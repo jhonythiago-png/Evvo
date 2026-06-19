@@ -1021,6 +1021,81 @@ button{cursor:pointer;background:none}
 }
 .modal h3{font-size:18px;font-weight:900;color:var(--text);letter-spacing:-.4px;margin-bottom:16px}
 .modal .form-input{margin-bottom:12px}
+
+/* ═══════════════════════════════════════════
+   EDITOR DE SERIES
+═══════════════════════════════════════════ */
+.serie-editor-row{
+  display:grid;
+  grid-template-columns:24px 1fr 1fr 1fr 36px;
+  gap:6px;
+  padding:8px 14px;
+  align-items:center;
+  border-bottom:1px solid var(--border);
+}
+.serie-editor-row:last-child{border-bottom:none}
+.se-num{
+  width:22px;height:22px;
+  border-radius:7px;
+  background:var(--grad);
+  display:flex;align-items:center;justify-content:center;
+  font-size:10px;font-weight:900;color:#fff;
+  flex-shrink:0;
+}
+.se-input{
+  background:var(--bg3);
+  border:1px solid var(--border2);
+  border-radius:9px;
+  padding:8px 4px;
+  text-align:center;
+  color:var(--text);
+  font-size:13px;font-weight:800;
+  width:100%;
+}
+.se-input:focus{border-color:var(--accent)}
+.se-obs{
+  background:var(--bg3);
+  border:1px solid var(--border2);
+  border-radius:9px;
+  padding:8px 6px;
+  color:var(--text3);
+  font-size:11px;
+  width:100%;
+}
+.btn-del-serie{
+  width:28px;height:28px;
+  border-radius:8px;
+  background:#ee097915;
+  display:flex;align-items:center;justify-content:center;
+  flex-shrink:0;
+}
+.btn-del-serie svg{width:14px;height:14px;stroke:#ee0979;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+
+/* select escuro */
+select.form-input option{background:#0e0e1a;color:#fff}
+
+/* card exercicio editavel */
+.ex-edit-card{
+  background:var(--bg2);
+  border-radius:16px;
+  border:1px solid var(--border);
+  padding:13px 14px;
+  display:flex;align-items:center;gap:12px;
+  cursor:pointer;
+  transition:background .15s;
+}
+.ex-edit-card:active{background:var(--bg3)}
+.ex-edit-actions{display:flex;gap:6px;margin-left:auto;flex-shrink:0}
+.btn-sm{
+  width:30px;height:30px;
+  border-radius:9px;
+  display:flex;align-items:center;justify-content:center;
+}
+.btn-sm svg{width:14px;height:14px;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.btn-sm.edit{background:var(--border);stroke:var(--text3)}
+.btn-sm.edit svg{stroke:var(--text3)}
+.btn-sm.del{background:#ee097915}
+.btn-sm.del svg{stroke:#ee0979}
 </style>
 </head>
 <body>
@@ -1116,7 +1191,7 @@ button{cursor:pointer;background:none}
         <div style="padding:20px;text-align:center;color:var(--text3);font-size:13px">Nenhum treino cadastrado ainda</div>
       </div>
 
-      <button class="btn-add" style="margin-bottom:20px" onclick="openNovaFicha()">
+      <button class="btn-add" style="margin-bottom:20px" onclick="openNovoDia()">
         <svg viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
         novo treino
       </button>
@@ -1518,6 +1593,153 @@ button{cursor:pointer;background:none}
     </button>
   </nav>
 
+
+  <!-- ══════════ TELA: EDITAR DIA ══════════ -->
+  <div class="screen" id="screen-editar-dia">
+    <div class="scroll">
+      <div class="back-row">
+        <button class="btn-back" onclick="goTo('screen-treino')">
+          <svg viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg>
+        </button>
+        <span class="back-label" id="editar-dia-back-label">Meu treino</span>
+      </div>
+      <div class="hero" style="padding-top:12px">
+        <div class="hero-glow"></div>
+        <div class="hero-label" id="editar-dia-label">Segunda-feira</div>
+        <div class="hero-title" id="editar-dia-title">Peito & Triceps</div>
+        <div class="hero-sub">Toque em um exercicio para editar</div>
+      </div>
+
+      <div class="sec-lbl">Exercicios</div>
+      <div class="day-list" id="editar-ex-list" style="padding:0 16px;gap:9px"></div>
+
+      <button class="btn-add-accent" style="margin-top:10px" onclick="openModalEx()">
+        <svg viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+        adicionar exercicio
+      </button>
+      <div style="height:20px"></div>
+    </div>
+  </div>
+
+  <!-- ══════════ TELA: EDITAR EXERCICIO ══════════ -->
+  <div class="screen" id="screen-editar-ex">
+    <div class="scroll">
+      <div class="back-row">
+        <button class="btn-back" onclick="goTo('screen-editar-dia')">
+          <svg viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg>
+        </button>
+        <span class="back-label">Exercicios do dia</span>
+      </div>
+      <div class="hero" style="padding-top:12px">
+        <div class="hero-glow"></div>
+        <div class="hero-label">Configurar exercicio</div>
+        <div class="hero-title" id="editar-ex-title">Exercicio</div>
+        <div class="hero-sub" id="editar-ex-meta">—</div>
+      </div>
+
+      <div class="sec-lbl">Series e cargas</div>
+
+      <div style="padding:0 16px">
+        <div style="background:var(--bg2);border-radius:16px;border:1px solid var(--border);overflow:hidden">
+          <div style="display:grid;grid-template-columns:24px 1fr 1fr 1fr 36px;gap:6px;padding:10px 14px 6px;border-bottom:1px solid var(--border)">
+            <span style="font-size:9px;color:var(--text4);text-transform:uppercase;letter-spacing:.1em;font-weight:700">#</span>
+            <span style="font-size:9px;color:var(--text4);text-transform:uppercase;letter-spacing:.1em;font-weight:700;text-align:center">Carga</span>
+            <span style="font-size:9px;color:var(--text4);text-transform:uppercase;letter-spacing:.1em;font-weight:700;text-align:center">Reps</span>
+            <span style="font-size:9px;color:var(--text4);text-transform:uppercase;letter-spacing:.1em;font-weight:700;text-align:center">Obs</span>
+            <span></span>
+          </div>
+          <div id="series-editor-list"></div>
+        </div>
+        <button class="btn-add" style="margin:10px 0 0;width:100%" onclick="addSerieEditor()">
+          <svg viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+          adicionar serie
+        </button>
+      </div>
+      <div style="padding:16px 16px 0">
+        <button class="btn-main" style="margin:0;width:100%" onclick="salvarSeries()">
+          <svg viewBox="0 0 24 24" style="width:18px;height:18px;stroke:#fff;fill:none;stroke-width:2.5;stroke-linecap:round;stroke-linejoin:round"><polyline points="20 6 9 17 4 12"/></svg>
+          Salvar series
+        </button>
+      </div>
+      <div style="height:20px"></div>
+    </div>
+  </div>
+
+  <!-- ══════════ MODAL NOVO DIA ══════════ -->
+  <div class="modal-overlay" id="modal-dia">
+    <div class="modal">
+      <div class="modal-handle"></div>
+      <h3>Novo dia de treino</h3>
+      <div class="form-group">
+        <label class="form-label">Nome do treino</label>
+        <input class="form-input" type="text" id="dia-nome-input" placeholder="Ex: Peito & Triceps">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Dia da semana</label>
+        <select class="form-input" id="dia-semana-input" style="color:var(--text)">
+          <option value="0">Domingo</option>
+          <option value="1">Segunda-feira</option>
+          <option value="2">Terca-feira</option>
+          <option value="3">Quarta-feira</option>
+          <option value="4">Quinta-feira</option>
+          <option value="5">Sexta-feira</option>
+          <option value="6">Sabado</option>
+        </select>
+      </div>
+      <button class="btn-primary" onclick="criarDia()">Criar dia</button>
+    </div>
+  </div>
+
+  <!-- ══════════ MODAL NOVO EXERCICIO ══════════ -->
+  <div class="modal-overlay" id="modal-ex">
+    <div class="modal">
+      <div class="modal-handle"></div>
+      <h3>Novo exercicio</h3>
+      <div class="form-group">
+        <label class="form-label">Nome do exercicio</label>
+        <input class="form-input" type="text" id="ex-nome-input" placeholder="Ex: Supino reto">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Tipo</label>
+        <select class="form-input" id="ex-tipo-input" style="color:var(--text)" onchange="toggleCardioFields()">
+          <option value="forca">Forca / Musculacao</option>
+          <option value="cardio">Cardio</option>
+        </select>
+      </div>
+      <div id="campos-forca">
+        <div class="form-group">
+          <label class="form-label">Grupo muscular</label>
+          <select class="form-input" id="ex-grupo-input" style="color:var(--text)">
+            <option value="Peitoral">Peitoral</option>
+            <option value="Costas">Costas</option>
+            <option value="Ombros">Ombros</option>
+            <option value="Biceps">Biceps</option>
+            <option value="Triceps">Triceps</option>
+            <option value="Pernas">Pernas</option>
+            <option value="Gluteos">Gluteos</option>
+            <option value="Abdomen">Abdomen</option>
+            <option value="Panturrilha">Panturrilha</option>
+            <option value="Antebraco">Antebraco</option>
+            <option value="Corpo todo">Corpo todo</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Equipamento</label>
+          <select class="form-input" id="ex-equip-input" style="color:var(--text)">
+            <option value="Barra">Barra livre</option>
+            <option value="Halter">Halter</option>
+            <option value="Maquina">Maquina</option>
+            <option value="Polia">Polia / Cabo</option>
+            <option value="Peso corporal">Peso corporal</option>
+            <option value="Kettlebell">Kettlebell</option>
+            <option value="Elastico">Elastico</option>
+          </select>
+        </div>
+      </div>
+      <button class="btn-primary" onclick="criarExercicio()">Adicionar exercicio</button>
+    </div>
+  </div>
+
   <!-- ══════════ MODAL NOVA FICHA ══════════ -->
   <div class="modal-overlay" id="modal-ficha">
     <div class="modal">
@@ -1752,17 +1974,28 @@ function renderDayList() {
     return;
   }
   list.innerHTML = state.diasTreino.map(dia => {
-    const diasNomes = ['Domingo','Segunda-feira','Terça-feira','Quarta-feira','Quinta-feira','Sexta-feira','Sábado'];
-    return `<div class="day-card" onclick="openDia('${dia.id}')">
-      <div class="card-icon fire">
-        <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 4v16M18 4v16M3 8h3M18 8h3M3 16h3M18 16h3M6 12h12"/></svg>
+    const diasNomes = ['Domingo','Segunda-feira','Terca-feira','Quarta-feira','Quinta-feira','Sexta-feira','Sabado'];
+    return `<div class="day-card" style="flex-direction:column;align-items:stretch;gap:0;padding:0;overflow:hidden">
+      <div style="display:flex;align-items:center;gap:12px;padding:13px 14px">
+        <div class="card-icon fire">
+          <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 4v16M18 4v16M3 8h3M18 8h3M3 16h3M18 16h3M6 12h12"/></svg>
+        </div>
+        <div class="card-info">
+          <div class="card-name">${dia.nome}</div>
+          <div class="card-meta">${diasNomes[dia.dia_semana]}</div>
+        </div>
       </div>
-      <div class="card-info">
-        <div class="card-name">${dia.nome}</div>
-        <div class="card-meta">${diasNomes[dia.dia_semana]}</div>
-      </div>
-      <div class="day-card-play">
-        <svg viewBox="0 0 24 24"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+      <div style="display:flex;border-top:1px solid var(--border)">
+        <button style="flex:1;padding:10px;display:flex;align-items:center;justify-content:center;gap:6px;font-size:11px;font-weight:800;color:var(--text3);text-transform:uppercase;letter-spacing:.08em;background:none;border:none;border-right:1px solid var(--border);cursor:pointer"
+          onclick="abrirEditarDia('${dia.id}')">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+          Montar
+        </button>
+        <button style="flex:1;padding:10px;display:flex;align-items:center;justify-content:center;gap:6px;font-size:11px;font-weight:800;color:var(--accent);text-transform:uppercase;letter-spacing:.08em;background:none;border:none;cursor:pointer"
+          onclick="openDia('${dia.id}')">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+          Treinar
+        </button>
       </div>
     </div>`;
   }).join('');
@@ -2172,6 +2405,293 @@ window.navTo = function(screenId, btn) {
   if (screenId === 'screen-evolucao') loadFichas();
   if (screenId === 'screen-medidas') setupMedidasDate();
 };
+
+
+// ═══════════════════════════════════════════
+// ESTADO EXTRA PARA MONTAGEM
+// ═══════════════════════════════════════════
+let editState = {
+  diaEditando: null,
+  exEditando: null,
+  seriesEditor: [],
+};
+
+const DIAS_NOMES = ['Domingo','Segunda-feira','Terca-feira','Quarta-feira','Quinta-feira','Sexta-feira','Sabado'];
+
+// ═══════════════════════════════════════════
+// MODAL HELPERS
+// ═══════════════════════════════════════════
+function openModal(id) {
+  document.getElementById(id).classList.add('open');
+}
+function closeModal(id) {
+  document.getElementById(id).classList.remove('open');
+}
+
+// Fecha modal ao clicar fora
+['modal-dia','modal-ex','modal-ficha'].forEach(id => {
+  const el = document.getElementById(id);
+  if(el) el.addEventListener('click', function(e){ if(e.target===this) closeModal(id); });
+});
+
+// ═══════════════════════════════════════════
+// CRIAR DIA DE TREINO
+// ═══════════════════════════════════════════
+function openModalDia() {
+  if (!state.fichaAtiva) {
+    showToast('Crie uma ficha primeiro!');
+    openModal('modal-ficha');
+    return;
+  }
+  // pre-seleciona o dia de hoje
+  document.getElementById('dia-semana-input').value = new Date().getDay();
+  openModal('modal-dia');
+  setTimeout(() => document.getElementById('dia-nome-input').focus(), 300);
+}
+
+async function criarDia() {
+  const nome = document.getElementById('dia-nome-input').value.trim();
+  const dia  = parseInt(document.getElementById('dia-semana-input').value);
+  if (!nome) { showToast('Digite o nome do treino'); return; }
+
+  const ordem = state.diasTreino.length;
+  const { data, error } = await sb.from('dias_treino').insert({
+    ficha_id: state.fichaAtiva.id,
+    dia_semana: dia,
+    nome,
+    ordem
+  }).select().single();
+
+  if (error) { showToast('Erro ao criar dia'); return; }
+
+  document.getElementById('dia-nome-input').value = '';
+  closeModal('modal-dia');
+  showToast('Dia criado!');
+  await loadTreino();
+}
+
+// ═══════════════════════════════════════════
+// ABRIR DIA PARA EDITAR (montar treino)
+// ═══════════════════════════════════════════
+async function abrirEditarDia(diaId) {
+  const dia = state.diasTreino.find(d => d.id === diaId);
+  if (!dia) return;
+  editState.diaEditando = dia;
+
+  document.getElementById('editar-dia-label').textContent = DIAS_NOMES[dia.dia_semana];
+  document.getElementById('editar-dia-title').textContent = dia.nome;
+
+  await renderExEditList();
+  goTo('screen-editar-dia');
+}
+
+async function renderExEditList() {
+  const { data: exs } = await sb.from('exercicios')
+    .select('*, series_template(*)')
+    .eq('dia_id', editState.diaEditando.id)
+    .order('ordem');
+
+  const list = document.getElementById('editar-ex-list');
+  if (!exs || !exs.length) {
+    list.innerHTML = '<div style="padding:20px;text-align:center;color:var(--text3);font-size:13px">Nenhum exercicio ainda. Adicione o primeiro!</div>';
+    return;
+  }
+
+  list.innerHTML = exs.map(ex => {
+    const series = ex.series_template || [];
+    const maxCarga = series.length ? Math.max(...series.map(s=>s.carga_kg||0)) : 0;
+    const detalhe = ex.tipo === 'cardio'
+      ? 'Cardio'
+      : series.length + ' serie' + (series.length!==1?'s':'') + (maxCarga?' · ate '+maxCarga+'kg':'');
+    return `<div class="ex-edit-card">
+      <div class="card-icon ${ex.tipo==='cardio'?'ice':'fire'}">
+        <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          ${ex.tipo==='cardio'
+            ? '<path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/>'
+            : '<path d="M6 4v16M18 4v16M3 8h3M18 8h3M3 16h3M18 16h3M6 12h12"/>'}
+        </svg>
+      </div>
+      <div class="card-info">
+        <div class="card-name">${ex.nome}</div>
+        <div class="card-meta">${ex.grupo_muscular||''} ${ex.equipamento?' · '+ex.equipamento:''} · ${detalhe}</div>
+      </div>
+      <div class="ex-edit-actions">
+        <button class="btn-sm edit" onclick="abrirEditarEx('${ex.id}','${ex.nome.replace(/'/g,"\'")}','${ex.grupo_muscular||''}','${ex.equipamento||''}')" title="Editar series">
+          <svg viewBox="0 0 24 24"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+        </button>
+        <button class="btn-sm del" onclick="deletarExercicio('${ex.id}')" title="Excluir">
+          <svg viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6M14 11v6"/></svg>
+        </button>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+// ═══════════════════════════════════════════
+// CRIAR EXERCICIO
+// ═══════════════════════════════════════════
+function openModalEx() {
+  document.getElementById('ex-nome-input').value = '';
+  document.getElementById('ex-tipo-input').value = 'forca';
+  document.getElementById('campos-forca').style.display = 'block';
+  openModal('modal-ex');
+  setTimeout(() => document.getElementById('ex-nome-input').focus(), 300);
+}
+
+function toggleCardioFields() {
+  const tipo = document.getElementById('ex-tipo-input').value;
+  document.getElementById('campos-forca').style.display = tipo === 'forca' ? 'block' : 'none';
+}
+
+async function criarExercicio() {
+  const nome   = document.getElementById('ex-nome-input').value.trim();
+  const tipo   = document.getElementById('ex-tipo-input').value;
+  const grupo  = tipo === 'forca' ? document.getElementById('ex-grupo-input').value : 'Cardio';
+  const equip  = tipo === 'forca' ? document.getElementById('ex-equip-input').value : '';
+  if (!nome) { showToast('Digite o nome do exercicio'); return; }
+
+  const { data: exsAtuais } = await sb.from('exercicios')
+    .select('id').eq('dia_id', editState.diaEditando.id);
+  const ordem = exsAtuais ? exsAtuais.length : 0;
+
+  const { data, error } = await sb.from('exercicios').insert({
+    dia_id: editState.diaEditando.id,
+    nome, tipo,
+    grupo_muscular: grupo,
+    equipamento: equip,
+    ordem
+  }).select().single();
+
+  if (error) { showToast('Erro ao criar exercicio'); return; }
+
+  closeModal('modal-ex');
+  showToast('Exercicio adicionado!');
+  await renderExEditList();
+
+  // Abre direto o editor de series
+  abrirEditarEx(data.id, nome, grupo, equip);
+}
+
+async function deletarExercicio(exId) {
+  if (!confirm('Excluir este exercicio e todas as suas series?')) return;
+  await sb.from('exercicios').delete().eq('id', exId);
+  showToast('Exercicio removido');
+  await renderExEditList();
+}
+
+// ═══════════════════════════════════════════
+// EDITOR DE SERIES
+// ═══════════════════════════════════════════
+async function abrirEditarEx(exId, nome, grupo, equip) {
+  editState.exEditando = exId;
+  document.getElementById('editar-ex-title').textContent = nome;
+  document.getElementById('editar-ex-meta').textContent = [grupo,equip].filter(Boolean).join(' · ');
+
+  // carrega series existentes
+  const { data: series } = await sb.from('series_template')
+    .select('*').eq('exercicio_id', exId).order('numero_serie');
+
+  editState.seriesEditor = series ? series.map(s => ({
+    id: s.id,
+    numero: s.numero_serie,
+    carga: s.carga_kg || '',
+    reps: s.repeticoes || '',
+    obs: s.observacao || ''
+  })) : [];
+
+  // se nao tem series, ja adiciona 3 para comecar
+  if (!editState.seriesEditor.length) {
+    editState.seriesEditor = [
+      {id:null,numero:1,carga:'',reps:'',obs:''},
+      {id:null,numero:2,carga:'',reps:'',obs:''},
+      {id:null,numero:3,carga:'',reps:'',obs:''},
+    ];
+  }
+
+  renderSeriesEditor();
+  goTo('screen-editar-ex');
+}
+
+function renderSeriesEditor() {
+  const list = document.getElementById('series-editor-list');
+  list.innerHTML = editState.seriesEditor.map((s, i) => `
+    <div class="serie-editor-row">
+      <div class="se-num">${i+1}</div>
+      <input class="se-input" type="number" placeholder="kg" value="${s.carga}"
+        onchange="editState.seriesEditor[${i}].carga=this.value"
+        oninput="editState.seriesEditor[${i}].carga=this.value" step="0.5" min="0">
+      <input class="se-input" type="number" placeholder="reps" value="${s.reps}"
+        onchange="editState.seriesEditor[${i}].reps=this.value"
+        oninput="editState.seriesEditor[${i}].reps=this.value" min="0">
+      <input class="se-obs" type="text" placeholder="obs" value="${s.obs}"
+        onchange="editState.seriesEditor[${i}].obs=this.value"
+        oninput="editState.seriesEditor[${i}].obs=this.value" maxlength="20">
+      <button class="btn-del-serie" onclick="removerSerie(${i})">
+        <svg viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+    </div>
+  `).join('');
+}
+
+function addSerieEditor() {
+  const n = editState.seriesEditor.length + 1;
+  // copia a carga da ultima serie como sugestao
+  const ultima = editState.seriesEditor[editState.seriesEditor.length-1];
+  editState.seriesEditor.push({
+    id: null,
+    numero: n,
+    carga: ultima ? ultima.carga : '',
+    reps:  ultima ? ultima.reps  : '',
+    obs:   ''
+  });
+  renderSeriesEditor();
+  // scroll para o fim
+  const list = document.getElementById('series-editor-list');
+  list.lastElementChild?.scrollIntoView({behavior:'smooth', block:'end'});
+}
+
+function removerSerie(idx) {
+  if (editState.seriesEditor.length <= 1) { showToast('Minimo 1 serie'); return; }
+  editState.seriesEditor.splice(idx, 1);
+  editState.seriesEditor.forEach((s,i) => s.numero = i+1);
+  renderSeriesEditor();
+}
+
+async function salvarSeries() {
+  if (!editState.exEditando) return;
+
+  const series = editState.seriesEditor;
+  if (!series.length) { showToast('Adicione ao menos 1 serie'); return; }
+
+  // deleta as series existentes e recria (mais simples)
+  await sb.from('series_template').delete().eq('exercicio_id', editState.exEditando);
+
+  const inserts = series.map((s, i) => ({
+    exercicio_id: editState.exEditando,
+    numero_serie: i + 1,
+    carga_kg:    s.carga !== '' ? parseFloat(s.carga) : null,
+    repeticoes:  s.reps  !== '' ? parseInt(s.reps)   : null,
+    observacao:  s.obs || null
+  }));
+
+  const { error } = await sb.from('series_template').insert(inserts);
+  if (error) { showToast('Erro ao salvar series'); return; }
+
+  showToast('Series salvas!');
+  await renderExEditList();
+  goTo('screen-editar-dia');
+}
+
+// ═══════════════════════════════════════════
+// ATUALIZA btn-add NO TREINO PARA ABRIR DIA
+// ═══════════════════════════════════════════
+function openNovoDia() {
+  if (!state.fichaAtiva) {
+    openModal('modal-ficha');
+  } else {
+    openModalDia();
+  }
+}
 
 // ═══════════════════════════════════════════
 // START

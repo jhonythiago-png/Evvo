@@ -1052,8 +1052,8 @@ button{cursor:pointer;background:none}
     <div class="login-form" id="login-form">
       <div class="login-error" id="login-error"></div>
       <div class="form-group">
-        <label class="form-label">E-mail</label>
-        <input class="form-input" type="email" id="login-email" placeholder="seu@email.com" autocomplete="email">
+        <label class="form-label">Usuário</label>
+        <input class="form-input" type="text" id="login-user" placeholder="seu usuário" autocomplete="username" autocapitalize="none">
       </div>
       <div class="form-group">
         <label class="form-label">Senha</label>
@@ -1066,12 +1066,12 @@ button{cursor:pointer;background:none}
     <div class="login-form" id="register-form" style="display:none">
       <div class="login-error" id="register-error"></div>
       <div class="form-group">
-        <label class="form-label">Nome</label>
+        <label class="form-label">Nome completo</label>
         <input class="form-input" type="text" id="reg-name" placeholder="Seu nome">
       </div>
       <div class="form-group">
-        <label class="form-label">E-mail</label>
-        <input class="form-input" type="email" id="reg-email" placeholder="seu@email.com" autocomplete="email">
+        <label class="form-label">Usuário</label>
+        <input class="form-input" type="text" id="reg-user" placeholder="escolha um usuário" autocapitalize="none">
       </div>
       <div class="form-group">
         <label class="form-label">Senha</label>
@@ -1087,7 +1087,19 @@ button{cursor:pointer;background:none}
     <div class="scroll">
       <div class="hero">
         <div class="hero-glow"></div>
-        <div class="hero-label" id="treino-greeting">Bom dia 💪</div>
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
+          <div style="display:flex;align-items:center;gap:10px">
+            <svg width="36" height="36" viewBox="0 0 36 36" fill="none">
+              <rect width="36" height="36" rx="10" fill="url(#hg)"/>
+              <defs><linearGradient id="hg" x1="0" y1="0" x2="36" y2="36"><stop offset="0%" stop-color="#ff6a00"/><stop offset="100%" stop-color="#ee0979"/></linearGradient></defs>
+              <path d="M9 12 L18 26 L27 12" stroke="white" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round" fill="none" opacity=".35"/>
+              <path d="M12 12 L18 22 L24 12" stroke="white" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+              <circle cx="18" cy="10" r="1.8" fill="white"/>
+            </svg>
+            <span style="font-size:20px;font-weight:900;color:#fff;letter-spacing:-1px">EVVO</span>
+          </div>
+          <div style="font-size:11px;color:var(--text3);font-weight:600" id="treino-greeting">Bom dia 💪</div>
+        </div>
         <div class="hero-title">Meu Treino</div>
         <div class="hero-sub">Toque em um dia para começar</div>
       </div>
@@ -1591,27 +1603,40 @@ function toggleForm() {
   rf.style.display = rf.style.display === 'none' ? 'block' : 'none';
 }
 
+
 async function doLogin() {
-  const email = document.getElementById('login-email').value.trim();
-  const pass  = document.getElementById('login-pass').value;
-  const err   = document.getElementById('login-error');
+  const user = document.getElementById('login-user').value.trim().toLowerCase();
+  const pass = document.getElementById('login-pass').value;
+  const err  = document.getElementById('login-error');
   err.style.display = 'none';
-  if (!email || !pass) { err.textContent = 'Preencha e-mail e senha.'; err.style.display = 'block'; return; }
-  const { error } = await sb.auth.signInWithPassword({ email, password: pass });
-  if (error) { err.textContent = 'E-mail ou senha incorretos.'; err.style.display = 'block'; }
+  if (!user || !pass) { err.textContent = 'Preencha usuario e senha.'; err.style.display = 'block'; return; }
+  const fakeEmail = user + '@evvo.app';
+  const { error } = await sb.auth.signInWithPassword({ email: fakeEmail, password: pass });
+  if (error) { err.textContent = 'Usuario ou senha incorretos.'; err.style.display = 'block'; }
 }
 
 async function doRegister() {
-  const nome  = document.getElementById('reg-name').value.trim();
-  const email = document.getElementById('reg-email').value.trim();
-  const pass  = document.getElementById('reg-pass').value;
-  const err   = document.getElementById('register-error');
+  const nome = document.getElementById('reg-name').value.trim();
+  const user = document.getElementById('reg-user').value.trim().toLowerCase().replace(/\s+/g,'');
+  const pass = document.getElementById('reg-pass').value;
+  const err  = document.getElementById('register-error');
   err.style.display = 'none';
-  if (!nome || !email || !pass) { err.textContent = 'Preencha todos os campos.'; err.style.display = 'block'; return; }
+  if (!nome || !user || !pass) { err.textContent = 'Preencha todos os campos.'; err.style.display = 'block'; return; }
+  if (user.length < 3) { err.textContent = 'Usuario deve ter ao menos 3 caracteres.'; err.style.display = 'block'; return; }
   if (pass.length < 6) { err.textContent = 'Senha deve ter ao menos 6 caracteres.'; err.style.display = 'block'; return; }
-  const { error } = await sb.auth.signUp({ email, password: pass, options: { data: { nome } } });
-  if (error) { err.textContent = error.message; err.style.display = 'block'; }
-  else { showToast('Conta criada! Verifique seu e-mail.'); toggleForm(); }
+  const fakeEmail = user + '@evvo.app';
+  const { error } = await sb.auth.signUp({ email: fakeEmail, password: pass, options: { data: { nome, username: user } } });
+  if (error) {
+    err.textContent = error.message.includes('already') ? 'Usuario ja existe. Escolha outro.' : error.message;
+    err.style.display = 'block';
+  } else {
+    showToast('Conta criada! Entrando...');
+    setTimeout(() => {
+      document.getElementById('login-user').value = user;
+      document.getElementById('login-pass').value = pass;
+      doLogin();
+    }, 800);
+  }
 }
 
 async function doLogout() {
@@ -1631,7 +1656,8 @@ async function loadPerfil() {
     const ini = data.nome.charAt(0).toUpperCase();
     document.getElementById('profile-avatar').textContent = ini;
     document.getElementById('profile-name').textContent = data.nome;
-    document.getElementById('profile-email').textContent = data.email;
+    const username = data.email.replace('@evvo.app','');
+    document.getElementById('profile-email').textContent = '@' + username;
     const planEl = document.getElementById('profile-plan');
     planEl.textContent = data.plano === 'pro' ? '⭐ Pro' : 'Free';
     planEl.className = 'profile-plan ' + (data.plano === 'pro' ? 'plan-pro' : 'plan-free');

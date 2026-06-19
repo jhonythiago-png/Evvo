@@ -1098,7 +1098,7 @@ button{cursor:pointer;background:none}
             </svg>
             <span style="font-size:20px;font-weight:900;color:#fff;letter-spacing:-1px">EVVO</span>
           </div>
-          <div style="font-size:11px;color:var(--text3);font-weight:600" id="treino-greeting">Bom dia 💪</div>
+          <div style="font-size:14px;color:var(--text2);font-weight:700;letter-spacing:-.2px" id="treino-greeting">Ola 👋</div>
         </div>
         <div class="hero-title">Meu Treino</div>
         <div class="hero-sub">Toque em um dia para começar</div>
@@ -1689,9 +1689,9 @@ function navTo(screenId, btn) {
 // TREINO — CARREGAR DIAS
 // ═══════════════════════════════════════════
 function updateGreeting() {
-  const h = new Date().getHours();
-  const g = h < 12 ? 'Bom dia 🌅' : h < 18 ? 'Boa tarde ☀️' : 'Boa noite 🌙';
-  document.getElementById('treino-greeting').textContent = g;
+  const primeiroNome = state.perfil ? state.perfil.nome.split(" ")[0] : "";
+  const txt = primeiroNome ? "Olá, " + primeiroNome + " 👋" : "Olá 👋";
+  document.getElementById("treino-greeting").textContent = txt;
 }
 
 async function loadTreino() {

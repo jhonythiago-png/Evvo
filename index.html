@@ -3422,10 +3422,15 @@ async function abrirDetalhesSessao(sessaoId) {
       // Chips compactos das séries
       const chipsHTML = isCardio
         ? ex.series.map(s => {
-            const dur = s.repeticoes ? s.repeticoes : '—';
-            const vel = s.carga_kg  ? s.carga_kg + ' km/h' : null;
-            const txt = vel ? dur + ' · ' + vel : dur;
-            return `<span style="background:var(--border);border-radius:6px;padding:3px 8px;font-size:10px;font-weight:700;color:var(--text3)">${txt}</span>`;
+            const minFeitos = s.repeticoes ? parseInt(s.repeticoes) : null;
+            const horas = minFeitos ? Math.floor(minFeitos / 60) : 0;
+            const mins  = minFeitos ? minFeitos % 60 : 0;
+            const durStr = minFeitos
+              ? (horas > 0 ? horas+'h '+mins+'min' : mins+' min')
+              : '—';
+            const vel = s.carga_kg ? s.carga_kg + ' km/h' : null;
+            const txt = vel ? durStr + ' · ' + vel : durStr;
+            return `<span style="background:#00cfff15;border:1px solid #00cfff22;border-radius:6px;padding:4px 10px;font-size:11px;font-weight:700;color:#00cfff">${txt}</span>`;
           }).join('')
         : ex.series.map((s, i) =>
             `<span style="background:var(--border);border-radius:6px;padding:3px 8px;font-size:10px;font-weight:700;color:var(--text3)">
@@ -3535,47 +3540,57 @@ function iniciarCardio() {
   }, 1000);
 }
 
-function finalizarCardio() {
-  let tempoFinal;
+async function finalizarCardio() {
+  let tempoFinalSeg;
 
   if (cardioState.iniciado && cardioState.inicio) {
-    // Calcula tempo real
-    tempoFinal = Math.floor((Date.now() - cardioState.inicio) / 1000);
+    // Tempo real cronometrado
+    tempoFinalSeg = Math.floor((Date.now() - cardioState.inicio) / 1000);
     clearInterval(cardioState.interval);
     cardioState.interval = null;
   } else {
-    // Usa tempo previsto
-    tempoFinal = cardioState.duracaoPrevista;
+    // Sem timer — usa tempo previsto cadastrado
+    tempoFinalSeg = cardioState.duracaoPrevista;
   }
 
-  // Marca o exercício como concluído
   const ex = state.exerciciosAtual[state.execIdx];
-  if (ex) {
-    ex._cardio_concluido = true;
-    ex._cardio_tempo_real = tempoFinal;
-  }
+  if (!ex) return;
 
-  // Salva cardio como série executada
-  if (state.sessaoAtiva && ex) {
-    const minReal = Math.round(tempoFinal / 60);
-    sb.from('series_executadas').insert({
+  // Busca a velocidade cadastrada para este cardio
+  const serie = (ex.series_template || [])[0] || {};
+  const vel   = serie.velocidade || null;
+  const incl  = serie.inclinacao || null;
+
+  // Formata tempo para exibição
+  const minReal = Math.round(tempoFinalSeg / 60);
+  const horas   = Math.floor(minReal / 60);
+  const mins    = minReal % 60;
+  const tempoStr = horas > 0 ? `${horas}h ${mins}min` : `${minReal} min`;
+
+  // Salva no banco: carga_kg = velocidade, repeticoes = tempo feito
+  if (state.sessaoAtiva) {
+    const { error } = await sb.from('series_executadas').insert({
       sessao_id:    state.sessaoAtiva.id,
       exercicio_id: ex.id,
       numero_serie: 1,
-      carga_kg:     null,
-      repeticoes:   String(minReal) + ' min',
+      carga_kg:     vel,              // velocidade km/h salva aqui
+      repeticoes:   String(minReal),  // minutos feitos
       concluida:    true,
       executado_em: new Date().toISOString(),
     });
-    // guarda no estado local
-    const key = `${state.execIdx}_cardio`;
-    seriesExecutadas[key] = { carga: 0, reps: minReal };
+    if (error) console.error('Erro ao salvar cardio:', error);
   }
 
-  const min = Math.floor(tempoFinal / 60);
-  showToast(`Cardio concluído — ${min} min! 🔥`);
+  // Guarda local
+  const key = `${state.execIdx}_cardio`;
+  seriesExecutadas[key] = { carga: vel || 0, reps: minReal };
 
-  // Avança para o próximo exercício
+  // Marca concluído
+  ex._cardio_concluido = true;
+  ex._cardio_tempo_real = tempoFinalSeg;
+  state.exsConcluidos.add(state.execIdx);
+
+  showToast(`Cardio concluído — ${tempoStr}! 🔥`);
   setTimeout(() => nextEx(), 800);
 }
 
@@ -5085,10 +5100,15 @@ async function abrirDetalhesSessao(sessaoId) {
       // Chips compactos das séries
       const chipsHTML = isCardio
         ? ex.series.map(s => {
-            const dur = s.repeticoes ? s.repeticoes : '—';
-            const vel = s.carga_kg  ? s.carga_kg + ' km/h' : null;
-            const txt = vel ? dur + ' · ' + vel : dur;
-            return `<span style="background:var(--border);border-radius:6px;padding:3px 8px;font-size:10px;font-weight:700;color:var(--text3)">${txt}</span>`;
+            const minFeitos = s.repeticoes ? parseInt(s.repeticoes) : null;
+            const horas = minFeitos ? Math.floor(minFeitos / 60) : 0;
+            const mins  = minFeitos ? minFeitos % 60 : 0;
+            const durStr = minFeitos
+              ? (horas > 0 ? horas+'h '+mins+'min' : mins+' min')
+              : '—';
+            const vel = s.carga_kg ? s.carga_kg + ' km/h' : null;
+            const txt = vel ? durStr + ' · ' + vel : durStr;
+            return `<span style="background:#00cfff15;border:1px solid #00cfff22;border-radius:6px;padding:4px 10px;font-size:11px;font-weight:700;color:#00cfff">${txt}</span>`;
           }).join('')
         : ex.series.map((s, i) =>
             `<span style="background:var(--border);border-radius:6px;padding:3px 8px;font-size:10px;font-weight:700;color:var(--text3)">
@@ -5198,47 +5218,57 @@ function iniciarCardio() {
   }, 1000);
 }
 
-function finalizarCardio() {
-  let tempoFinal;
+async function finalizarCardio() {
+  let tempoFinalSeg;
 
   if (cardioState.iniciado && cardioState.inicio) {
-    // Calcula tempo real
-    tempoFinal = Math.floor((Date.now() - cardioState.inicio) / 1000);
+    // Tempo real cronometrado
+    tempoFinalSeg = Math.floor((Date.now() - cardioState.inicio) / 1000);
     clearInterval(cardioState.interval);
     cardioState.interval = null;
   } else {
-    // Usa tempo previsto
-    tempoFinal = cardioState.duracaoPrevista;
+    // Sem timer — usa tempo previsto cadastrado
+    tempoFinalSeg = cardioState.duracaoPrevista;
   }
 
-  // Marca o exercício como concluído
   const ex = state.exerciciosAtual[state.execIdx];
-  if (ex) {
-    ex._cardio_concluido = true;
-    ex._cardio_tempo_real = tempoFinal;
-  }
+  if (!ex) return;
 
-  // Salva cardio como série executada
-  if (state.sessaoAtiva && ex) {
-    const minReal = Math.round(tempoFinal / 60);
-    sb.from('series_executadas').insert({
+  // Busca a velocidade cadastrada para este cardio
+  const serie = (ex.series_template || [])[0] || {};
+  const vel   = serie.velocidade || null;
+  const incl  = serie.inclinacao || null;
+
+  // Formata tempo para exibição
+  const minReal = Math.round(tempoFinalSeg / 60);
+  const horas   = Math.floor(minReal / 60);
+  const mins    = minReal % 60;
+  const tempoStr = horas > 0 ? `${horas}h ${mins}min` : `${minReal} min`;
+
+  // Salva no banco: carga_kg = velocidade, repeticoes = tempo feito
+  if (state.sessaoAtiva) {
+    const { error } = await sb.from('series_executadas').insert({
       sessao_id:    state.sessaoAtiva.id,
       exercicio_id: ex.id,
       numero_serie: 1,
-      carga_kg:     null,
-      repeticoes:   String(minReal) + ' min',
+      carga_kg:     vel,              // velocidade km/h salva aqui
+      repeticoes:   String(minReal),  // minutos feitos
       concluida:    true,
       executado_em: new Date().toISOString(),
     });
-    // guarda no estado local
-    const key = `${state.execIdx}_cardio`;
-    seriesExecutadas[key] = { carga: 0, reps: minReal };
+    if (error) console.error('Erro ao salvar cardio:', error);
   }
 
-  const min = Math.floor(tempoFinal / 60);
-  showToast(`Cardio concluído — ${min} min! 🔥`);
+  // Guarda local
+  const key = `${state.execIdx}_cardio`;
+  seriesExecutadas[key] = { carga: vel || 0, reps: minReal };
 
-  // Avança para o próximo exercício
+  // Marca concluído
+  ex._cardio_concluido = true;
+  ex._cardio_tempo_real = tempoFinalSeg;
+  state.exsConcluidos.add(state.execIdx);
+
+  showToast(`Cardio concluído — ${tempoStr}! 🔥`);
   setTimeout(() => nextEx(), 800);
 }
 

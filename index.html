@@ -1991,7 +1991,7 @@ async function doRegister() {
 
 async function doLogout() {
   await sb.auth.signOut();
-  state = { user:null, perfil:null, fichaAtiva:null, diasTreino:[], diaAtual:null, exerciciosAtual:[], execIdx:0, sessaoAtiva:null, medidas:null };
+  state = { user:null, perfil:null, fichaAtiva:null, diasTreino:[], diaAtual:null, exerciciosAtual:[], execIdx:0, sessaoAtiva:null, medidas:null, exsConcluidos:new Set() };
   document.getElementById('bottom-nav').classList.remove('visible');
   goTo('screen-login');
 }
@@ -3555,6 +3555,23 @@ function finalizarCardio() {
     ex._cardio_tempo_real = tempoFinal;
   }
 
+  // Salva cardio como série executada
+  if (state.sessaoAtiva && ex) {
+    const minReal = Math.round(tempoFinal / 60);
+    sb.from('series_executadas').insert({
+      sessao_id:    state.sessaoAtiva.id,
+      exercicio_id: ex.id,
+      numero_serie: 1,
+      carga_kg:     null,
+      repeticoes:   String(minReal) + ' min',
+      concluida:    true,
+      executado_em: new Date().toISOString(),
+    });
+    // guarda no estado local
+    const key = `${state.execIdx}_cardio`;
+    seriesExecutadas[key] = { carga: 0, reps: minReal };
+  }
+
   const min = Math.floor(tempoFinal / 60);
   showToast(`Cardio concluído — ${min} min! 🔥`);
 
@@ -3572,11 +3589,13 @@ function todasFeitas() {
   const total = series.length;
   if (!total) { nextEx(); return; }
 
-  // Marca todas visualmente
+  // Marca todas visualmente e salva cada uma
   for (let si = 0; si < total; si++) {
     const row = document.getElementById(`sr-${si}`);
     const btn = document.getElementById(`sc-${si}`);
     if (!row || !btn) continue;
+    // Só salva se não estava done ainda
+    const jaFeita = row.querySelector('.sn')?.classList.contains('done');
     row.querySelectorAll('.sn,.sf').forEach(e => {
       e.classList.remove('now','next');
       e.classList.add('done');
@@ -3584,6 +3603,7 @@ function todasFeitas() {
     btn.classList.remove('now','next');
     btn.classList.add('done');
     btn.innerHTML = '<svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>';
+    if (!jaFeita) salvarSerieExecutada(si);
   }
 
   showToast(`${total} séries concluídas! 💪`);
@@ -3659,7 +3679,7 @@ async function doRegister() {
 
 async function doLogout() {
   await sb.auth.signOut();
-  state = { user:null, perfil:null, fichaAtiva:null, diasTreino:[], diaAtual:null, exerciciosAtual:[], execIdx:0, sessaoAtiva:null, medidas:null };
+  state = { user:null, perfil:null, fichaAtiva:null, diasTreino:[], diaAtual:null, exerciciosAtual:[], execIdx:0, sessaoAtiva:null, medidas:null, exsConcluidos:new Set() };
   document.getElementById('bottom-nav').classList.remove('visible');
   goTo('screen-login');
 }
@@ -3958,31 +3978,6 @@ function renderExec() {
 }
 
 
-function toggleSerie(si) {
-  const row = document.getElementById(`sr-${si}`);
-  const btn = document.getElementById(`sc-${si}`);
-  const els = row.querySelectorAll('.sn,.sf');
-  els.forEach(e => { e.classList.remove('now','next'); e.classList.add('done'); });
-  btn.classList.remove('now','next'); btn.classList.add('done');
-  btn.innerHTML = '<svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>';
-  // ativa próxima
-  const next = document.getElementById(`sr-${si+1}`);
-  if (next) {
-    next.querySelectorAll('.sn,.sf').forEach(e => { e.classList.remove('next'); e.classList.add('now'); });
-    const nb = document.getElementById(`sc-${si+1}`);
-    nb.classList.remove('next'); nb.classList.add('now');
-    nb.innerHTML = '<svg viewBox="0 0 24 24"><polygon points="5 3 19 12 5 21 5 3"/></svg>';
-  }
-  // Salva série executada no banco
-  salvarSerieExecutada(si);
-  // Verifica se todas as séries foram concluídas
-  const totalSeries = (state.exerciciosAtual[state.execIdx]?.series_template || []).length;
-  const concluidas = document.querySelectorAll(`[id^="sr-"] .sn.done`).length;
-  if (concluidas >= totalSeries) {
-    state.exsConcluidos.add(state.execIdx);
-    renderExOverview(state.execIdx);
-  }
-}
 
 function editCarga(si) {
   const val = prompt('Carga (kg):');
@@ -5223,6 +5218,23 @@ function finalizarCardio() {
     ex._cardio_tempo_real = tempoFinal;
   }
 
+  // Salva cardio como série executada
+  if (state.sessaoAtiva && ex) {
+    const minReal = Math.round(tempoFinal / 60);
+    sb.from('series_executadas').insert({
+      sessao_id:    state.sessaoAtiva.id,
+      exercicio_id: ex.id,
+      numero_serie: 1,
+      carga_kg:     null,
+      repeticoes:   String(minReal) + ' min',
+      concluida:    true,
+      executado_em: new Date().toISOString(),
+    });
+    // guarda no estado local
+    const key = `${state.execIdx}_cardio`;
+    seriesExecutadas[key] = { carga: 0, reps: minReal };
+  }
+
   const min = Math.floor(tempoFinal / 60);
   showToast(`Cardio concluído — ${min} min! 🔥`);
 
@@ -5240,11 +5252,13 @@ function todasFeitas() {
   const total = series.length;
   if (!total) { nextEx(); return; }
 
-  // Marca todas visualmente
+  // Marca todas visualmente e salva cada uma
   for (let si = 0; si < total; si++) {
     const row = document.getElementById(`sr-${si}`);
     const btn = document.getElementById(`sc-${si}`);
     if (!row || !btn) continue;
+    // Só salva se não estava done ainda
+    const jaFeita = row.querySelector('.sn')?.classList.contains('done');
     row.querySelectorAll('.sn,.sf').forEach(e => {
       e.classList.remove('now','next');
       e.classList.add('done');
@@ -5252,6 +5266,7 @@ function todasFeitas() {
     btn.classList.remove('now','next');
     btn.classList.add('done');
     btn.innerHTML = '<svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>';
+    if (!jaFeita) salvarSerieExecutada(si);
   }
 
   showToast(`${total} séries concluídas! 💪`);

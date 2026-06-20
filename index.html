@@ -2282,100 +2282,111 @@ async function loadFichas() {
 function gerarBonecoHTML(medida, sexo) {
   const s = sexo || 'neutro';
 
-  // SVG do boneco por sexo
-  const bonecos = {
-    masculino: `<svg viewBox="0 0 120 220" fill="none" xmlns="http://www.w3.org/2000/svg" style="width:120px;height:220px">
-      <circle cx="60" cy="22" r="16" stroke="#ff6a00" stroke-width="2" fill="#ff6a0015"/>
-      <path d="M38 52 Q60 44 82 52 L88 110 Q60 118 32 110 Z" stroke="#ff6a00" stroke-width="2" fill="#ff6a0010"/>
-      <path d="M38 54 L18 100 Q20 104 26 102 L38 62" stroke="#ff6a00" stroke-width="2" fill="none"/>
-      <path d="M82 54 L102 100 Q100 104 94 102 L82 62" stroke="#ff6a00" stroke-width="2" fill="none"/>
-      <path d="M44 110 L40 168 Q42 172 48 170 L52 112" stroke="#ff6a00" stroke-width="2" fill="none"/>
-      <path d="M76 110 L80 168 Q78 172 72 170 L68 112" stroke="#ff6a00" stroke-width="2" fill="none"/>
-      <path d="M40 168 L38 200 Q40 204 46 202 L48 170" stroke="#ff6a00" stroke-width="1.5" fill="none"/>
-      <path d="M80 168 L82 200 Q80 204 74 202 L72 170" stroke="#ff6a00" stroke-width="1.5" fill="none"/>
-    </svg>`,
-    feminino: `<svg viewBox="0 0 120 220" fill="none" xmlns="http://www.w3.org/2000/svg" style="width:120px;height:220px">
-      <circle cx="60" cy="22" r="16" stroke="#ff6a00" stroke-width="2" fill="#ff6a0015"/>
-      <path d="M42 50 Q60 44 78 50 L82 82 Q72 92 60 94 Q48 92 38 82 Z" stroke="#ff6a00" stroke-width="2" fill="#ff6a0010"/>
-      <path d="M42 52 L22 98 Q24 102 30 100 L42 62" stroke="#ff6a00" stroke-width="2" fill="none"/>
-      <path d="M78 52 L98 98 Q96 102 90 100 L78 62" stroke="#ff6a00" stroke-width="2" fill="none"/>
-      <path d="M38 82 Q32 100 36 112 Q46 120 60 122 Q74 120 84 112 Q88 100 82 82" stroke="#ff6a00" stroke-width="2" fill="#ff6a0008"/>
-      <path d="M44 118 L40 168 Q42 172 48 170 L52 120" stroke="#ff6a00" stroke-width="2" fill="none"/>
-      <path d="M76 118 L80 168 Q78 172 72 170 L68 120" stroke="#ff6a00" stroke-width="2" fill="none"/>
-      <path d="M40 168 L38 200 Q40 204 46 202 L48 170" stroke="#ff6a00" stroke-width="1.5" fill="none"/>
-      <path d="M80 168 L82 200 Q80 204 74 202 L72 170" stroke="#ff6a00" stroke-width="1.5" fill="none"/>
-    </svg>`,
-    neutro: `<svg viewBox="0 0 120 220" fill="none" xmlns="http://www.w3.org/2000/svg" style="width:120px;height:220px">
-      <circle cx="60" cy="22" r="16" stroke="#ff6a00" stroke-width="2" fill="#ff6a0015"/>
-      <path d="M40 52 Q60 44 80 52 L86 108 Q60 116 34 108 Z" stroke="#ff6a00" stroke-width="2" fill="#ff6a0010"/>
-      <path d="M40 54 L20 100 Q22 104 28 102 L40 62" stroke="#ff6a00" stroke-width="2" fill="none"/>
-      <path d="M80 54 L100 100 Q98 104 92 102 L80 62" stroke="#ff6a00" stroke-width="2" fill="none"/>
-      <path d="M44 108 L40 168 Q42 172 48 170 L52 110" stroke="#ff6a00" stroke-width="2" fill="none"/>
-      <path d="M76 108 L80 168 Q78 172 72 170 L68 110" stroke="#ff6a00" stroke-width="2" fill="none"/>
-      <path d="M40 168 L38 200 Q40 204 46 202 L48 170" stroke="#ff6a00" stroke-width="1.5" fill="none"/>
-      <path d="M80 168 L82 200 Q80 204 74 202 L72 170" stroke="#ff6a00" stroke-width="1.5" fill="none"/>
-    </svg>`
-  };
+  // ── BONECOS SVG ──
+  const svgMasc = `<svg viewBox="0 0 100 200" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <circle cx="50" cy="18" r="13" stroke="#ff6a00" stroke-width="1.8" fill="#ff6a0015"/>
+    <path d="M32 42 Q50 36 68 42 L72 98 Q50 104 28 98 Z" stroke="#ff6a00" stroke-width="1.8" fill="#ff6a000d"/>
+    <path d="M32 43 L16 86 Q18 90 23 88 L32 52" stroke="#ff6a00" stroke-width="1.8" fill="none"/>
+    <path d="M68 43 L84 86 Q82 90 77 88 L68 52" stroke="#ff6a00" stroke-width="1.8" fill="none"/>
+    <path d="M38 98 L34 152 Q36 156 42 154 L46 100" stroke="#ff6a00" stroke-width="1.8" fill="none"/>
+    <path d="M62 98 L66 152 Q64 156 58 154 L54 100" stroke="#ff6a00" stroke-width="1.8" fill="none"/>
+    <path d="M34 152 L32 182 Q34 186 40 184 L42 154" stroke="#ff6a00" stroke-width="1.5" fill="none"/>
+    <path d="M66 152 L68 182 Q66 186 60 184 L58 154" stroke="#ff6a00" stroke-width="1.5" fill="none"/>
+  </svg>`;
 
-  // Posições das etiquetas: [left%, top%, label, campo]
-  // ajustadas para sobrepor a parte correta do boneco
-  const posicoes = [
-    { l:'2%',  t:'12%', label:'Ombros',  val: medida?.ombros_cm,    key:'ombros_cm',    lado:'esq' },
-    { l:'68%', t:'12%', label:'Peito',   val: medida?.peito_cm,     key:'peito_cm',     lado:'dir' },
-    { l:'2%',  t:'30%', label:'Braço D', val: medida?.braco_d_cm,   key:'braco_d_cm',   lado:'esq' },
-    { l:'68%', t:'30%', label:'Braço E', val: medida?.braco_e_cm,   key:'braco_e_cm',   lado:'dir' },
-    { l:'2%',  t:'46%', label:'Cintura', val: medida?.cintura_cm,   key:'cintura_cm',   lado:'esq' },
-    { l:'68%', t:'46%', label:'Abdômen', val: medida?.abdomen_cm,   key:'abdomen_cm',   lado:'dir' },
-    { l:'2%',  t:'60%', label:'Glúteo',  val: medida?.gluteo_cm,    key:'gluteo_cm',    lado:'esq' },
-    { l:'68%', t:'60%', label:'Coxa D',  val: medida?.coxa_d_cm,    key:'coxa_d_cm',    lado:'dir' },
-    { l:'2%',  t:'74%', label:'Coxa E',  val: medida?.coxa_e_cm,    key:'coxa_e_cm',    lado:'esq' },
-    { l:'68%', t:'74%', label:'Panturr.',val: medida?.panturrilha_cm,key:'panturrilha_cm',lado:'dir'},
+  const svgFem = `<svg viewBox="0 0 100 200" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <circle cx="50" cy="18" r="13" stroke="#ff6a00" stroke-width="1.8" fill="#ff6a0015"/>
+    <path d="M34 40 Q50 35 66 40 L70 74 Q62 84 50 86 Q38 84 30 74 Z" stroke="#ff6a00" stroke-width="1.8" fill="#ff6a000d"/>
+    <path d="M34 42 L18 84 Q20 88 25 86 L34 52" stroke="#ff6a00" stroke-width="1.8" fill="none"/>
+    <path d="M66 42 L82 84 Q80 88 75 86 L66 52" stroke="#ff6a00" stroke-width="1.8" fill="none"/>
+    <path d="M30 74 Q26 90 30 102 Q40 112 50 114 Q60 112 70 102 Q74 90 70 74" stroke="#ff6a00" stroke-width="1.8" fill="#ff6a0008"/>
+    <path d="M38 108 L34 154 Q36 158 42 156 L46 110" stroke="#ff6a00" stroke-width="1.8" fill="none"/>
+    <path d="M62 108 L66 154 Q64 158 58 156 L54 110" stroke="#ff6a00" stroke-width="1.8" fill="none"/>
+    <path d="M34 154 L32 184 Q34 188 40 186 L42 156" stroke="#ff6a00" stroke-width="1.5" fill="none"/>
+    <path d="M66 154 L68 184 Q66 188 60 186 L58 156" stroke="#ff6a00" stroke-width="1.5" fill="none"/>
+  </svg>`;
+
+  const svgNeutro = `<svg viewBox="0 0 100 200" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <circle cx="50" cy="18" r="13" stroke="#ff6a00" stroke-width="1.8" fill="#ff6a0015"/>
+    <path d="M33 42 Q50 36 67 42 L71 97 Q50 103 29 97 Z" stroke="#ff6a00" stroke-width="1.8" fill="#ff6a000d"/>
+    <path d="M33 43 L17 86 Q19 90 24 88 L33 52" stroke="#ff6a00" stroke-width="1.8" fill="none"/>
+    <path d="M67 43 L83 86 Q81 90 76 88 L67 52" stroke="#ff6a00" stroke-width="1.8" fill="none"/>
+    <path d="M38 97 L34 152 Q36 156 42 154 L46 99" stroke="#ff6a00" stroke-width="1.8" fill="none"/>
+    <path d="M62 97 L66 152 Q64 156 58 154 L54 99" stroke="#ff6a00" stroke-width="1.8" fill="none"/>
+    <path d="M34 152 L32 182 Q34 186 40 184 L42 154" stroke="#ff6a00" stroke-width="1.5" fill="none"/>
+    <path d="M66 152 L68 182 Q66 186 60 184 L58 154" stroke="#ff6a00" stroke-width="1.5" fill="none"/>
+  </svg>`;
+
+  const svgMap = { masculino: svgMasc, feminino: svgFem, neutro: svgNeutro };
+  const svgAtual = svgMap[s] || svgNeutro;
+
+  // ── ETIQUETAS: esquerda e direita alternadas ──
+  // [label, valor, lado: 'L'|'R', topPercent]
+  const med = medida || {};
+  // Personagem de frente: lado esquerdo da tela = direito do usuário (como espelho)
+  const etiquetas = [
+    { l:'Ombros',   v: med.ombros_cm,      lado:'L', top: 22 },
+    { l:'Peito',    v: med.peito_cm,        lado:'R', top: 22 },
+    { l:'Braço D',  v: med.braco_d_cm,      lado:'L', top: 36 },
+    { l:'Braço E',  v: med.braco_e_cm,      lado:'R', top: 36 },
+    { l:'Cintura',  v: med.cintura_cm,      lado:'L', top: 50 },
+    { l:'Abdômen',  v: med.abdomen_cm,      lado:'R', top: 50 },
+    { l:'Glúteo',   v: med.gluteo_cm,       lado:'L', top: 62 },
+    { l:'Coxa D',   v: med.coxa_d_cm,       lado:'L', top: 74 },
+    { l:'Coxa E',   v: med.coxa_e_cm,       lado:'R', top: 74 },
+    { l:'Panturr.', v: med.panturrilha_cm,  lado:'R', top: 62 },
   ];
 
-  const etiquetas = posicoes.map(p => {
-    const val = p.val ? `<span style="font-size:14px;font-weight:900;color:var(--text)">${p.val}</span><span style="font-size:9px;color:var(--text3)">cm</span>` : `<span style="font-size:12px;font-weight:700;color:var(--text4)">—</span>`;
-    const alinhamento = p.lado === 'dir' ? 'left' : 'right';
-    const linha = p.lado === 'dir'
-      ? `<div style="display:flex;align-items:center;gap:4px"><div style="width:14px;height:1px;background:#ff6a0044"></div><div>`
-      : `<div style="display:flex;align-items:center;gap:4px;justify-content:flex-end"><div style="text-align:right">`;
-    const fechaLinha = p.lado === 'dir'
-      ? `</div></div>`
-      : `</div><div style="width:14px;height:1px;background:#ff6a0044"></div></div>`;
+  const tagsHTML = etiquetas.map(e => {
+    const valStr = e.v
+      ? `<span style="font-size:15px;font-weight:900;color:var(--text);line-height:1">${e.v}</span><span style="font-size:9px;color:var(--text3)">cm</span>`
+      : `<span style="font-size:11px;font-weight:700;color:var(--text4)">—</span>`;
 
-    return `<div style="position:absolute;left:${p.l};top:${p.t};${p.lado==='dir'?'':'right:'+p.l+';left:auto;'}">
-      ${linha}
-        <div>
-          <div style="font-size:9px;color:var(--text4);font-weight:700;text-transform:uppercase;letter-spacing:.06em">${p.label}</div>
-          <div style="margin-top:1px">${val}</div>
+    if (e.lado === 'L') {
+      return `<div style="position:absolute;left:4px;top:${e.top}%;transform:translateY(-50%);display:flex;align-items:center;gap:4px">
+        <div style="text-align:right">
+          <div style="font-size:8px;color:var(--text4);font-weight:700;text-transform:uppercase;letter-spacing:.05em;line-height:1">${e.l}</div>
+          <div style="margin-top:2px">${valStr}</div>
         </div>
-      ${fechaLinha}
-    </div>`;
+        <div style="width:12px;height:1px;background:#ff6a0055;flex-shrink:0"></div>
+      </div>`;
+    } else {
+      return `<div style="position:absolute;right:4px;top:${e.top}%;transform:translateY(-50%);display:flex;align-items:center;gap:4px">
+        <div style="width:12px;height:1px;background:#ff6a0055;flex-shrink:0"></div>
+        <div style="text-align:left">
+          <div style="font-size:8px;color:var(--text4);font-weight:700;text-transform:uppercase;letter-spacing:.05em;line-height:1">${e.l}</div>
+          <div style="margin-top:2px">${valStr}</div>
+        </div>
+      </div>`;
+    }
   }).join('');
 
-  // Dados de topo: peso, altura
-  const pesoVal = medida?.peso_kg || '—';
-  const altVal  = medida?.altura_cm || '—';
+  // ── TOPO: peso / altura / sexo ──
+  const pesoVal  = med.peso_kg    || '—';
+  const altVal   = med.altura_cm  || '—';
+  const sexoIcon = s === 'masculino' ? '♂' : s === 'feminino' ? '♀' : '—';
+  const sexoLabel = s === 'masculino' ? 'Masculino' : s === 'feminino' ? 'Feminino' : 'Não inf.';
 
   return `
-    <div style="padding:16px 14px 0;display:flex;justify-content:space-around;border-bottom:1px solid var(--border)">
+    <div style="display:flex;justify-content:space-around;align-items:center;padding:14px 16px 14px;border-bottom:1px solid var(--border)">
       <div style="text-align:center">
-        <div style="font-size:26px;font-weight:900;color:var(--text);line-height:1">${pesoVal}<span style="font-size:12px;color:var(--text3);margin-left:2px">kg</span></div>
-        <div style="font-size:9px;color:var(--text3);text-transform:uppercase;letter-spacing:.1em;margin-top:2px">Peso</div>
+        <div style="font-size:24px;font-weight:900;color:var(--text);line-height:1">${pesoVal}<span style="font-size:11px;color:var(--text3);margin-left:2px">kg</span></div>
+        <div style="font-size:9px;color:var(--text3);text-transform:uppercase;letter-spacing:.1em;margin-top:3px">Peso</div>
       </div>
-      <div style="width:1px;background:var(--border)"></div>
+      <div style="width:1px;height:36px;background:var(--border)"></div>
       <div style="text-align:center">
-        <div style="font-size:26px;font-weight:900;color:var(--text);line-height:1">${altVal}<span style="font-size:12px;color:var(--text3);margin-left:2px">cm</span></div>
-        <div style="font-size:9px;color:var(--text3);text-transform:uppercase;letter-spacing:.1em;margin-top:2px">Altura</div>
+        <div style="font-size:24px;font-weight:900;color:var(--text);line-height:1">${altVal}<span style="font-size:11px;color:var(--text3);margin-left:2px">cm</span></div>
+        <div style="font-size:9px;color:var(--text3);text-transform:uppercase;letter-spacing:.1em;margin-top:3px">Altura</div>
       </div>
-      <div style="width:1px;background:var(--border)"></div>
+      <div style="width:1px;height:36px;background:var(--border)"></div>
       <div style="text-align:center">
-        <div style="font-size:13px;font-weight:800;color:var(--text);line-height:1;margin-top:6px">${s==='masculino'?'♂':s==='feminino'?'♀':'—'}</div>
-        <div style="font-size:9px;color:var(--text3);text-transform:uppercase;letter-spacing:.1em;margin-top:6px">Sexo</div>
+        <div style="font-size:20px;font-weight:900;color:var(--accent);line-height:1">${sexoIcon}</div>
+        <div style="font-size:9px;color:var(--text3);text-transform:uppercase;letter-spacing:.08em;margin-top:3px">${sexoLabel}</div>
       </div>
     </div>
-    <div style="position:relative;display:flex;justify-content:center;align-items:center;padding:16px 0;min-height:240px">
-      ${bonecos[s] || bonecos.neutro}
-      ${etiquetas}
+    <div style="position:relative;display:flex;justify-content:center;align-items:center;padding:12px 0;height:280px">
+      <div style="width:100px;height:200px;flex-shrink:0">${svgAtual}</div>
+      ${tagsHTML}
     </div>
   `;
 }

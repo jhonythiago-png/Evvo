@@ -3383,31 +3383,22 @@ async function abrirDetalhesSessao(sessaoId) {
     cont.innerHTML = exList.map(ex => {
       const isCardio = ex.tipo === 'cardio';
       const iconeColor = isCardio ? 'ice' : 'fire';
+      const totalSeries = ex.series.length;
 
-      const seriesHTML = isCardio
-        ? ex.series.map(s => `
-            <div style="display:flex;align-items:center;gap:8px;padding:8px 14px;border-top:1px solid var(--border)">
-              <div style="font-size:11px;color:var(--text3);font-weight:700">Cardio</div>
-              <div style="flex:1"></div>
-              ${s.repeticoes ? `<span style="font-size:13px;font-weight:800;color:var(--text)">${s.repeticoes}</span>` : ''}
-              ${s.carga_kg ? `<span style="font-size:11px;color:var(--text3)"> · ${s.carga_kg} km/h</span>` : ''}
-            </div>`).join('')
-        : ex.series.map((s, i) => `
-            <div style="display:grid;grid-template-columns:24px 1fr 1fr;gap:8px;padding:8px 14px;align-items:center;border-top:1px solid var(--border)">
-              <div style="width:22px;height:22px;border-radius:7px;background:#ff6a0025;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:900;color:var(--accent)">${i+1}</div>
-              <div style="text-align:center">
-                <div style="font-size:14px;font-weight:900;color:var(--text)">${s.carga_kg != null ? s.carga_kg+'kg' : '—'}</div>
-                <div style="font-size:8px;color:var(--text4);text-transform:uppercase;letter-spacing:.06em;margin-top:1px">carga</div>
-              </div>
-              <div style="text-align:center">
-                <div style="font-size:14px;font-weight:900;color:var(--text)">${s.repeticoes || '—'}</div>
-                <div style="font-size:8px;color:var(--text4);text-transform:uppercase;letter-spacing:.06em;margin-top:1px">reps</div>
-              </div>
-            </div>`).join('');
+      // Chips compactos das séries
+      const chipsHTML = isCardio
+        ? ex.series.map(s =>
+            `<span style="background:var(--border);border-radius:6px;padding:3px 8px;font-size:10px;font-weight:700;color:var(--text3)">
+              ${s.repeticoes || '—'}${s.carga_kg ? ' · '+s.carga_kg+'km/h' : ''}
+            </span>`).join('')
+        : ex.series.map((s, i) =>
+            `<span style="background:var(--border);border-radius:6px;padding:3px 8px;font-size:10px;font-weight:700;color:var(--text3)">
+              ${s.carga_kg != null ? s.carga_kg+'kg' : '—'} × ${s.repeticoes || '—'}
+            </span>`).join('');
 
-      return `<div style="background:var(--bg2);border-radius:16px;border:1px solid var(--border);overflow:hidden">
-        <div style="padding:13px 14px;display:flex;align-items:center;gap:10px">
-          <div class="card-icon ${iconeColor}">
+      return `<div style="background:var(--bg2);border-radius:14px;border:1px solid var(--border);padding:12px 14px">
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:${chipsHTML ? '10px' : '0'}">
+          <div class="card-icon ${iconeColor}" style="width:34px;height:34px;border-radius:10px">
             <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
               ${isCardio
                 ? '<path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/>'
@@ -3415,14 +3406,14 @@ async function abrirDetalhesSessao(sessaoId) {
             </svg>
           </div>
           <div style="flex:1;min-width:0">
-            <div style="font-size:13px;font-weight:800;color:var(--text)">${ex.nome}</div>
-            <div style="font-size:10px;color:var(--text3);margin-top:2px">${ex.grupo} · ${ex.series.length} ${isCardio?'sessão':'série'+(ex.series.length!==1?'s':'')}</div>
+            <div style="font-size:13px;font-weight:800;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${ex.nome}</div>
+            <div style="font-size:10px;color:var(--text3);margin-top:2px">${ex.grupo}</div>
           </div>
-          <div style="width:22px;height:22px;border-radius:7px;background:#39d35320;display:flex;align-items:center;justify-content:center">
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#39d353" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+          <div style="font-size:11px;font-weight:800;color:#39d353;background:#39d35318;padding:3px 9px;border-radius:7px;white-space:nowrap;flex-shrink:0">
+            ${isCardio ? '✓ Feito' : totalSeries+'/'+totalSeries+' séries'}
           </div>
         </div>
-        ${seriesHTML}
+        ${chipsHTML ? `<div style="display:flex;flex-wrap:wrap;gap:5px">${chipsHTML}</div>` : ''}
       </div>`;
     }).join('');
   }

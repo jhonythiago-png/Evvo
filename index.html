@@ -1320,8 +1320,11 @@ select.form-input option{background:#0e0e1a;color:#fff}
         </div>
         <button class="btn-add-accent" onclick="goTo('screen-medidas')">
           <svg viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-          registrar medidas
+          nova avaliação
         </button>
+
+        <div class="sec-lbl" style="margin-top:18px">Histórico de avaliações</div>
+        <div id="hist-medidas-list" style="padding:0 16px"></div>
         <div style="height:20px"></div>
       </div>
 
@@ -2223,7 +2226,10 @@ async function loadFichas() {
           <div class="ficha-name">${f.nome}</div>
           <div class="ficha-meta">${new Date(f.created_at).toLocaleDateString('pt-BR')} ${f.status==='arquivada'?'· arquivada':''}</div>
         </div>
-        <span class="card-badge ${f.status==='ativa'?'badge-accent':'badge-muted'}">${f.status==='ativa'?'Ativa':'Arq.'}</span>
+        <div style="display:flex;gap:6px;align-items:center;flex-shrink:0">
+          <span class="card-badge ${f.status==='ativa'?'badge-accent':'badge-muted'}">${f.status==='ativa'?'Ativa':'Arq.'}</span>
+          <button class="btn-sm" style="background:var(--border)" onclick="editarNomeFicha('${f.id}','${f.nome.replace(/'/g, String.fromCharCode(92)+'\'')}')" title="Renomear"><svg viewBox="0 0 24 24" fill="none" stroke="var(--text3)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"/></svg></button>
+        </div>
       </div>
     </div>`).join('');
 }
@@ -2295,8 +2301,6 @@ async function loadMedidas() {
 
 async function saveMedidas() {
   const payload = {
-    user_id: state.user.id,
-    data_registro: new Date().toISOString().split('T')[0],
     peso_kg:        parseFloat(document.getElementById('inp-peso').value)||null,
     braco_d_cm:     parseFloat(document.getElementById('inp-braco-d').value)||null,
     braco_e_cm:     parseFloat(document.getElementById('inp-braco-e').value)||null,
@@ -2309,11 +2313,37 @@ async function saveMedidas() {
     coxa_e_cm:      parseFloat(document.getElementById('inp-coxa-e').value)||null,
     panturrilha_cm: parseFloat(document.getElementById('inp-panturrilha').value)||null,
   };
-  const { error } = await sb.from('medidas').insert(payload);
+
+  let error;
+  if (medicaoEditandoId) {
+    // MODO EDIÇÃO — atualiza registro existente
+    ({ error } = await sb.from('medidas').update(payload).eq('id', medicaoEditandoId));
+    if (!error) showToast('Medidas atualizadas!');
+  } else {
+    // MODO NOVO — insere novo registro
+    payload.user_id = state.user.id;
+    payload.data_registro = new Date().toISOString().split('T')[0];
+    ({ error } = await sb.from('medidas').insert(payload));
+    if (!error) showToast('Medidas salvas!');
+  }
+
   if (!error) {
-    showToast('Medidas salvas!');
+    medicaoEditandoId = null;
+    // Restaura botão
+    const btnSalvar = document.querySelector('#screen-medidas .btn-main');
+    if (btnSalvar) btnSalvar.innerHTML = '<svg viewBox="0 0 24 24" style="width:18px;height:18px;stroke:#fff;fill:none;stroke-width:2.5;stroke-linecap:round;stroke-linejoin:round"><polyline points="20 6 9 17 4 12"/></svg> Salvar medidas';
+    // Limpa campos
+    ['inp-peso','inp-braco-d','inp-braco-e','inp-ombros','inp-peito',
+     'inp-cintura','inp-abdomen','inp-gluteo','inp-coxa-d','inp-coxa-e','inp-panturrilha']
+      .forEach(id => { const el = document.getElementById(id); if(el) el.value=''; });
     await loadMedidas();
+    renderHistoricoMedidas();
     goTo('screen-evolucao');
+    // Muda para aba medidas
+    setTimeout(() => {
+      const tabMedidas = document.querySelectorAll('.itab')[1];
+      if (tabMedidas) switchEvoTab('medidas', tabMedidas);
+    }, 100);
   } else {
     showToast('Erro ao salvar');
   }
@@ -2321,8 +2351,18 @@ async function saveMedidas() {
 
 // atualiza data no form de medidas
 function setupMedidasDate() {
-  const d = new Date();
-  document.getElementById('med-date').textContent = `Hoje, ${d.toLocaleDateString('pt-BR',{day:'2-digit',month:'short',year:'numeric'})}`;
+  // Só reseta se NAO estiver em modo edicao
+  if (!medicaoEditandoId) {
+    const d = new Date();
+    document.getElementById('med-date').textContent = 'Hoje, ' + d.toLocaleDateString('pt-BR',{day:'2-digit',month:'short',year:'numeric'});
+    // Limpa campos
+    ['inp-peso','inp-braco-d','inp-braco-e','inp-ombros','inp-peito',
+     'inp-cintura','inp-abdomen','inp-gluteo','inp-coxa-d','inp-coxa-e','inp-panturrilha']
+      .forEach(id => { const el = document.getElementById(id); if(el) el.value=''; });
+    // Restaura botao
+    const btnSalvar = document.querySelector('#screen-medidas .btn-main');
+    if (btnSalvar) btnSalvar.innerHTML = '<svg viewBox="0 0 24 24" style="width:18px;height:18px;stroke:#fff;fill:none;stroke-width:2.5;stroke-linecap:round;stroke-linejoin:round"><polyline points="20 6 9 17 4 12"/></svg> Salvar medidas';
+  }
 }
 
 // ═══════════════════════════════════════════
@@ -2334,6 +2374,10 @@ function switchEvoTab(tab, btn) {
   });
   document.querySelectorAll('.itab').forEach(b => b.classList.remove('on'));
   btn.classList.add('on');
+  if (tab === 'medidas') {
+    loadMedidas();
+    renderHistoricoMedidas();
+  }
 }
 
 // ═══════════════════════════════════════════
@@ -2522,6 +2566,7 @@ async function renderExEditList() {
         <button class="btn-sm del" onclick="deletarExercicio('${ex.id}')" title="Excluir">
           <svg viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6M14 11v6"/></svg>
         </button>
+        <button class="btn-sm" style="background:var(--border)" onclick="editarNomeEx('${ex.id}','${ex.nome}','${ex.grupo_muscular||''}','${ex.equipamento||''}')"><svg viewBox="0 0 24 24" fill="none" stroke="var(--text3)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"/></svg></button>
       </div>
     </div>`;
   }).join('');
@@ -2620,9 +2665,9 @@ function renderSeriesEditor() {
       <input class="se-input" type="number" placeholder="kg" value="${s.carga}"
         onchange="editState.seriesEditor[${i}].carga=this.value"
         oninput="editState.seriesEditor[${i}].carga=this.value" step="0.5" min="0">
-      <input class="se-input" type="number" placeholder="reps" value="${s.reps}"
+      <input class="se-input" type="text" placeholder="10/15" value="${s.reps}"
         onchange="editState.seriesEditor[${i}].reps=this.value"
-        oninput="editState.seriesEditor[${i}].reps=this.value" min="0">
+        oninput="editState.seriesEditor[${i}].reps=this.value" maxlength="8">
       <input class="se-obs" type="text" placeholder="obs" value="${s.obs}"
         onchange="editState.seriesEditor[${i}].obs=this.value"
         oninput="editState.seriesEditor[${i}].obs=this.value" maxlength="20">
@@ -2666,13 +2711,20 @@ async function salvarSeries() {
   // deleta as series existentes e recria (mais simples)
   await sb.from('series_template').delete().eq('exercicio_id', editState.exEditando);
 
-  const inserts = series.map((s, i) => ({
-    exercicio_id: editState.exEditando,
-    numero_serie: i + 1,
-    carga_kg:    s.carga !== '' ? parseFloat(s.carga) : null,
-    repeticoes:  s.reps  !== '' ? parseInt(s.reps)   : null,
-    observacao:  s.obs || null
-  }));
+  const inserts = series.map((s, i) => {
+    const repsNum = parseInt(s.reps);
+    const repsTexto = s.reps && isNaN(repsNum) ? s.reps : null;
+    return {
+      exercicio_id: editState.exEditando,
+      numero_serie: i + 1,
+      carga_kg:    s.carga !== '' ? parseFloat(s.carga) : null,
+      repeticoes:  !isNaN(repsNum) && s.reps !== '' ? repsNum : null,
+      observacao:  repsTexto || s.obs || null,
+      _reps_texto: s.reps // guardamos para exibir
+    };
+  });
+  // remove campo virtual antes de enviar
+  inserts.forEach(r => delete r._reps_texto);
 
   const { error } = await sb.from('series_template').insert(inserts);
   if (error) { showToast('Erro ao salvar series'); return; }
@@ -2690,6 +2742,164 @@ function openNovoDia() {
     openModal('modal-ficha');
   } else {
     openModalDia();
+  }
+}
+
+
+// ═══════════════════════════════════════════
+// EDITAR NOME DA FICHA
+// ═══════════════════════════════════════════
+async function editarNomeFicha(id, nomeAtual) {
+  const novo = prompt('Novo nome da ficha:', nomeAtual);
+  if (!novo || novo.trim() === nomeAtual) return;
+  const { error } = await sb.from('fichas').update({ nome: novo.trim() }).eq('id', id);
+  if (!error) {
+    showToast('Ficha renomeada!');
+    loadFichas();
+    // atualiza ficha ativa se for ela
+    if (state.fichaAtiva && state.fichaAtiva.id === id) {
+      state.fichaAtiva.nome = novo.trim();
+    }
+  }
+}
+
+// ═══════════════════════════════════════════
+// EDITAR NOME / GRUPO / EQUIPAMENTO DO EXERCICIO
+// ═══════════════════════════════════════════
+async function editarNomeEx(id, nomeAtual, grupoAtual, equipAtual) {
+  const novo = prompt('Novo nome do exercicio:', nomeAtual);
+  if (!novo || novo.trim() === nomeAtual) return;
+  const { error } = await sb.from('exercicios').update({ nome: novo.trim() }).eq('id', id);
+  if (!error) {
+    showToast('Exercicio renomeado!');
+    renderExEditList();
+  }
+}
+
+// ═══════════════════════════════════════════
+// MEDIDAS — HISTORICO POR DATA
+// ═══════════════════════════════════════════
+async function loadMedidasHistorico() {
+  const { data } = await sb.from('medidas')
+    .select('*')
+    .eq('user_id', state.user.id)
+    .order('data_registro', { ascending: false });
+  return data || [];
+}
+
+async function renderHistoricoMedidas() {
+  const hist = await loadMedidasHistorico();
+  const cont = document.getElementById('hist-medidas-list');
+  if (!cont) return;
+
+  if (!hist.length) {
+    cont.innerHTML = '<div style="padding:20px;text-align:center;color:var(--text3);font-size:13px">Nenhuma medicao registrada ainda</div>';
+    return;
+  }
+
+  cont.innerHTML = hist.map((m, i) => {
+    const prev = hist[i+1];
+    const dateFmt = new Date(m.data_registro + 'T12:00:00').toLocaleDateString('pt-BR', {day:'2-digit',month:'short',year:'numeric'});
+    const pesoStr = m.peso_kg ? m.peso_kg + ' kg' : '—';
+    const pesoPrev = prev?.peso_kg;
+    const pesoDelta = m.peso_kg && pesoPrev ? (m.peso_kg - pesoPrev).toFixed(1) : null;
+
+    const campos = [
+      {k:'braco_d_cm',l:'Braço D'},{k:'braco_e_cm',l:'Braço E'},
+      {k:'peito_cm',l:'Peito'},{k:'cintura_cm',l:'Cintura'},
+      {k:'gluteo_cm',l:'Glúteo'},{k:'coxa_d_cm',l:'Coxa D'},
+      {k:'ombros_cm',l:'Ombros'},{k:'coxa_e_cm',l:'Coxa E'},
+      {k:'abdomen_cm',l:'Abdômen'},{k:'panturrilha_cm',l:'Panturr.'},
+    ];
+    const chips = campos
+      .filter(c => m[c.k])
+      .map(c => {
+        const d = prev && prev[c.k] ? (m[c.k] - prev[c.k]).toFixed(1) : null;
+        const negativo = ['cintura_cm','abdomen_cm'].includes(c.k);
+        const col = d ? (parseFloat(d) > 0 ? (negativo?'#39d353':'#ff6a00') : (negativo?'#ff6a00':'#39d353')) : 'var(--text4)';
+        return `<span style="background:var(--border);border-radius:6px;padding:3px 8px;font-size:10px;font-weight:700;color:${col}">${c.l}: ${m[c.k]}${d?' ('+(parseFloat(d)>0?'+':'')+d+')':''}cm</span>`;
+      }).join('');
+
+    return `<div style="background:var(--bg2);border-radius:14px;border:1px solid var(--border);padding:14px;margin-bottom:8px">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+        <div>
+          <div style="font-size:13px;font-weight:800;color:var(--text)">${dateFmt}</div>
+          <div style="font-size:10px;color:var(--text3);margin-top:2px">${i===0?'Mais recente':'Avaliação anterior'}</div>
+        </div>
+        <div style="display:flex;align-items:center;gap:8px">
+          <div style="text-align:right">
+            <div style="font-size:18px;font-weight:900;color:var(--text)">${pesoStr}</div>
+            ${pesoDelta ? `<div style="font-size:10px;font-weight:800;color:${parseFloat(pesoDelta)<=0?'#39d353':'#ff6a00'}">${parseFloat(pesoDelta)>0?'+':''}${pesoDelta}kg</div>` : ''}
+          </div>
+          <div style="display:flex;flex-direction:column;gap:5px">
+            <button class="btn-sm edit" onclick="editarMedida('${m.id}')" title="Editar">
+              <svg viewBox="0 0 24 24"><path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"/></svg>
+            </button>
+            <button class="btn-sm del" onclick="deletarMedida('${m.id}')" title="Excluir">
+              <svg viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg>
+            </button>
+          </div>
+        </div>
+      </div>
+      <div style="display:flex;gap:5px;flex-wrap:wrap">${chips}</div>
+    </div>`;
+  }).join('');
+}
+
+
+// ═══════════════════════════════════════════
+// EDITAR MEDIDA EXISTENTE
+// ═══════════════════════════════════════════
+let medicaoEditandoId = null;
+
+async function editarMedida(id) {
+  // Carrega o registro pelo id
+  const { data, error } = await sb.from('medidas').select('*').eq('id', id).single();
+  if (error || !data) { showToast('Erro ao carregar medida'); return; }
+
+  medicaoEditandoId = id;
+
+  // Preenche os campos da tela de medidas com os valores existentes
+  const campos = {
+    'inp-peso':        data.peso_kg,
+    'inp-braco-d':     data.braco_d_cm,
+    'inp-braco-e':     data.braco_e_cm,
+    'inp-ombros':      data.ombros_cm,
+    'inp-peito':       data.peito_cm,
+    'inp-cintura':     data.cintura_cm,
+    'inp-abdomen':     data.abdomen_cm,
+    'inp-gluteo':      data.gluteo_cm,
+    'inp-coxa-d':      data.coxa_d_cm,
+    'inp-coxa-e':      data.coxa_e_cm,
+    'inp-panturrilha': data.panturrilha_cm,
+  };
+  Object.entries(campos).forEach(([id, val]) => {
+    const el = document.getElementById(id);
+    if (el) el.value = val || '';
+  });
+
+  // Atualiza o header da tela de medidas
+  const dateFmt = new Date(data.data_registro + 'T12:00:00').toLocaleDateString('pt-BR', {
+    day:'2-digit', month:'short', year:'numeric'
+  });
+  document.getElementById('med-date').textContent = dateFmt;
+
+  // Muda o botão salvar para modo edição
+  const btnSalvar = document.querySelector('#screen-medidas .btn-main');
+  if (btnSalvar) {
+    btnSalvar.innerHTML = '<svg viewBox="0 0 24 24" style="width:18px;height:18px;stroke:#fff;fill:none;stroke-width:2.5;stroke-linecap:round;stroke-linejoin:round"><polyline points="20 6 9 17 4 12"/></svg> Atualizar medidas';
+  }
+
+  goTo('screen-medidas');
+}
+
+async function deletarMedida(id) {
+  if (!confirm('Excluir este registro de medidas?')) return;
+  const { error } = await sb.from('medidas').delete().eq('id', id);
+  if (!error) {
+    showToast('Registro excluído');
+    await loadMedidas();
+    renderHistoricoMedidas();
   }
 }
 

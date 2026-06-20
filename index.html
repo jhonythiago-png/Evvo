@@ -1237,6 +1237,9 @@ select.form-input option{background:#0e0e1a;color:#fff}
         <svg viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg>
       </button>
       <div class="exec-counter" id="exec-counter">1 de 1</div>
+      <button onclick="finalizarTreino()" style="font-size:10px;font-weight:800;color:var(--accent);text-transform:uppercase;letter-spacing:.08em;padding:6px 10px;background:#ff6a0015;border-radius:8px;border:1px solid #ff6a0030">
+        Finalizar
+      </button>
     </div>
 
     <div class="seg-bar" id="seg-bar"></div>
@@ -2110,6 +2113,10 @@ function renderExOverview(doneTo) {
 // ═══════════════════════════════════════════
 function startExec(idx) {
   state.execIdx = idx;
+  // Cria sessão se ainda não existe
+  if (!state.sessaoAtiva) {
+    iniciarSessao();
+  }
   renderExec();
   goTo('screen-exec');
 }
@@ -2179,6 +2186,8 @@ function toggleSerie(si) {
     nb.classList.remove('next'); nb.classList.add('now');
     nb.innerHTML = '<svg viewBox="0 0 24 24"><polygon points="5 3 19 12 5 21 5 3"/></svg>';
   }
+  // Salva série executada no banco
+  salvarSerieExecutada(si);
 }
 
 function editCarga(si) {
@@ -2212,6 +2221,7 @@ function prevEx() {
 }
 
 async function finalizarTreino() {
+  await encerrarSessao();
   showToast('🎉 Treino finalizado!');
   goTo('screen-dia');
 }
@@ -2491,6 +2501,9 @@ function switchEvoTab(tab, btn) {
     loadMedidas();
     renderHistoricoMedidas();
   }
+  if (tab === 'historico') {
+    loadHistorico();
+  }
 }
 
 // ═══════════════════════════════════════════
@@ -2559,7 +2572,7 @@ function showToast(msg) {
 const origNavTo = navTo;
 window.navTo = function(screenId, btn) {
   origNavTo(screenId, btn);
-  if (screenId === 'screen-evolucao') loadFichas();
+  if (screenId === 'screen-evolucao') { loadFichas(); loadHistorico(); }
   if (screenId === 'screen-medidas') setupMedidasDate();
 };
 
@@ -3075,6 +3088,152 @@ async function deletarMedida(id) {
     await loadMedidas();
     renderHistoricoMedidas();
   }
+}
+
+
+// ═══════════════════════════════════════════
+// SESSÕES DE TREINO
+// ═══════════════════════════════════════════
+
+// Séries marcadas na sessão atual: { exIdx_serieIdx: { carga, reps } }
+let seriesExecutadas = {};
+let sessaoInicio = null;
+
+async function iniciarSessao() {
+  if (!state.diaAtual || !state.fichaAtiva) return;
+  sessaoInicio = new Date();
+  seriesExecutadas = {};
+
+  const { data, error } = await sb.from('sessoes').insert({
+    user_id:   state.user.id,
+    dia_id:    state.diaAtual.id,
+    ficha_id:  state.fichaAtiva.id,
+    iniciado_em: sessaoInicio.toISOString(),
+  }).select().single();
+
+  if (!error && data) {
+    state.sessaoAtiva = data;
+    console.log('Sessão iniciada:', data.id);
+  }
+}
+
+async function salvarSerieExecutada(si) {
+  if (!state.sessaoAtiva) return;
+
+  const ex  = state.exerciciosAtual[state.execIdx];
+  if (!ex) return;
+
+  const serie = (ex.series_template || [])[si];
+  if (!serie) return;
+
+  // Pega valores atuais da tela (podem ter sido editados)
+  const cargaEl = document.querySelector(`#sr-${si} .sf:first-of-type .v`);
+  const repsEl  = document.querySelectorAll(`#sr-${si} .sf`)[1]?.querySelector('.v');
+  const cargaVal = cargaEl ? parseFloat(cargaEl.textContent) || null : serie.carga_kg;
+  const repsVal  = repsEl  ? repsEl.textContent : serie.repeticoes;
+
+  await sb.from('series_executadas').insert({
+    sessao_id:    state.sessaoAtiva.id,
+    exercicio_id: ex.id,
+    numero_serie: si + 1,
+    carga_kg:     cargaVal,
+    repeticoes:   repsVal ? String(repsVal) : null,
+    concluida:    true,
+    executado_em: new Date().toISOString(),
+  });
+
+  // Guarda local para calcular volume
+  const key = `${state.execIdx}_${si}`;
+  seriesExecutadas[key] = { carga: cargaVal, reps: repsVal };
+}
+
+async function encerrarSessao() {
+  if (!state.sessaoAtiva) return;
+
+  // Calcula volume total (kg levantados)
+  let volume = 0;
+  Object.values(seriesExecutadas).forEach(s => {
+    const c = parseFloat(s.carga) || 0;
+    const r = parseInt(s.reps)   || 1;
+    volume += c * r;
+  });
+
+  const agora = new Date();
+  await sb.from('sessoes').update({
+    finalizado_em:   agora.toISOString(),
+    volume_total_kg: Math.round(volume),
+  }).eq('id', state.sessaoAtiva.id);
+
+  console.log('Sessão encerrada — volume:', volume, 'kg');
+  state.sessaoAtiva = null;
+  seriesExecutadas = {};
+  sessaoInicio = null;
+}
+
+// ═══════════════════════════════════════════
+// HISTÓRICO DE SESSÕES
+// ═══════════════════════════════════════════
+async function loadHistorico() {
+  if (!state.user) return;
+
+  const { data } = await sb.from('sessoes')
+    .select(`
+      *,
+      dias_treino ( nome, dia_semana ),
+      fichas ( nome )
+    `)
+    .eq('user_id', state.user.id)
+    .not('finalizado_em', 'is', null)
+    .order('iniciado_em', { ascending: false })
+    .limit(30);
+
+  const list = document.getElementById('hist-list');
+  if (!data || !data.length) {
+    list.innerHTML = '<div style="padding:20px;text-align:center;color:var(--text3);font-size:13px">Nenhum treino realizado ainda</div>';
+    return;
+  }
+
+  const diasNomes = ['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'];
+
+  list.innerHTML = data.map(s => {
+    const inicio  = new Date(s.iniciado_em);
+    const fim     = s.finalizado_em ? new Date(s.finalizado_em) : null;
+    const duracaoMs = fim ? fim - inicio : 0;
+    const duracaoMin = Math.round(duracaoMs / 60000);
+    const dia     = inicio.getDate();
+    const mes     = inicio.toLocaleDateString('pt-BR', { month:'short' }).replace('.','');
+    const dateFmt = inicio.toLocaleDateString('pt-BR', { day:'2-digit', month:'long', year:'numeric' });
+    const nomeDia = s.dias_treino?.nome || '—';
+    const nomeFicha = s.fichas?.nome || '—';
+    const volume  = s.volume_total_kg ? (s.volume_total_kg >= 1000
+      ? (s.volume_total_kg / 1000).toFixed(1) + 't'
+      : s.volume_total_kg + 'kg') : '—';
+
+    return `<div style="background:var(--bg2);border-radius:14px;border:1px solid var(--border);overflow:hidden;cursor:pointer"
+      ontouchstart="this.style.background='var(--bg3)'" ontouchend="this.style.background='var(--bg2)'"
+      onclick="abrirDetalhesSessao('${s.id}')">
+      <div style="padding:13px 14px;display:flex;align-items:center;gap:12px">
+        <div style="width:46px;height:46px;border-radius:13px;background:var(--grad);display:flex;flex-direction:column;align-items:center;justify-content:center;flex-shrink:0">
+          <span style="font-size:16px;font-weight:900;color:#fff;line-height:1">${dia}</span>
+          <span style="font-size:8px;font-weight:800;color:#ffffffdd;text-transform:uppercase;letter-spacing:.04em">${mes}</span>
+        </div>
+        <div style="flex:1;min-width:0">
+          <div style="font-size:13px;font-weight:800;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${nomeDia}</div>
+          <div style="font-size:10px;color:var(--text3);margin-top:2px">${nomeFicha}</div>
+        </div>
+        <div style="text-align:right;flex-shrink:0">
+          <div style="font-size:15px;font-weight:900;color:var(--text)">${volume}</div>
+          <div style="font-size:10px;color:var(--text3);margin-top:2px">${duracaoMin > 0 ? duracaoMin + ' min' : '—'}</div>
+        </div>
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--text4)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0"><polyline points="9 18 15 12 9 6"/></svg>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+async function abrirDetalhesSessao(sessaoId) {
+  // Por enquanto só mostra toast — detalhe completo vem na Parte 2
+  showToast('Detalhes em breve!');
 }
 
 // ═══════════════════════════════════════════

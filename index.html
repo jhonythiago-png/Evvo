@@ -1359,7 +1359,7 @@ select.form-input option{background:#0e0e1a;color:#fff}
             <div class="ig-ico"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="2" x2="12" y2="22"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg></div>
             <span class="ig-nm">Altura</span>
             <span class="ig-prev" id="prev-altura">—</span>
-            <input class="ig-input" type="number" id="inp-altura" placeholder="173" step="1" min="100" max="250" inputmode="numeric"><span style="font-size:10px;color:var(--text3);margin-left:4px">cm</span>
+            <input class="ig-input" type="number" id="inp-altura" placeholder="1.73" step="0.01" min="1.00" max="2.50" inputmode="decimal"><span style="font-size:10px;color:var(--text3);margin-left:4px">m</span>
           </div>
           <div class="ig-row">
             <div class="ig-ico"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 8v4M12 16h.01"/></svg></div>
@@ -2381,7 +2381,7 @@ function gerarBonecoHTML(medida, sexo) {
   }).join('');
 
   const pesoVal  = med.peso_kg   || '—';
-  const altVal   = med.altura_cm ? med.altura_cm + ' cm' : '—';
+  const altVal   = med.altura_cm ? med.altura_cm + ' m' : '—';
   const sexoIcon = s === 'masculino' ? '♂' : s === 'feminino' ? '♀' : '—';
   const sexoTxt  = s === 'masculino' ? 'Masculino' : s === 'feminino' ? 'Feminino' : 'Não inf.';
 
@@ -2457,7 +2457,7 @@ async function saveMedidas() {
 
   const payload = {
     peso_kg:        parseFloat(document.getElementById('inp-peso').value)||null,
-    altura_cm:      alturaVal ? Math.round(alturaVal) : null,
+    altura_cm:      alturaVal ? Math.round(alturaVal * 100) / 100 : null,
     braco_d_cm:     parseFloat(document.getElementById('inp-braco-d').value)||null,
     braco_e_cm:     parseFloat(document.getElementById('inp-braco-e').value)||null,
     ombros_cm:      parseFloat(document.getElementById('inp-ombros').value)||null,

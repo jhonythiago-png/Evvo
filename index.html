@@ -3387,10 +3387,12 @@ async function abrirDetalhesSessao(sessaoId) {
 
       // Chips compactos das séries
       const chipsHTML = isCardio
-        ? ex.series.map(s =>
-            `<span style="background:var(--border);border-radius:6px;padding:3px 8px;font-size:10px;font-weight:700;color:var(--text3)">
-              ${s.repeticoes || '—'}${s.carga_kg ? ' · '+s.carga_kg+'km/h' : ''}
-            </span>`).join('')
+        ? ex.series.map(s => {
+            const dur = s.repeticoes ? s.repeticoes : '—';
+            const vel = s.carga_kg  ? s.carga_kg + ' km/h' : null;
+            const txt = vel ? dur + ' · ' + vel : dur;
+            return `<span style="background:var(--border);border-radius:6px;padding:3px 8px;font-size:10px;font-weight:700;color:var(--text3)">${txt}</span>`;
+          }).join('')
         : ex.series.map((s, i) =>
             `<span style="background:var(--border);border-radius:6px;padding:3px 8px;font-size:10px;font-weight:700;color:var(--text3)">
               ${s.carga_kg != null ? s.carga_kg+'kg' : '—'} × ${s.repeticoes || '—'}

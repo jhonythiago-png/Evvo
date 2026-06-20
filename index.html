@@ -2273,7 +2273,16 @@ function renderExec() {
     return;
   }
   cont.innerHTML = series.map((s, si) => {
-    const cls = si === 0 ? 'now' : 'next';
+    // Verifica se já foi marcada como feita nesta sessão
+    const jaFeita = !!(seriesExecutadas[`${state.execIdx}_${si}`]);
+    // Primeira não feita = 'now', feitas = 'done', demais = 'next'
+    const primeiraAberta = series.findIndex((_, i) => !seriesExecutadas[`${state.execIdx}_${i}`]);
+    const cls = jaFeita ? 'done' : (si === primeiraAberta ? 'now' : 'next');
+    const svgBotao = cls === 'done'
+      ? '<polyline points="20 6 9 17 4 12"/>'
+      : cls === 'now'
+        ? '<polygon points="5 3 19 12 5 21 5 3"/>'
+        : '<circle cx="12" cy="12" r="10"/>';
     return `<div class="serie-row" id="sr-${si}">
       <div class="sn ${cls}">${si+1}</div>
       <div class="sf ${cls}" onclick="editCarga(${si})">
@@ -2285,7 +2294,7 @@ function renderExec() {
         <div class="u">reps</div>
       </div>
       <button class="sc ${cls}" onclick="toggleSerie(${si})" id="sc-${si}">
-        <svg viewBox="0 0 24 24">${cls==='now'?'<polygon points="5 3 19 12 5 21 5 3"/>':'<circle cx="12" cy="12" r="10"/>'}</svg>
+        <svg viewBox="0 0 24 24"><${svgBotao}/></svg>
       </button>
     </div>`;
   }).join('');
@@ -2295,28 +2304,65 @@ function renderExec() {
 function toggleSerie(si) {
   const row = document.getElementById(`sr-${si}`);
   const btn = document.getElementById(`sc-${si}`);
-  const els = row.querySelectorAll('.sn,.sf');
-  els.forEach(e => { e.classList.remove('now','next'); e.classList.add('done'); });
-  btn.classList.remove('now','next'); btn.classList.add('done');
-  btn.innerHTML = '<svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>';
-  // ativa próxima
-  const next = document.getElementById(`sr-${si+1}`);
-  if (next) {
-    next.querySelectorAll('.sn,.sf').forEach(e => { e.classList.remove('next'); e.classList.add('now'); });
-    const nb = document.getElementById(`sc-${si+1}`);
-    nb.classList.remove('next'); nb.classList.add('now');
-    nb.innerHTML = '<svg viewBox="0 0 24 24"><polygon points="5 3 19 12 5 21 5 3"/></svg>';
-  }
-  // Salva série executada no banco
-  salvarSerieExecutada(si);
-  // Verifica se todas as séries foram concluídas
-  const totalSeries = (state.exerciciosAtual[state.execIdx]?.series_template || []).length;
-  const concluidas = document.querySelectorAll(`[id^="sr-"] .sn.done`).length;
-  if (concluidas >= totalSeries) {
-    state.exsConcluidos.add(state.execIdx);
-    renderExOverview(state.execIdx);
+  if (!row || !btn) return;
+
+  const jaDone = row.querySelector('.sn')?.classList.contains('done');
+
+  if (jaDone) {
+    // ── DESMARCAR ──
+    desmarcarSerieExecutada(si);
+    delete seriesExecutadas[`${state.execIdx}_${si}`];
+
+    // Recalcula qual é a primeira aberta agora
+    const series = state.exerciciosAtual[state.execIdx]?.series_template || [];
+    const primeiraAberta = series.findIndex((_, i) => !seriesExecutadas[`${state.execIdx}_${i}`]);
+    const novoCls = si === primeiraAberta ? 'now' : 'next';
+
+    row.querySelectorAll('.sn,.sf').forEach(e => {
+      e.classList.remove('done','now','next');
+      e.classList.add(novoCls);
+    });
+    btn.classList.remove('done','now','next');
+    btn.classList.add(novoCls);
+    btn.innerHTML = novoCls === 'now'
+      ? '<svg viewBox="0 0 24 24"><polygon points="5 3 19 12 5 21 5 3"/></svg>'
+      : '<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/></svg>';
+    showToast('Série desmarcada');
+  } else {
+    // ── MARCAR ──
+    row.querySelectorAll('.sn,.sf').forEach(e => {
+      e.classList.remove('now','next');
+      e.classList.add('done');
+    });
+    btn.classList.remove('now','next');
+    btn.classList.add('done');
+    btn.innerHTML = '<svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>';
+    salvarSerieExecutada(si);
+
+    // Ativa próxima não feita
+    const series = state.exerciciosAtual[state.execIdx]?.series_template || [];
+    for (let i = si + 1; i < series.length; i++) {
+      if (!seriesExecutadas[`${state.execIdx}_${i}`]) {
+        const nr = document.getElementById(`sr-${i}`);
+        const nb = document.getElementById(`sc-${i}`);
+        if (nr && nb) {
+          nr.querySelectorAll('.sn,.sf').forEach(e => { e.classList.remove('next'); e.classList.add('now'); });
+          nb.classList.remove('next'); nb.classList.add('now');
+          nb.innerHTML = '<svg viewBox="0 0 24 24"><polygon points="5 3 19 12 5 21 5 3"/></svg>';
+        }
+        break;
+      }
+    }
+    // Verifica se todas concluídas
+    const totalSeries = series.length;
+    const concluidas = Object.keys(seriesExecutadas).filter(k => k.startsWith(`${state.execIdx}_`)).length;
+    if (concluidas >= totalSeries) {
+      state.exsConcluidos.add(state.execIdx);
+      renderExOverview(state.execIdx);
+    }
   }
 }
+
 
 function editCarga(si) {
   const val = prompt('Carga (kg):');
@@ -3339,6 +3385,17 @@ async function salvarSerieExecutada(si) {
   // Guarda local para calcular volume
   const key = `${state.execIdx}_${si}`;
   seriesExecutadas[key] = { carga: cargaVal, reps: repsVal };
+}
+
+async function desmarcarSerieExecutada(si) {
+  if (!state.sessaoAtiva) return;
+  const ex = state.exerciciosAtual[state.execIdx];
+  if (!ex) return;
+  // Remove do banco a série executada correspondente
+  await sb.from('series_executadas').delete()
+    .eq('sessao_id', state.sessaoAtiva.id)
+    .eq('exercicio_id', ex.id)
+    .eq('numero_serie', si + 1);
 }
 
 async function encerrarSessao() {
@@ -4042,7 +4099,16 @@ function renderExec() {
     return;
   }
   cont.innerHTML = series.map((s, si) => {
-    const cls = si === 0 ? 'now' : 'next';
+    // Verifica se já foi marcada como feita nesta sessão
+    const jaFeita = !!(seriesExecutadas[`${state.execIdx}_${si}`]);
+    // Primeira não feita = 'now', feitas = 'done', demais = 'next'
+    const primeiraAberta = series.findIndex((_, i) => !seriesExecutadas[`${state.execIdx}_${i}`]);
+    const cls = jaFeita ? 'done' : (si === primeiraAberta ? 'now' : 'next');
+    const svgBotao = cls === 'done'
+      ? '<polyline points="20 6 9 17 4 12"/>'
+      : cls === 'now'
+        ? '<polygon points="5 3 19 12 5 21 5 3"/>'
+        : '<circle cx="12" cy="12" r="10"/>';
     return `<div class="serie-row" id="sr-${si}">
       <div class="sn ${cls}">${si+1}</div>
       <div class="sf ${cls}" onclick="editCarga(${si})">
@@ -4054,7 +4120,7 @@ function renderExec() {
         <div class="u">reps</div>
       </div>
       <button class="sc ${cls}" onclick="toggleSerie(${si})" id="sc-${si}">
-        <svg viewBox="0 0 24 24">${cls==='now'?'<polygon points="5 3 19 12 5 21 5 3"/>':'<circle cx="12" cy="12" r="10"/>'}</svg>
+        <svg viewBox="0 0 24 24"><${svgBotao}/></svg>
       </button>
     </div>`;
   }).join('');
@@ -5083,6 +5149,17 @@ async function salvarSerieExecutada(si) {
   // Guarda local para calcular volume
   const key = `${state.execIdx}_${si}`;
   seriesExecutadas[key] = { carga: cargaVal, reps: repsVal };
+}
+
+async function desmarcarSerieExecutada(si) {
+  if (!state.sessaoAtiva) return;
+  const ex = state.exerciciosAtual[state.execIdx];
+  if (!ex) return;
+  // Remove do banco a série executada correspondente
+  await sb.from('series_executadas').delete()
+    .eq('sessao_id', state.sessaoAtiva.id)
+    .eq('exercicio_id', ex.id)
+    .eq('numero_serie', si + 1);
 }
 
 async function encerrarSessao() {

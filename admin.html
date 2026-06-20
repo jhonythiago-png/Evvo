@@ -1,0 +1,717 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="robots" content="noindex,nofollow">
+<title>EVVO Admin</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;-webkit-font-smoothing:antialiased}
+:root{
+  --bg:     #080810;
+  --bg2:    #0e0e1a;
+  --bg3:    #141428;
+  --border: #ffffff0a;
+  --bord2:  #ffffff14;
+  --text:   #ffffff;
+  --text2:  #ffffffcc;
+  --text3:  #ffffff55;
+  --text4:  #ffffff22;
+  --accent: #ff6a00;
+  --pink:   #ee0979;
+  --grad:   linear-gradient(135deg,#ff6a00,#ee0979);
+  --green:  #39d353;
+  --red:    #ee0979;
+}
+html,body{min-height:100vh;background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,'SF Pro Display','Segoe UI',sans-serif}
+input,button,select,textarea{font-family:inherit;border:none;outline:none}
+button{cursor:pointer;background:none}
+a{text-decoration:none;color:inherit}
+
+/* ── LOADING ── */
+#loading{position:fixed;inset:0;background:var(--bg);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;z-index:999}
+#loading p{font-size:11px;color:var(--text3);font-weight:700;letter-spacing:.12em;text-transform:uppercase}
+#loading svg{animation:spin 1s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* ── LOGIN ── */
+#screen-login{
+  display:none;
+  min-height:100vh;
+  align-items:center;
+  justify-content:center;
+  padding:32px;
+  background:var(--bg);
+}
+#screen-login.active{display:flex}
+.login-box{width:100%;max-width:380px;display:flex;flex-direction:column;align-items:center;gap:0}
+.login-logo{display:flex;flex-direction:column;align-items:center;margin-bottom:40px;gap:14px}
+.login-logo h1{font-size:32px;font-weight:900;letter-spacing:-1.5px;color:var(--text)}
+.login-logo p{font-size:11px;color:var(--text3);letter-spacing:.2em;text-transform:uppercase}
+.admin-badge{background:#ffffff0a;border:1px solid var(--bord2);border-radius:20px;padding:4px 12px;font-size:10px;font-weight:700;color:var(--text3);letter-spacing:.1em;text-transform:uppercase}
+.form-group{width:100%;margin-bottom:12px}
+.form-label{font-size:10px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.1em;display:block;margin-bottom:6px}
+.form-input{width:100%;background:var(--bg2);border:1px solid var(--bord2);border-radius:13px;padding:14px 16px;color:var(--text);font-size:15px;font-weight:500;transition:border-color .2s}
+.form-input:focus{border-color:var(--accent)}
+.form-input::placeholder{color:var(--text4)}
+.btn-login{width:100%;background:var(--grad);border-radius:14px;padding:16px;color:#fff;font-size:14px;font-weight:800;text-transform:uppercase;letter-spacing:.1em;margin-top:4px;transition:opacity .2s}
+.btn-login:hover{opacity:.9}
+.login-error{background:#ee09791a;border:1px solid #ee097933;border-radius:10px;padding:10px 14px;font-size:12px;color:#ee0979;margin-bottom:12px;display:none;width:100%}
+
+/* ── APP SHELL ── */
+#app{display:none;min-height:100vh;flex-direction:column}
+#app.active{display:flex}
+
+/* ── TOPBAR ── */
+.topbar{
+  background:rgba(8,8,16,.96);
+  backdrop-filter:blur(20px);
+  border-bottom:1px solid var(--border);
+  padding:0 24px;
+  height:60px;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  position:sticky;top:0;z-index:50;
+  flex-shrink:0;
+}
+.topbar-left{display:flex;align-items:center;gap:12px}
+.topbar-logo{display:flex;align-items:center;gap:8px}
+.topbar-logo span{font-size:18px;font-weight:900;color:var(--text);letter-spacing:-1px}
+.topbar-divider{width:1px;height:20px;background:var(--bord2)}
+.topbar-title{font-size:12px;font-weight:700;color:var(--text3);letter-spacing:.08em;text-transform:uppercase}
+.topbar-right{display:flex;align-items:center;gap:10px}
+.btn-logout{background:var(--bg2);border:1px solid var(--bord2);border-radius:10px;padding:7px 14px;font-size:12px;font-weight:700;color:var(--text3);transition:all .2s}
+.btn-logout:hover{border-color:var(--red);color:var(--red)}
+
+/* ── LAYOUT ── */
+.main{flex:1;padding:28px 24px;max-width:1100px;width:100%;margin:0 auto}
+
+/* ── STATS CARDS ── */
+.stats-row{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:28px}
+.stat-card{background:var(--bg2);border-radius:16px;border:1px solid var(--border);padding:18px 20px}
+.stat-card .label{font-size:10px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.1em;margin-bottom:8px}
+.stat-card .value{font-size:32px;font-weight:900;color:var(--text);letter-spacing:-1px;line-height:1}
+.stat-card .value span{font-size:14px;color:var(--text3);margin-left:4px;font-weight:500}
+.stat-card .delta{font-size:11px;font-weight:700;color:var(--green);margin-top:6px}
+.stat-card.accent{border-color:#ff6a0022}
+.stat-card.accent .value{background:var(--grad);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+
+/* ── SECTION ── */
+.section{margin-bottom:28px}
+.section-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px}
+.section-title{font-size:13px;font-weight:800;color:var(--text);letter-spacing:-.2px}
+.section-actions{display:flex;gap:8px}
+
+/* ── SEARCH + FILTER ── */
+.toolbar{display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap}
+.search-wrap{flex:1;min-width:200px;position:relative}
+.search-wrap svg{position:absolute;left:12px;top:50%;transform:translateY(-50%);width:16px;height:16px;stroke:var(--text4);fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.search-input{width:100%;background:var(--bg2);border:1px solid var(--bord2);border-radius:11px;padding:10px 12px 10px 36px;color:var(--text);font-size:13px}
+.search-input::placeholder{color:var(--text4)}
+.search-input:focus{border-color:var(--accent);outline:none}
+.filter-select{background:var(--bg2);border:1px solid var(--bord2);border-radius:11px;padding:10px 14px;color:var(--text);font-size:12px;font-weight:600}
+.filter-select option{background:var(--bg2)}
+
+/* ── TABELA DE USUÁRIOS ── */
+.table-wrap{background:var(--bg2);border-radius:16px;border:1px solid var(--border);overflow:hidden}
+.table-head{display:grid;grid-template-columns:2fr 1.2fr 1fr 1fr 1fr 140px;gap:0;border-bottom:1px solid var(--border)}
+.th{padding:12px 16px;font-size:10px;font-weight:700;color:var(--text4);text-transform:uppercase;letter-spacing:.08em}
+.table-body{display:flex;flex-direction:column}
+.tr{display:grid;grid-template-columns:2fr 1.2fr 1fr 1fr 1fr 140px;border-bottom:1px solid var(--border);align-items:center;transition:background .15s}
+.tr:last-child{border-bottom:none}
+.tr:hover{background:var(--bg3)}
+.td{padding:13px 16px;font-size:13px;color:var(--text2)}
+.td-user{display:flex;align-items:center;gap:10px}
+.user-avatar{width:32px;height:32px;border-radius:50%;background:var(--grad);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:900;color:#fff;flex-shrink:0}
+.user-name{font-size:13px;font-weight:700;color:var(--text)}
+.user-handle{font-size:11px;color:var(--text3);margin-top:1px}
+.badge{display:inline-flex;align-items:center;gap:4px;font-size:10px;font-weight:800;padding:3px 9px;border-radius:20px;white-space:nowrap}
+.badge-pro{background:var(--grad);color:#fff}
+.badge-free{background:var(--border);border:1px solid var(--bord2);color:var(--text3)}
+.badge-ativo{background:#39d35318;color:var(--green);border:1px solid #39d35330}
+.badge-bloqueado{background:#ee097918;color:var(--red);border:1px solid #ee097930}
+.badge-dot{width:5px;height:5px;border-radius:50%;background:currentColor;flex-shrink:0}
+.td-date{font-size:11px;color:var(--text3)}
+.td-actions{display:flex;gap:6px;justify-content:flex-end;padding-right:16px}
+.btn-action{width:30px;height:30px;border-radius:8px;display:flex;align-items:center;justify-content:center;transition:all .2s;border:1px solid transparent}
+.btn-action svg{width:14px;height:14px;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.btn-action.pro{background:#ff6a0015;border-color:#ff6a0025}
+.btn-action.pro svg{stroke:var(--accent)}
+.btn-action.pro:hover{background:#ff6a0030}
+.btn-action.block{background:#ee097915;border-color:#ee097925}
+.btn-action.block svg{stroke:var(--red)}
+.btn-action.block:hover{background:#ee097930}
+.btn-action.del{background:var(--bg3);border-color:var(--bord2)}
+.btn-action.del svg{stroke:var(--text3)}
+.btn-action.del:hover{border-color:var(--red)}
+.btn-action.del:hover svg{stroke:var(--red)}
+.btn-action.edit{background:var(--bg3);border-color:var(--bord2)}
+.btn-action.edit svg{stroke:var(--text3)}
+.btn-action.edit:hover{border-color:var(--accent)}
+.btn-action.edit:hover svg{stroke:var(--accent)}
+
+.empty-state{padding:40px;text-align:center;color:var(--text3);font-size:13px}
+
+/* ── BUTTON PRIMÁRIO ── */
+.btn-primary{background:var(--grad);border-radius:11px;padding:9px 18px;color:#fff;font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:.08em;transition:opacity .2s;display:flex;align-items:center;gap:6px}
+.btn-primary svg{width:14px;height:14px;stroke:#fff;fill:none;stroke-width:2.5;stroke-linecap:round;stroke-linejoin:round}
+.btn-primary:hover{opacity:.9}
+.btn-secondary{background:var(--bg2);border:1px solid var(--bord2);border-radius:11px;padding:9px 16px;color:var(--text2);font-size:12px;font-weight:700;transition:all .2s}
+.btn-secondary:hover{border-color:var(--accent);color:var(--accent)}
+
+/* ── MODAL ── */
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.75);backdrop-filter:blur(12px);display:none;align-items:center;justify-content:center;padding:20px;z-index:100}
+.modal-overlay.open{display:flex}
+.modal{background:var(--bg2);border-radius:20px;border:1px solid var(--bord2);width:100%;max-width:420px;padding:28px}
+.modal h3{font-size:18px;font-weight:900;color:var(--text);letter-spacing:-.4px;margin-bottom:6px}
+.modal p{font-size:13px;color:var(--text3);margin-bottom:22px;line-height:1.5}
+.modal .form-input{margin-bottom:12px}
+.modal-footer{display:flex;gap:8px;justify-content:flex-end;margin-top:8px}
+
+/* ── TOAST ── */
+.toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:var(--bg2);border:1px solid var(--bord2);border-radius:12px;padding:12px 20px;font-size:13px;font-weight:700;color:var(--text);white-space:nowrap;z-index:500;pointer-events:none;opacity:0;transition:opacity .3s}
+.toast.show{opacity:1}
+
+/* ── TOOLTIP ── */
+[title]{position:relative;cursor:pointer}
+
+/* ── RESPONSIVE ── */
+@media(max-width:900px){
+  .stats-row{grid-template-columns:1fr 1fr}
+  .table-head,.tr{grid-template-columns:2fr 1fr 1fr 100px}
+  .th:nth-child(3),.td:nth-child(3),
+  .th:nth-child(5),.td:nth-child(5){display:none}
+}
+@media(max-width:600px){
+  .main{padding:16px}
+  .stats-row{grid-template-columns:1fr 1fr}
+  .table-head,.tr{grid-template-columns:2fr 1fr 90px}
+  .th:nth-child(2),.td:nth-child(2),
+  .th:nth-child(4),.td:nth-child(4){display:none}
+  .topbar{padding:0 16px}
+}
+</style>
+</head>
+<body>
+
+<div id="loading">
+  <svg width="36" height="36" viewBox="0 0 36 36" fill="none">
+    <rect width="36" height="36" rx="10" fill="url(#lg)"/>
+    <defs><linearGradient id="lg" x1="0" y1="0" x2="36" y2="36"><stop offset="0%" stop-color="#ff6a00"/><stop offset="100%" stop-color="#ee0979"/></linearGradient></defs>
+    <path d="M9 12 L18 26 L27 12" stroke="white" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round" fill="none" opacity=".35"/>
+    <path d="M12 12 L18 22 L24 12" stroke="white" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+    <circle cx="18" cy="10" r="1.8" fill="white"/>
+  </svg>
+  <p>EVVO Admin</p>
+</div>
+
+<!-- LOGIN -->
+<div id="screen-login">
+  <div class="login-box">
+    <div class="login-logo">
+      <svg width="60" height="60" viewBox="0 0 60 60" fill="none">
+        <rect width="60" height="60" rx="16" fill="url(#ll)"/>
+        <defs><linearGradient id="ll" x1="0" y1="0" x2="60" y2="60"><stop offset="0%" stop-color="#ff6a00"/><stop offset="100%" stop-color="#ee0979"/></linearGradient></defs>
+        <path d="M15 20 L30 43 L45 20" stroke="white" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" fill="none" opacity=".35"/>
+        <path d="M20 20 L30 37 L40 20" stroke="white" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+        <circle cx="30" cy="16" r="3" fill="white"/>
+      </svg>
+      <div style="text-align:center">
+        <h1>EVVO</h1>
+        <div class="admin-badge">Painel Admin</div>
+      </div>
+    </div>
+    <div class="login-error" id="login-error"></div>
+    <div class="form-group">
+      <label class="form-label">Usuário</label>
+      <input class="form-input" type="text" id="login-user" placeholder="usuário admin" autocapitalize="none">
+    </div>
+    <div class="form-group">
+      <label class="form-label">Senha</label>
+      <input class="form-input" type="password" id="login-pass" placeholder="••••••••">
+    </div>
+    <button class="btn-login" onclick="doAdminLogin()">Entrar no painel</button>
+  </div>
+</div>
+
+<!-- APP -->
+<div id="app">
+  <div class="topbar">
+    <div class="topbar-left">
+      <div class="topbar-logo">
+        <svg width="28" height="28" viewBox="0 0 28 28" fill="none">
+          <rect width="28" height="28" rx="8" fill="url(#tg)"/>
+          <defs><linearGradient id="tg" x1="0" y1="0" x2="28" y2="28"><stop offset="0%" stop-color="#ff6a00"/><stop offset="100%" stop-color="#ee0979"/></linearGradient></defs>
+          <path d="M7 9 L14 20 L21 9" stroke="white" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" fill="none" opacity=".35"/>
+          <path d="M9 9 L14 17 L19 9" stroke="white" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+          <circle cx="14" cy="7" r="1.5" fill="white"/>
+        </svg>
+        <span>EVVO</span>
+      </div>
+      <div class="topbar-divider"></div>
+      <span class="topbar-title">Admin</span>
+    </div>
+    <div class="topbar-right">
+      <span style="font-size:12px;color:var(--text3);font-weight:600" id="admin-user-label"></span>
+      <button class="btn-logout" onclick="doLogout()">Sair</button>
+    </div>
+  </div>
+
+  <div class="main">
+
+    <!-- STATS -->
+    <div class="stats-row" id="stats-row">
+      <div class="stat-card accent">
+        <div class="label">Total usuários</div>
+        <div class="value" id="stat-total">—</div>
+      </div>
+      <div class="stat-card">
+        <div class="label">Plano Pro</div>
+        <div class="value" id="stat-pro">—</div>
+      </div>
+      <div class="stat-card">
+        <div class="label">Ativos</div>
+        <div class="value" id="stat-ativos">—</div>
+      </div>
+      <div class="stat-card">
+        <div class="label">Bloqueados</div>
+        <div class="value" id="stat-bloqueados">—</div>
+      </div>
+    </div>
+
+    <!-- USUÁRIOS -->
+    <div class="section">
+      <div class="section-header">
+        <div class="section-title">Usuários cadastrados</div>
+        <div class="section-actions">
+          <button class="btn-primary" onclick="openModalCadastro()">
+            <svg viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+            Novo usuário
+          </button>
+        </div>
+      </div>
+
+      <div class="toolbar">
+        <div class="search-wrap">
+          <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+          <input class="search-input" type="text" id="search-input" placeholder="Buscar por nome ou usuário..." oninput="filtrarUsuarios()">
+        </div>
+        <select class="filter-select" id="filter-plano" onchange="filtrarUsuarios()">
+          <option value="">Todos os planos</option>
+          <option value="pro">Pro</option>
+          <option value="free">Free</option>
+        </select>
+        <select class="filter-select" id="filter-status" onchange="filtrarUsuarios()">
+          <option value="">Todos os status</option>
+          <option value="ativo">Ativos</option>
+          <option value="bloqueado">Bloqueados</option>
+        </select>
+      </div>
+
+      <div class="table-wrap">
+        <div class="table-head">
+          <div class="th">Usuário</div>
+          <div class="th">Cadastro</div>
+          <div class="th">Plano</div>
+          <div class="th">Status</div>
+          <div class="th">Treinos</div>
+          <div class="th" style="text-align:right;padding-right:24px">Ações</div>
+        </div>
+        <div class="table-body" id="users-table">
+          <div class="empty-state">Carregando...</div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- MODAL CADASTRAR USUÁRIO -->
+<div class="modal-overlay" id="modal-cadastro">
+  <div class="modal">
+    <h3>Novo usuário</h3>
+    <p>Crie um acesso manualmente. O usuário poderá fazer login com essas credenciais.</p>
+    <div class="login-error" id="cadastro-error"></div>
+    <div class="form-group">
+      <label class="form-label">Nome completo</label>
+      <input class="form-input" type="text" id="new-nome" placeholder="Nome do usuário">
+    </div>
+    <div class="form-group">
+      <label class="form-label">Usuário</label>
+      <input class="form-input" type="text" id="new-user" placeholder="nome de usuário" autocapitalize="none">
+    </div>
+    <div class="form-group">
+      <label class="form-label">Senha</label>
+      <input class="form-input" type="text" id="new-pass" placeholder="senha inicial">
+    </div>
+    <div class="form-group">
+      <label class="form-label">Plano</label>
+      <select class="form-input filter-select" id="new-plano" style="padding:14px 16px">
+        <option value="free">Free</option>
+        <option value="pro">Pro</option>
+      </select>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-secondary" onclick="closeModal('modal-cadastro')">Cancelar</button>
+      <button class="btn-primary" onclick="cadastrarUsuario()">Criar usuário</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL EDITAR PLANO -->
+<div class="modal-overlay" id="modal-editar">
+  <div class="modal">
+    <h3>Editar usuário</h3>
+    <p id="editar-desc">Altere o plano ou status deste usuário.</p>
+    <input type="hidden" id="editar-id">
+    <div class="form-group">
+      <label class="form-label">Plano</label>
+      <select class="form-input filter-select" id="editar-plano" style="padding:14px 16px">
+        <option value="free">Free</option>
+        <option value="pro">Pro</option>
+      </select>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Status</label>
+      <select class="form-input filter-select" id="editar-status" style="padding:14px 16px">
+        <option value="ativo">Ativo</option>
+        <option value="bloqueado">Bloqueado</option>
+      </select>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-secondary" onclick="closeModal('modal-editar')">Cancelar</button>
+      <button class="btn-primary" onclick="salvarEdicao()">Salvar</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL CONFIRMAR EXCLUSÃO -->
+<div class="modal-overlay" id="modal-deletar">
+  <div class="modal">
+    <h3>Excluir usuário</h3>
+    <p id="deletar-desc">Esta ação é permanente e remove todos os dados do usuário.</p>
+    <input type="hidden" id="deletar-id">
+    <div class="modal-footer">
+      <button class="btn-secondary" onclick="closeModal('modal-deletar')">Cancelar</button>
+      <button style="background:#ee097922;border:1px solid #ee097944;border-radius:11px;padding:9px 18px;color:var(--red);font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:.08em" onclick="confirmarDeletar()">Excluir</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ═══════════════════════════════════════════
+// CONFIG
+// ═══════════════════════════════════════════
+const SUPABASE_URL  = 'https://igxvsboqqmwzzyzgsbjw.supabase.co';
+const SUPABASE_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlneHZzYm9xcW13enp5emdzYmp3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE4Njc3MTgsImV4cCI6MjA5NzQ0MzcxOH0.ClLggfxlLEMqRdqqcbcugbMcUfviJAEMORitiku3MUw';
+const ADMIN_USER    = 'jhony'; // único usuário com acesso admin
+const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
+
+let todosUsuarios = [];
+
+// ═══════════════════════════════════════════
+// INIT
+// ═══════════════════════════════════════════
+async function init() {
+  const { data: { session } } = await sb.auth.getSession();
+  if (session) {
+    const username = session.user.email.replace('@evvo.app','');
+    if (username !== ADMIN_USER) {
+      await sb.auth.signOut();
+      showLogin();
+      return;
+    }
+    showApp(username);
+  } else {
+    showLogin();
+  }
+}
+
+function showLogin() {
+  document.getElementById('loading').style.display = 'none';
+  document.getElementById('screen-login').classList.add('active');
+}
+
+function showApp(username) {
+  document.getElementById('loading').style.display = 'none';
+  document.getElementById('screen-login').classList.remove('active');
+  document.getElementById('app').classList.add('active');
+  document.getElementById('admin-user-label').textContent = '@' + username;
+  loadDashboard();
+}
+
+// ═══════════════════════════════════════════
+// AUTH
+// ═══════════════════════════════════════════
+async function doAdminLogin() {
+  const user = document.getElementById('login-user').value.trim().toLowerCase();
+  const pass = document.getElementById('login-pass').value;
+  const err  = document.getElementById('login-error');
+  err.style.display = 'none';
+
+  if (!user || !pass) { err.textContent = 'Preencha usuário e senha.'; err.style.display = 'block'; return; }
+  if (user !== ADMIN_USER) { err.textContent = 'Acesso negado.'; err.style.display = 'block'; return; }
+
+  const { error } = await sb.auth.signInWithPassword({ email: user + '@evvo.app', password: pass });
+  if (error) { err.textContent = 'Usuário ou senha incorretos.'; err.style.display = 'block'; return; }
+  showApp(user);
+}
+
+async function doLogout() {
+  await sb.auth.signOut();
+  document.getElementById('app').classList.remove('active');
+  showLogin();
+}
+
+// ═══════════════════════════════════════════
+// DASHBOARD
+// ═══════════════════════════════════════════
+async function loadDashboard() {
+  await loadUsuarios();
+  atualizarStats();
+}
+
+async function loadUsuarios() {
+  // Busca perfis com contagem de sessões
+  const { data: perfis } = await sb.from('perfis')
+    .select('*')
+    .order('created_at', { ascending: false });
+
+  if (!perfis) return;
+
+  // Busca sessões por usuário
+  const { data: sessoes } = await sb.from('sessoes')
+    .select('user_id')
+    .not('finalizado_em', 'is', null);
+
+  const sessoesMap = {};
+  (sessoes || []).forEach(s => {
+    sessoesMap[s.user_id] = (sessoesMap[s.user_id] || 0) + 1;
+  });
+
+  todosUsuarios = perfis.map(p => ({
+    ...p,
+    totalTreinos: sessoesMap[p.id] || 0,
+    username: p.email.replace('@evvo.app',''),
+  }));
+
+  renderTabela(todosUsuarios);
+}
+
+function atualizarStats() {
+  const total     = todosUsuarios.length;
+  const pro       = todosUsuarios.filter(u => u.plano === 'pro').length;
+  const ativos    = todosUsuarios.filter(u => u.status !== 'bloqueado').length;
+  const bloqueados= todosUsuarios.filter(u => u.status === 'bloqueado').length;
+
+  document.getElementById('stat-total').textContent      = total;
+  document.getElementById('stat-pro').textContent        = pro;
+  document.getElementById('stat-ativos').textContent     = ativos;
+  document.getElementById('stat-bloqueados').textContent = bloqueados;
+}
+
+function renderTabela(lista) {
+  const body = document.getElementById('users-table');
+  if (!lista.length) {
+    body.innerHTML = '<div class="empty-state">Nenhum usuário encontrado</div>';
+    return;
+  }
+
+  body.innerHTML = lista.map(u => {
+    const ini = u.nome ? u.nome.charAt(0).toUpperCase() : '?';
+    const data = new Date(u.created_at).toLocaleDateString('pt-BR', { day:'2-digit', month:'short', year:'numeric' });
+    const isPro = u.plano === 'pro';
+    const isBlocked = u.status === 'bloqueado';
+    const nomeEsc = (u.nome||'').replace(/'/g,"\\'");
+    const userEsc = u.username.replace(/'/g,"\\'");
+
+    return `<div class="tr">
+      <div class="td td-user">
+        <div class="user-avatar">${ini}</div>
+        <div>
+          <div class="user-name">${u.nome || '—'}</div>
+          <div class="user-handle">@${u.username}</div>
+        </div>
+      </div>
+      <div class="td td-date">${data}</div>
+      <div class="td">
+        <span class="badge ${isPro ? 'badge-pro' : 'badge-free'}">
+          ${isPro ? '⭐ Pro' : 'Free'}
+        </span>
+      </div>
+      <div class="td">
+        <span class="badge ${isBlocked ? 'badge-bloqueado' : 'badge-ativo'}">
+          <span class="badge-dot"></span>
+          ${isBlocked ? 'Bloqueado' : 'Ativo'}
+        </span>
+      </div>
+      <div class="td" style="font-weight:700;color:${u.totalTreinos > 0 ? 'var(--text)' : 'var(--text4)'}">${u.totalTreinos}</div>
+      <div class="td td-actions">
+        <button class="btn-action edit" onclick="openModalEditar('${u.id}','${nomeEsc}','${u.plano}','${u.status || 'ativo'}')" title="Editar plano/status">
+          <svg viewBox="0 0 24 24"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+        </button>
+        <button class="btn-action ${isBlocked ? 'pro' : 'block'}" onclick="${isBlocked ? 'desbloquearUsuario' : 'bloquearUsuario'}('${u.id}')" title="${isBlocked ? 'Desbloquear' : 'Bloquear'}">
+          <svg viewBox="0 0 24 24">${isBlocked
+            ? '<rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/>'
+            : '<rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 9.9-1"/>'
+          }</svg>
+        </button>
+        <button class="btn-action del" onclick="openModalDeletar('${u.id}','${nomeEsc}')" title="Excluir usuário">
+          <svg viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6M14 11v6"/></svg>
+        </button>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+// ═══════════════════════════════════════════
+// FILTRO + BUSCA
+// ═══════════════════════════════════════════
+function filtrarUsuarios() {
+  const q      = document.getElementById('search-input').value.toLowerCase();
+  const plano  = document.getElementById('filter-plano').value;
+  const status = document.getElementById('filter-status').value;
+
+  const filtrado = todosUsuarios.filter(u => {
+    const matchQ = !q || u.nome?.toLowerCase().includes(q) || u.username.includes(q);
+    const matchP = !plano  || u.plano === plano;
+    const matchS = !status || (u.status || 'ativo') === status;
+    return matchQ && matchP && matchS;
+  });
+  renderTabela(filtrado);
+}
+
+// ═══════════════════════════════════════════
+// AÇÕES RÁPIDAS
+// ═══════════════════════════════════════════
+async function bloquearUsuario(id) {
+  const { error } = await sb.from('perfis').update({ status:'bloqueado' }).eq('id', id);
+  if (!error) { showToast('Usuário bloqueado'); await loadUsuarios(); atualizarStats(); }
+}
+
+async function desbloquearUsuario(id) {
+  const { error } = await sb.from('perfis').update({ status:'ativo' }).eq('id', id);
+  if (!error) { showToast('Usuário desbloqueado'); await loadUsuarios(); atualizarStats(); }
+}
+
+// ═══════════════════════════════════════════
+// MODAIS
+// ═══════════════════════════════════════════
+function openModal(id)  { document.getElementById(id).classList.add('open'); }
+function closeModal(id) { document.getElementById(id).classList.remove('open'); }
+
+// Fecha ao clicar fora
+['modal-cadastro','modal-editar','modal-deletar'].forEach(id => {
+  document.getElementById(id).addEventListener('click', function(e) {
+    if (e.target === this) closeModal(id);
+  });
+});
+
+function openModalCadastro() {
+  document.getElementById('new-nome').value = '';
+  document.getElementById('new-user').value = '';
+  document.getElementById('new-pass').value = '';
+  document.getElementById('new-plano').value = 'free';
+  document.getElementById('cadastro-error').style.display = 'none';
+  openModal('modal-cadastro');
+}
+
+async function cadastrarUsuario() {
+  const nome  = document.getElementById('new-nome').value.trim();
+  const user  = document.getElementById('new-user').value.trim().toLowerCase().replace(/\s+/g,'');
+  const pass  = document.getElementById('new-pass').value;
+  const plano = document.getElementById('new-plano').value;
+  const err   = document.getElementById('cadastro-error');
+  err.style.display = 'none';
+
+  if (!nome || !user || !pass) { err.textContent = 'Preencha todos os campos.'; err.style.display = 'block'; return; }
+  if (pass.length < 6) { err.textContent = 'Senha mínimo 6 caracteres.'; err.style.display = 'block'; return; }
+
+  const { data, error } = await sb.auth.admin
+    ? sb.auth.admin.createUser({ email: user+'@evvo.app', password: pass, email_confirm: true, user_metadata: { nome } })
+    : sb.auth.signUp({ email: user+'@evvo.app', password: pass, options: { data: { nome } } });
+
+  if (error) {
+    // Fallback: tenta via signUp normal
+    const { error: e2 } = await sb.auth.signUp({ email: user+'@evvo.app', password: pass, options: { data: { nome } } });
+    if (e2) { err.textContent = e2.message.includes('already') ? 'Usuário já existe.' : e2.message; err.style.display = 'block'; return; }
+  }
+
+  // Atualiza plano se pro
+  if (plano === 'pro') {
+    setTimeout(async () => {
+      const { data: perfil } = await sb.from('perfis').select('id').eq('email', user+'@evvo.app').single();
+      if (perfil) await sb.from('perfis').update({ plano:'pro' }).eq('id', perfil.id);
+    }, 1500);
+  }
+
+  closeModal('modal-cadastro');
+  showToast('Usuário criado!');
+  setTimeout(() => loadDashboard(), 1500);
+}
+
+function openModalEditar(id, nome, plano, status) {
+  document.getElementById('editar-id').value    = id;
+  document.getElementById('editar-desc').textContent = `Editando: ${nome}`;
+  document.getElementById('editar-plano').value  = plano;
+  document.getElementById('editar-status').value = status;
+  openModal('modal-editar');
+}
+
+async function salvarEdicao() {
+  const id     = document.getElementById('editar-id').value;
+  const plano  = document.getElementById('editar-plano').value;
+  const status = document.getElementById('editar-status').value;
+
+  const { error } = await sb.from('perfis').update({ plano, status }).eq('id', id);
+  if (!error) {
+    closeModal('modal-editar');
+    showToast('Usuário atualizado!');
+    await loadUsuarios();
+    atualizarStats();
+  } else {
+    showToast('Erro ao salvar');
+  }
+}
+
+function openModalDeletar(id, nome) {
+  document.getElementById('deletar-id').value = id;
+  document.getElementById('deletar-desc').textContent = `Excluir "${nome}"? Esta ação é permanente e remove todos os dados do usuário.`;
+  openModal('modal-deletar');
+}
+
+async function confirmarDeletar() {
+  const id = document.getElementById('deletar-id').value;
+  // Deleta o perfil (cascade vai limpar os dados)
+  const { error } = await sb.from('perfis').delete().eq('id', id);
+  if (!error) {
+    closeModal('modal-deletar');
+    showToast('Usuário excluído');
+    await loadUsuarios();
+    atualizarStats();
+  } else {
+    showToast('Erro ao excluir');
+  }
+}
+
+// ═══════════════════════════════════════════
+// TOAST
+// ═══════════════════════════════════════════
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2500);
+}
+
+// ═══════════════════════════════════════════
+// START
+// ═══════════════════════════════════════════
+init();
+</script>
+</body>
+</html>

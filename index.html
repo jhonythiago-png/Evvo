@@ -2283,48 +2283,18 @@ function gerarBonecoHTML(medida, sexo) {
   const s = sexo || 'neutro';
   const med = medida || {};
 
-  // SVG boneco original (neutro/masculino/feminino)
-  const svgNeutro = `<svg viewBox="0 0 100 220" fill="none" xmlns="http://www.w3.org/2000/svg" width="100%" height="100%">
-    <circle cx="50" cy="18" r="14" stroke="#ff6a00" stroke-width="1.8" fill="#ff6a0015"/>
-    <line x1="50" y1="32" x2="50" y2="40" stroke="#ff6a00" stroke-width="1.8"/>
-    <path d="M24 46 L22 44 Q50 38 78 44 L76 46 L73 108 Q50 114 27 108 Z" stroke="#ff6a00" stroke-width="1.8" fill="#ff6a000d"/>
-    <path d="M24 48 L10 88 Q11 93 16 91 L24 58" stroke="#ff6a00" stroke-width="2" stroke-linecap="round" fill="none"/>
-    <path d="M76 48 L90 88 Q89 93 84 91 L76 58" stroke="#ff6a00" stroke-width="2" stroke-linecap="round" fill="none"/>
-    <ellipse cx="10" cy="94" rx="4" ry="5" stroke="#ff6a00" stroke-width="1.5" fill="#ff6a0015"/>
-    <ellipse cx="90" cy="94" rx="4" ry="5" stroke="#ff6a00" stroke-width="1.5" fill="#ff6a0015"/>
-    <path d="M30 108 Q28 120 30 128 L70 128 Q72 120 70 108Z" stroke="#ff6a00" stroke-width="1.6" fill="#ff6a000a"/>
-    <path d="M34 128 L30 174" stroke="#ff6a00" stroke-width="2.5" stroke-linecap="round"/>
-    <path d="M66 128 L70 174" stroke="#ff6a00" stroke-width="2.5" stroke-linecap="round"/>
-    <path d="M30 174 L28 204" stroke="#ff6a00" stroke-width="2" stroke-linecap="round"/>
-    <path d="M70 174 L72 204" stroke="#ff6a00" stroke-width="2" stroke-linecap="round"/>
-    <path d="M28 204 Q22 206 18 205 Q16 208 20 209 L34 209 L36 204Z" stroke="#ff6a00" stroke-width="1.2" fill="#ff6a0015"/>
-    <path d="M72 204 Q78 206 82 205 Q84 208 80 209 L66 209 L64 204Z" stroke="#ff6a00" stroke-width="1.2" fill="#ff6a0015"/>
+  // SVG original do boneco — palito simples
+  const svgOriginal = `<svg viewBox="0 0 54 80" fill="none" xmlns="http://www.w3.org/2000/svg" width="100%" height="100%">
+    <circle cx="27" cy="10" r="9" stroke="#ff6a00" stroke-width="1.5" fill="none"/>
+    <path d="M14 24 Q27 20 40 24 L42 50 Q27 54 12 50 Z" stroke="#ff6a00" stroke-width="1.2" fill="none" opacity=".7"/>
+    <path d="M14 26 L8 48 Q10 50 14 48 L18 30" stroke="#ff6a00" stroke-width="1.2" fill="none" opacity=".6"/>
+    <path d="M40 26 L46 48 Q44 50 40 48 L36 30" stroke="#ff6a00" stroke-width="1.2" fill="none" opacity=".6"/>
+    <path d="M18 50 L16 72 Q18 74 22 72 L24 52" stroke="#ff6a00" stroke-width="1.2" fill="none" opacity=".6"/>
+    <path d="M36 50 L38 72 Q36 74 32 72 L30 52" stroke="#ff6a00" stroke-width="1.2" fill="none" opacity=".6"/>
   </svg>`;
 
-  const svgFem = `<svg viewBox="0 0 100 220" fill="none" xmlns="http://www.w3.org/2000/svg" width="100%" height="100%">
-    <path d="M36 6 Q30 4 28 16 Q26 30 28 42 Q30 48 32 50" stroke="#ff6a00" stroke-width="2" stroke-linecap="round" fill="none"/>
-    <path d="M64 6 Q70 4 72 16 Q74 30 72 42 Q70 48 68 50" stroke="#ff6a00" stroke-width="2" stroke-linecap="round" fill="none"/>
-    <path d="M36 6 Q50 2 64 6" stroke="#ff6a00" stroke-width="2" fill="none"/>
-    <circle cx="50" cy="19" r="13" stroke="#ff6a00" stroke-width="1.8" fill="#0e0e1a"/>
-    <path d="M38 14 Q50 9 62 14" stroke="#ff6a00" stroke-width="2.5" stroke-linecap="round"/>
-    <line x1="50" y1="32" x2="50" y2="40" stroke="#ff6a00" stroke-width="1.6"/>
-    <path d="M30 44 L28 42 Q50 37 72 42 L70 44 L68 74 Q60 82 50 84 Q40 82 32 74 Z" stroke="#ff6a00" stroke-width="1.8" fill="#ff6a000d"/>
-    <path d="M30 46 L16 84 Q17 89 22 87 L30 56" stroke="#ff6a00" stroke-width="1.8" stroke-linecap="round" fill="none"/>
-    <path d="M70 46 L84 84 Q83 89 78 87 L70 56" stroke="#ff6a00" stroke-width="1.8" stroke-linecap="round" fill="none"/>
-    <ellipse cx="16" cy="90" rx="3.5" ry="4.5" stroke="#ff6a00" stroke-width="1.5" fill="#ff6a0015"/>
-    <ellipse cx="84" cy="90" rx="3.5" ry="4.5" stroke="#ff6a00" stroke-width="1.5" fill="#ff6a0015"/>
-    <path d="M32 74 Q28 88 32 100 L68 100 Q72 88 68 74Z" stroke="#ff6a00" stroke-width="1.6" fill="#ff6a0008"/>
-    <path d="M32 100 Q24 108 26 120 L74 120 Q76 108 68 100Z" stroke="#ff6a00" stroke-width="1.8" fill="#ff6a000d"/>
-    <path d="M36 120 L32 172" stroke="#ff6a00" stroke-width="2.2" stroke-linecap="round"/>
-    <path d="M64 120 L68 172" stroke="#ff6a00" stroke-width="2.2" stroke-linecap="round"/>
-    <path d="M32 172 L30 202" stroke="#ff6a00" stroke-width="2" stroke-linecap="round"/>
-    <path d="M68 172 L70 202" stroke="#ff6a00" stroke-width="2" stroke-linecap="round"/>
-    <path d="M30 202 Q24 204 20 203 Q18 206 22 207 L36 207 L38 202Z" stroke="#ff6a00" stroke-width="1.2" fill="#ff6a0015"/>
-    <path d="M70 202 Q76 204 80 203 Q82 206 78 207 L64 207 L62 202Z" stroke="#ff6a00" stroke-width="1.2" fill="#ff6a0015"/>
-  </svg>`;
-
-  const svgMap = { masculino: svgNeutro, feminino: svgFem, neutro: svgNeutro };
-  const svgAtual = svgMap[s] || svgNeutro;
+  // Mesmo SVG para todos os sexos (boneco neutro original)
+  const svgAtual = svgOriginal;
 
   // Coluna esquerda: direito do usuário (como espelho)
   const esquerda = [
@@ -2356,8 +2326,8 @@ function gerarBonecoHTML(medida, sexo) {
     }).join('');
   }
 
-  const pesoVal = med.peso_kg   || '—';
-  const altVal  = med.altura_cm ? med.altura_cm + ' m' : '—';
+  const pesoVal  = med.peso_kg   || '—';
+  const altVal   = med.altura_cm ? med.altura_cm + ' m' : '—';
   const sexoIcon = s === 'masculino' ? '♂' : s === 'feminino' ? '♀' : '—';
   const sexoTxt  = s === 'masculino' ? 'Masculino' : s === 'feminino' ? 'Feminino' : 'Não inf.';
 
@@ -2379,11 +2349,11 @@ function gerarBonecoHTML(medida, sexo) {
       </div>
     </div>
     <div style="display:flex;align-items:center;padding:16px 12px;gap:8px">
-      <div style="display:flex;flex-direction:column;gap:14px;flex:1">
+      <div style="display:flex;flex-direction:column;gap:16px;flex:1">
         ${renderCol(esquerda, 'right')}
       </div>
-      <div style="width:100px;height:200px;flex-shrink:0">${svgAtual}</div>
-      <div style="display:flex;flex-direction:column;gap:14px;flex:1">
+      <div style="width:80px;height:120px;flex-shrink:0;opacity:.8">${svgAtual}</div>
+      <div style="display:flex;flex-direction:column;gap:16px;flex:1">
         ${renderCol(direita, 'left')}
       </div>
     </div>

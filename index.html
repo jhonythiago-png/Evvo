@@ -1827,6 +1827,7 @@ let state = {
   execIdx: 0,
   sessaoAtiva: null,
   medidas: null,
+  exsConcluidos: new Set(), // índices dos exercícios concluídos na sessão atual
 };
 
 // ═══════════════════════════════════════════
@@ -2056,6 +2057,7 @@ async function openDia(diaId) {
   const dia = state.diasTreino.find(d => d.id === diaId);
   if (!dia) return;
   state.diaAtual = dia;
+  state.exsConcluidos = new Set(); // limpa concluídos ao abrir novo dia
 
   // busca exercícios + séries
   const { data: exs } = await sb.from('exercicios')
@@ -2089,8 +2091,9 @@ async function openDia(diaId) {
 function renderExOverview(doneTo) {
   const cont = document.getElementById('ex-overview');
   cont.innerHTML = state.exerciciosAtual.map((ex, i) => {
-    const cls = i < doneTo ? 'done' : i === doneTo ? 'now' : 'next';
-    const label = i < doneTo ? '✓' : i === doneTo ? '▶' : (i+1);
+    const concluido = state.exsConcluidos.has(i) || i < doneTo;
+    const cls = concluido ? 'done' : i === doneTo ? 'now' : 'next';
+    const label = concluido ? '✓' : i === doneTo ? '▶' : (i+1);
     const series = ex.series_template || [];
     const maxCarga = series.length ? Math.max(...series.map(s => s.carga_kg||0)) : 0;
     const detail = ex.tipo === 'cardio'
@@ -2228,6 +2231,13 @@ function toggleSerie(si) {
   }
   // Salva série executada no banco
   salvarSerieExecutada(si);
+  // Verifica se todas as séries foram concluídas
+  const totalSeries = (state.exerciciosAtual[state.execIdx]?.series_template || []).length;
+  const concluidas = document.querySelectorAll(`[id^="sr-"] .sn.done`).length;
+  if (concluidas >= totalSeries) {
+    state.exsConcluidos.add(state.execIdx);
+    renderExOverview(state.execIdx);
+  }
 }
 
 function editCarga(si) {
@@ -3302,9 +3312,11 @@ async function concluirCardio() {
     });
   }
 
-  // Marca como concluído visualmente
+  // Marca como concluído visualmente e na visão geral
   ex._cardio_concluido = true;
+  state.exsConcluidos.add(state.execIdx);
   renderExec();
+  renderExOverview(state.execIdx);
   showToast('Cardio concluído! ✓');
 }
 

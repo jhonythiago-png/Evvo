@@ -1788,6 +1788,48 @@ select.form-input option{background:#0e0e1a;color:#fff}
     </div>
   </div>
 
+
+  <!-- ══════════ TELA: DETALHE DA SESSÃO ══════════ -->
+  <div class="screen" id="screen-detalhe-sessao">
+    <div class="scroll">
+      <div class="back-row">
+        <button class="btn-back" onclick="voltarParaHistorico()">
+          <svg viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg>
+        </button>
+        <span class="back-label">Histórico</span>
+      </div>
+
+      <div class="hero" style="padding-top:12px">
+        <div class="hero-glow"></div>
+        <div class="hero-label" id="sessao-data-label">—</div>
+        <div class="hero-title" id="sessao-titulo">Treino</div>
+        <div class="hero-sub" id="sessao-ficha">—</div>
+      </div>
+
+      <!-- Stats da sessão -->
+      <div style="display:flex;gap:8px;padding:0 16px 16px">
+        <div style="flex:1;background:var(--bg2);border-radius:14px;border:1px solid var(--border);padding:14px;text-align:center">
+          <div style="font-size:22px;font-weight:900;color:var(--text);line-height:1" id="sessao-volume">—</div>
+          <div style="font-size:9px;color:var(--text3);text-transform:uppercase;letter-spacing:.1em;margin-top:4px">Volume</div>
+        </div>
+        <div style="flex:1;background:var(--bg2);border-radius:14px;border:1px solid var(--border);padding:14px;text-align:center">
+          <div style="font-size:22px;font-weight:900;color:var(--text);line-height:1" id="sessao-duracao">—</div>
+          <div style="font-size:9px;color:var(--text3);text-transform:uppercase;letter-spacing:.1em;margin-top:4px">Duração</div>
+        </div>
+        <div style="flex:1;background:var(--bg2);border-radius:14px;border:1px solid var(--border);padding:14px;text-align:center">
+          <div style="font-size:22px;font-weight:900;color:var(--text);line-height:1" id="sessao-series">—</div>
+          <div style="font-size:9px;color:var(--text3);text-transform:uppercase;letter-spacing:.1em;margin-top:4px">Séries</div>
+        </div>
+      </div>
+
+      <!-- Exercícios executados -->
+      <div class="sec-lbl">Exercícios realizados</div>
+      <div id="sessao-exercicios" style="padding:0 16px;display:flex;flex-direction:column;gap:10px"></div>
+
+      <div style="height:20px"></div>
+    </div>
+  </div>
+
   <!-- ══════════ MODAL NOVA FICHA ══════════ -->
   <div class="modal-overlay" id="modal-ficha">
     <div class="modal">
@@ -3283,8 +3325,117 @@ async function loadHistorico() {
 }
 
 async function abrirDetalhesSessao(sessaoId) {
-  // Por enquanto só mostra toast — detalhe completo vem na Parte 2
-  showToast('Detalhes em breve!');
+  // Carrega sessão completa com exercícios e séries
+  const { data: sessao, error } = await sb.from('sessoes')
+    .select(`*, dias_treino(nome, dia_semana), fichas(nome)`)
+    .eq('id', sessaoId)
+    .single();
+
+  if (error || !sessao) { showToast('Erro ao carregar treino'); return; }
+
+  // Carrega séries executadas com nome do exercício
+  const { data: series } = await sb.from('series_executadas')
+    .select(`*, exercicios(nome, tipo, grupo_muscular)`)
+    .eq('sessao_id', sessaoId)
+    .eq('concluida', true)
+    .order('executado_em');
+
+  // ── Header ──
+  const inicio  = new Date(sessao.iniciado_em);
+  const fim     = sessao.finalizado_em ? new Date(sessao.finalizado_em) : null;
+  const duracaoMin = fim ? Math.round((fim - inicio) / 60000) : 0;
+  const diasNomes = ['Domingo','Segunda-feira','Terça-feira','Quarta-feira','Quinta-feira','Sexta-feira','Sábado'];
+
+  document.getElementById('sessao-data-label').textContent =
+    inicio.toLocaleDateString('pt-BR', {day:'2-digit', month:'long', year:'numeric'});
+  document.getElementById('sessao-titulo').textContent = sessao.dias_treino?.nome || 'Treino';
+  document.getElementById('sessao-ficha').textContent = sessao.fichas?.nome || '—';
+
+  // ── Stats ──
+  const vol = sessao.volume_total_kg;
+  document.getElementById('sessao-volume').textContent = vol
+    ? (vol >= 1000 ? (vol/1000).toFixed(1)+'t' : vol+'kg') : '—';
+  document.getElementById('sessao-duracao').textContent = duracaoMin > 0 ? duracaoMin+'min' : '—';
+  document.getElementById('sessao-series').textContent = series?.length || 0;
+
+  // ── Agrupa séries por exercício ──
+  const exMap = {};
+  (series || []).forEach(s => {
+    const exId = s.exercicio_id;
+    if (!exMap[exId]) {
+      exMap[exId] = {
+        nome:  s.exercicios?.nome || '—',
+        tipo:  s.exercicios?.tipo || 'forca',
+        grupo: s.exercicios?.grupo_muscular || '',
+        series: []
+      };
+    }
+    exMap[exId].series.push(s);
+  });
+
+  // ── Renderiza exercícios ──
+  const cont = document.getElementById('sessao-exercicios');
+  const exList = Object.values(exMap);
+
+  if (!exList.length) {
+    cont.innerHTML = '<div style="padding:20px;text-align:center;color:var(--text3);font-size:13px">Nenhuma série registrada</div>';
+  } else {
+    cont.innerHTML = exList.map(ex => {
+      const isCardio = ex.tipo === 'cardio';
+      const iconeColor = isCardio ? 'ice' : 'fire';
+
+      const seriesHTML = isCardio
+        ? ex.series.map(s => `
+            <div style="display:flex;align-items:center;gap:8px;padding:8px 14px;border-top:1px solid var(--border)">
+              <div style="font-size:11px;color:var(--text3);font-weight:700">Cardio</div>
+              <div style="flex:1"></div>
+              ${s.repeticoes ? `<span style="font-size:13px;font-weight:800;color:var(--text)">${s.repeticoes}</span>` : ''}
+              ${s.carga_kg ? `<span style="font-size:11px;color:var(--text3)"> · ${s.carga_kg} km/h</span>` : ''}
+            </div>`).join('')
+        : ex.series.map((s, i) => `
+            <div style="display:grid;grid-template-columns:24px 1fr 1fr;gap:8px;padding:8px 14px;align-items:center;border-top:1px solid var(--border)">
+              <div style="width:22px;height:22px;border-radius:7px;background:#ff6a0025;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:900;color:var(--accent)">${i+1}</div>
+              <div style="text-align:center">
+                <div style="font-size:14px;font-weight:900;color:var(--text)">${s.carga_kg != null ? s.carga_kg+'kg' : '—'}</div>
+                <div style="font-size:8px;color:var(--text4);text-transform:uppercase;letter-spacing:.06em;margin-top:1px">carga</div>
+              </div>
+              <div style="text-align:center">
+                <div style="font-size:14px;font-weight:900;color:var(--text)">${s.repeticoes || '—'}</div>
+                <div style="font-size:8px;color:var(--text4);text-transform:uppercase;letter-spacing:.06em;margin-top:1px">reps</div>
+              </div>
+            </div>`).join('');
+
+      return `<div style="background:var(--bg2);border-radius:16px;border:1px solid var(--border);overflow:hidden">
+        <div style="padding:13px 14px;display:flex;align-items:center;gap:10px">
+          <div class="card-icon ${iconeColor}">
+            <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              ${isCardio
+                ? '<path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/>'
+                : '<path d="M6 4v16M18 4v16M3 8h3M18 8h3M3 16h3M18 16h3M6 12h12"/>'}
+            </svg>
+          </div>
+          <div style="flex:1;min-width:0">
+            <div style="font-size:13px;font-weight:800;color:var(--text)">${ex.nome}</div>
+            <div style="font-size:10px;color:var(--text3);margin-top:2px">${ex.grupo} · ${ex.series.length} ${isCardio?'sessão':'série'+(ex.series.length!==1?'s':'')}</div>
+          </div>
+          <div style="width:22px;height:22px;border-radius:7px;background:#39d35320;display:flex;align-items:center;justify-content:center">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#39d353" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+          </div>
+        </div>
+        ${seriesHTML}
+      </div>`;
+    }).join('');
+  }
+
+  goTo('screen-detalhe-sessao');
+}
+
+function voltarParaHistorico() {
+  goTo('screen-evolucao');
+  setTimeout(() => {
+    const tabHistorico = document.querySelectorAll('.itab')[2];
+    if (tabHistorico) switchEvoTab('historico', tabHistorico);
+  }, 50);
 }
 
 

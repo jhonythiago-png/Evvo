@@ -2799,49 +2799,64 @@ async function renderHistoricoMedidas() {
 
   cont.innerHTML = hist.map((m, i) => {
     const prev = hist[i+1];
-    const dateFmt = new Date(m.data_registro + 'T12:00:00').toLocaleDateString('pt-BR', {day:'2-digit',month:'short',year:'numeric'});
+    const dateFmt = new Date(m.data_registro + 'T12:00:00').toLocaleDateString('pt-BR', {day:'2-digit', month:'long', year:'numeric'});
+    const dateShort = new Date(m.data_registro + 'T12:00:00');
+    const dia = dateShort.getDate();
+    const mes = dateShort.toLocaleDateString('pt-BR', {month:'short'}).replace('.','');
+    const ano = dateShort.getFullYear();
     const pesoStr = m.peso_kg ? m.peso_kg + ' kg' : '—';
     const pesoPrev = prev?.peso_kg;
     const pesoDelta = m.peso_kg && pesoPrev ? (m.peso_kg - pesoPrev).toFixed(1) : null;
 
     const campos = [
-      {k:'braco_d_cm',l:'Braço D'},{k:'braco_e_cm',l:'Braço E'},
-      {k:'peito_cm',l:'Peito'},{k:'cintura_cm',l:'Cintura'},
-      {k:'gluteo_cm',l:'Glúteo'},{k:'coxa_d_cm',l:'Coxa D'},
-      {k:'ombros_cm',l:'Ombros'},{k:'coxa_e_cm',l:'Coxa E'},
-      {k:'abdomen_cm',l:'Abdômen'},{k:'panturrilha_cm',l:'Panturr.'},
+      {k:'peito_cm',l:'Peito'},
+      {k:'cintura_cm',l:'Cintura'},
+      {k:'braco_d_cm',l:'Braço D'},
+      {k:'gluteo_cm',l:'Glúteo'},
+      {k:'coxa_d_cm',l:'Coxa'},
+      {k:'ombros_cm',l:'Ombros'},
     ];
-    const chips = campos
-      .filter(c => m[c.k])
-      .map(c => {
-        const d = prev && prev[c.k] ? (m[c.k] - prev[c.k]).toFixed(1) : null;
-        const negativo = ['cintura_cm','abdomen_cm'].includes(c.k);
-        const col = d ? (parseFloat(d) > 0 ? (negativo?'#39d353':'#ff6a00') : (negativo?'#ff6a00':'#39d353')) : 'var(--text4)';
-        return `<span style="background:var(--border);border-radius:6px;padding:3px 8px;font-size:10px;font-weight:700;color:${col}">${c.l}: ${m[c.k]}${d?' ('+(parseFloat(d)>0?'+':'')+d+')':''}cm</span>`;
-      }).join('');
 
-    return `<div style="background:var(--bg2);border-radius:14px;border:1px solid var(--border);padding:14px;margin-bottom:8px">
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
-        <div>
+    const metricas = campos.filter(c => m[c.k]).map(c => {
+      const d = prev && prev[c.k] ? (m[c.k] - prev[c.k]).toFixed(1) : null;
+      const negativo = ['cintura_cm','abdomen_cm'].includes(c.k);
+      const col = d ? (parseFloat(d) > 0 ? (negativo?'#39d353':'#ff6a00') : (negativo?'#ff6a00':'#39d353')) : 'var(--text3)';
+      const seta = d ? (parseFloat(d) > 0 ? '↑' : '↓') : '';
+      return `<div style="flex:1;min-width:calc(33% - 4px);background:var(--bg3);border-radius:8px;padding:8px 6px;text-align:center">
+        <div style="font-size:14px;font-weight:900;color:var(--text)">${m[c.k]}<span style="font-size:9px;color:var(--text3)">cm</span></div>
+        <div style="font-size:9px;color:var(--text3);margin-top:1px">${c.l}</div>
+        ${d ? `<div style="font-size:9px;font-weight:800;color:${col};margin-top:2px">${seta}${Math.abs(d)}cm</div>` : ''}
+      </div>`;
+    }).join('');
+
+    return `<div onclick="editarMedida('${m.id}')"
+      style="background:var(--bg2);border-radius:16px;border:1px solid var(--border);overflow:hidden;margin-bottom:10px;cursor:pointer;transition:background .15s"
+      onmousedown="this.style.background='var(--bg3)'" onmouseup="this.style.background='var(--bg2)'" ontouchstart="this.style.background='var(--bg3)'" ontouchend="this.style.background='var(--bg2)'">
+
+      <div style="padding:14px 14px 12px;display:flex;align-items:center;gap:12px;border-bottom:1px solid var(--border)">
+        <div style="width:44px;height:44px;border-radius:12px;background:var(--grad);display:flex;flex-direction:column;align-items:center;justify-content:center;flex-shrink:0">
+          <span style="font-size:15px;font-weight:900;color:#fff;line-height:1">${dia}</span>
+          <span style="font-size:8px;font-weight:700;color:#ffffffcc;text-transform:uppercase">${mes}</span>
+        </div>
+        <div style="flex:1">
           <div style="font-size:13px;font-weight:800;color:var(--text)">${dateFmt}</div>
-          <div style="font-size:10px;color:var(--text3);margin-top:2px">${i===0?'Mais recente':'Avaliação anterior'}</div>
+          <div style="font-size:10px;color:var(--text3);margin-top:2px">${i===0?'✦ Avaliação mais recente':'Avaliação passada'}</div>
         </div>
-        <div style="display:flex;align-items:center;gap:8px">
-          <div style="text-align:right">
-            <div style="font-size:18px;font-weight:900;color:var(--text)">${pesoStr}</div>
-            ${pesoDelta ? `<div style="font-size:10px;font-weight:800;color:${parseFloat(pesoDelta)<=0?'#39d353':'#ff6a00'}">${parseFloat(pesoDelta)>0?'+':''}${pesoDelta}kg</div>` : ''}
-          </div>
-          <div style="display:flex;flex-direction:column;gap:5px">
-            <button class="btn-sm edit" onclick="editarMedida('${m.id}')" title="Editar">
-              <svg viewBox="0 0 24 24"><path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"/></svg>
-            </button>
-            <button class="btn-sm del" onclick="deletarMedida('${m.id}')" title="Excluir">
-              <svg viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg>
-            </button>
-          </div>
+        <div style="text-align:right;flex-shrink:0">
+          <div style="font-size:20px;font-weight:900;color:var(--text);line-height:1">${pesoStr}</div>
+          ${pesoDelta ? `<div style="font-size:10px;font-weight:800;color:${parseFloat(pesoDelta)<=0?'#39d353':'#ff6a00'};margin-top:2px">${parseFloat(pesoDelta)>0?'↑':'↓'}${Math.abs(pesoDelta)}kg</div>` : ''}
         </div>
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--text4)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
       </div>
-      <div style="display:flex;gap:5px;flex-wrap:wrap">${chips}</div>
+
+      ${metricas ? `<div style="display:flex;gap:4px;flex-wrap:wrap;padding:10px 12px">${metricas}</div>` : ''}
+
+      <div style="padding:8px 14px;display:flex;justify-content:flex-end">
+        <button onclick="event.stopPropagation();deletarMedida('${m.id}')"
+          style="font-size:10px;font-weight:700;color:#ee097988;background:none;border:none;cursor:pointer;padding:4px 8px">
+          Excluir registro
+        </button>
+      </div>
     </div>`;
   }).join('');
 }

@@ -2281,10 +2281,10 @@ async function loadFichas() {
 // ═══════════════════════════════════════════
 function gerarBonecoHTML(medida, sexo) {
   const s = sexo || 'neutro';
+  const med = medida || {};
 
-  // SVG do boneco — viewBox 100x220, desenhado de frente
-  // Proporções: cabeça 0-36, pescoço 36-46, tronco 46-120, braços 46-150, quadril 120-148, pernas 148-210, pés 210-220
-  const svgMasc = `<svg viewBox="0 0 100 220" fill="none" xmlns="http://www.w3.org/2000/svg" width="100%" height="100%">
+  // SVG boneco original (neutro/masculino/feminino)
+  const svgNeutro = `<svg viewBox="0 0 100 220" fill="none" xmlns="http://www.w3.org/2000/svg" width="100%" height="100%">
     <circle cx="50" cy="18" r="14" stroke="#ff6a00" stroke-width="1.8" fill="#ff6a0015"/>
     <line x1="50" y1="32" x2="50" y2="40" stroke="#ff6a00" stroke-width="1.8"/>
     <path d="M24 46 L22 44 Q50 38 78 44 L76 46 L73 108 Q50 114 27 108 Z" stroke="#ff6a00" stroke-width="1.8" fill="#ff6a000d"/>
@@ -2307,12 +2307,8 @@ function gerarBonecoHTML(medida, sexo) {
     <path d="M36 6 Q50 2 64 6" stroke="#ff6a00" stroke-width="2" fill="none"/>
     <circle cx="50" cy="19" r="13" stroke="#ff6a00" stroke-width="1.8" fill="#0e0e1a"/>
     <path d="M38 14 Q50 9 62 14" stroke="#ff6a00" stroke-width="2.5" stroke-linecap="round"/>
-    <circle cx="45" cy="19" r="1.2" fill="#ff6a00"/>
-    <circle cx="55" cy="19" r="1.2" fill="#ff6a00"/>
-    <path d="M45 25 Q50 28 55 25" stroke="#ff6a00" stroke-width="1" fill="none" stroke-linecap="round"/>
     <line x1="50" y1="32" x2="50" y2="40" stroke="#ff6a00" stroke-width="1.6"/>
     <path d="M30 44 L28 42 Q50 37 72 42 L70 44 L68 74 Q60 82 50 84 Q40 82 32 74 Z" stroke="#ff6a00" stroke-width="1.8" fill="#ff6a000d"/>
-    <path d="M35 62 Q43 70 50 67 Q57 70 65 62" stroke="#ff6a00" stroke-width="1" fill="none" opacity=".5"/>
     <path d="M30 46 L16 84 Q17 89 22 87 L30 56" stroke="#ff6a00" stroke-width="1.8" stroke-linecap="round" fill="none"/>
     <path d="M70 46 L84 84 Q83 89 78 87 L70 56" stroke="#ff6a00" stroke-width="1.8" stroke-linecap="round" fill="none"/>
     <ellipse cx="16" cy="90" rx="3.5" ry="4.5" stroke="#ff6a00" stroke-width="1.5" fill="#ff6a0015"/>
@@ -2327,61 +2323,41 @@ function gerarBonecoHTML(medida, sexo) {
     <path d="M70 202 Q76 204 80 203 Q82 206 78 207 L64 207 L62 202Z" stroke="#ff6a00" stroke-width="1.2" fill="#ff6a0015"/>
   </svg>`;
 
-  const svgNeutro = svgMasc;
-  const svgMap = { masculino: svgMasc, feminino: svgFem, neutro: svgNeutro };
+  const svgMap = { masculino: svgNeutro, feminino: svgFem, neutro: svgNeutro };
   const svgAtual = svgMap[s] || svgNeutro;
 
-  const med = medida || {};
-
-  // Etiquetas com top% calibrado para cada região anatômica do boneco
-  // O boneco tem altura total de 220 unidades no viewBox
-  // O container do boneco tem height:340px
-  // Cabeça: 0-32 = top 0-14%
-  // Ombros/peito: 44-70 = top 20-32%
-  // Braços: 50-95 = top 23-43%
-  // Cintura: 95-115 = top 43-52%
-  // Quadril/glúteo: 115-135 = top 52-61%
-  // Coxa: 140-175 = top 64-80%
-  // Panturrilha: 175-205 = top 80-93%
-  const etiquetas = [
-    { l:'Ombros',   v: med.ombros_cm,       lado:'L', top: 24 },
-    { l:'Peito',    v: med.peito_cm,         lado:'R', top: 30 },
-    { l:'Braço D',  v: med.braco_d_cm,       lado:'L', top: 42 },
-    { l:'Braço E',  v: med.braco_e_cm,       lado:'R', top: 42 },
-    { l:'Cintura',  v: med.cintura_cm,       lado:'L', top: 55 },
-    { l:'Abdômen',  v: med.abdomen_cm,       lado:'R', top: 55 },
-    { l:'Glúteo',   v: med.gluteo_cm,        lado:'L', top: 66 },
-    { l:'Panturr.', v: med.panturrilha_cm,   lado:'R', top: 66 },
-    { l:'Coxa D',   v: med.coxa_d_cm,        lado:'L', top: 77 },
-    { l:'Coxa E',   v: med.coxa_e_cm,        lado:'R', top: 77 },
+  // Coluna esquerda: direito do usuário (como espelho)
+  const esquerda = [
+    { l:'Ombros',  v: med.ombros_cm   },
+    { l:'Braço D', v: med.braco_d_cm  },
+    { l:'Cintura', v: med.cintura_cm  },
+    { l:'Glúteo',  v: med.gluteo_cm   },
+    { l:'Coxa D',  v: med.coxa_d_cm   },
   ];
 
-  const tagsHTML = etiquetas.map(e => {
-    const valStr = e.v
-      ? `<span style="font-size:15px;font-weight:900;color:var(--text);line-height:1">${e.v}</span><span style="font-size:9px;color:var(--text3);margin-left:1px">cm</span>`
-      : `<span style="font-size:11px;font-weight:600;color:var(--text4)">—</span>`;
+  // Coluna direita: esquerdo do usuário
+  const direita = [
+    { l:'Peito',    v: med.peito_cm       },
+    { l:'Braço E',  v: med.braco_e_cm     },
+    { l:'Abdômen',  v: med.abdomen_cm     },
+    { l:'Panturr.', v: med.panturrilha_cm },
+    { l:'Coxa E',   v: med.coxa_e_cm      },
+  ];
 
-    if (e.lado === 'L') {
-      return `<div style="position:absolute;left:0;top:${e.top}%;transform:translateY(-50%);display:flex;align-items:center;gap:4px;width:38%">
-        <div style="flex:1;text-align:right">
-          <div style="font-size:8px;color:var(--text4);font-weight:700;text-transform:uppercase;letter-spacing:.05em;line-height:1">${e.l}</div>
-          <div style="margin-top:2px">${valStr}</div>
-        </div>
-        <div style="width:14px;height:1px;background:#ff6a0055;flex-shrink:0"></div>
+  function renderCol(items, align) {
+    return items.map(item => {
+      const val = item.v
+        ? `<span style="font-size:16px;font-weight:900;color:var(--text);line-height:1">${item.v}</span><span style="font-size:9px;color:var(--text3);margin-left:1px">cm</span>`
+        : `<span style="font-size:12px;color:var(--text4)">—</span>`;
+      return `<div style="text-align:${align};flex:1">
+        <div style="font-size:8px;color:var(--text4);font-weight:700;text-transform:uppercase;letter-spacing:.06em;line-height:1">${item.l}</div>
+        <div style="margin-top:3px">${val}</div>
       </div>`;
-    } else {
-      return `<div style="position:absolute;right:0;top:${e.top}%;transform:translateY(-50%);display:flex;align-items:center;gap:4px;width:38%">
-        <div style="width:14px;height:1px;background:#ff6a0055;flex-shrink:0"></div>
-        <div style="flex:1;text-align:left">
-          <div style="font-size:8px;color:var(--text4);font-weight:700;text-transform:uppercase;letter-spacing:.05em;line-height:1">${e.l}</div>
-          <div style="margin-top:2px">${valStr}</div>
-        </div>
-      </div>`;
-    }
-  }).join('');
+    }).join('');
+  }
 
-  const pesoVal  = med.peso_kg   || '—';
-  const altVal   = med.altura_cm ? med.altura_cm + ' m' : '—';
+  const pesoVal = med.peso_kg   || '—';
+  const altVal  = med.altura_cm ? med.altura_cm + ' m' : '—';
   const sexoIcon = s === 'masculino' ? '♂' : s === 'feminino' ? '♀' : '—';
   const sexoTxt  = s === 'masculino' ? 'Masculino' : s === 'feminino' ? 'Feminino' : 'Não inf.';
 
@@ -2402,9 +2378,14 @@ function gerarBonecoHTML(medida, sexo) {
         <div style="font-size:9px;color:var(--text3);text-transform:uppercase;letter-spacing:.08em;margin-top:3px">${sexoTxt}</div>
       </div>
     </div>
-    <div style="position:relative;width:100%;height:340px;display:flex;justify-content:center;align-items:flex-start;padding-top:12px">
-      <div style="width:120px;height:310px;flex-shrink:0">${svgAtual}</div>
-      ${tagsHTML}
+    <div style="display:flex;align-items:center;padding:16px 12px;gap:8px">
+      <div style="display:flex;flex-direction:column;gap:14px;flex:1">
+        ${renderCol(esquerda, 'right')}
+      </div>
+      <div style="width:100px;height:200px;flex-shrink:0">${svgAtual}</div>
+      <div style="display:flex;flex-direction:column;gap:14px;flex:1">
+        ${renderCol(direita, 'left')}
+      </div>
     </div>
   `;
 }

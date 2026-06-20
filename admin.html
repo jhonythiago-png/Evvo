@@ -429,6 +429,19 @@ async function init() {
   } else {
     showLogin();
   }
+
+  // Detecta login em tempo real
+  sb.auth.onAuthStateChange((_event, session) => {
+    if (session) {
+      const username = session.user.email.replace('@evvo.app','');
+      if (username === ADMIN_USER) {
+        showApp(username);
+      } else {
+        sb.auth.signOut();
+        showLogin();
+      }
+    }
+  });
 }
 
 function showLogin() {
@@ -456,9 +469,9 @@ async function doAdminLogin() {
   if (!user || !pass) { err.textContent = 'Preencha usuário e senha.'; err.style.display = 'block'; return; }
   if (user !== ADMIN_USER) { err.textContent = 'Acesso negado.'; err.style.display = 'block'; return; }
 
-  const { error } = await sb.auth.signInWithPassword({ email: user + '@evvo.app', password: pass });
+  const { data, error } = await sb.auth.signInWithPassword({ email: user + '@evvo.app', password: pass });
   if (error) { err.textContent = 'Usuário ou senha incorretos.'; err.style.display = 'block'; return; }
-  showApp(user);
+  if (data?.session) showApp(user);
 }
 
 async function doLogout() {

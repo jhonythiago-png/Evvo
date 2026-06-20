@@ -43,8 +43,9 @@ a{text-decoration:none;color:inherit}
   justify-content:center;
   padding:32px;
   background:var(--bg);
+  flex-direction:column;
 }
-#screen-login.active{display:flex}
+#screen-login.active{display:flex!important}
 .login-box{width:100%;max-width:380px;display:flex;flex-direction:column;align-items:center;gap:0}
 .login-logo{display:flex;flex-direction:column;align-items:center;margin-bottom:40px;gap:14px}
 .login-logo h1{font-size:32px;font-weight:900;letter-spacing:-1.5px;color:var(--text)}
@@ -445,14 +446,25 @@ async function init() {
 }
 
 function showLogin() {
-  document.getElementById('loading').style.display = 'none';
-  document.getElementById('screen-login').classList.add('active');
+  const loading = document.getElementById('loading');
+  const login   = document.getElementById('screen-login');
+  const app     = document.getElementById('app');
+
+  if (loading) loading.style.display = 'none';
+  if (app)     { app.classList.remove('active'); app.style.display = 'none'; }
+  if (login)   { login.classList.add('active'); login.style.display = 'flex'; }
 }
 
 function showApp(username) {
-  document.getElementById('loading').style.display = 'none';
-  document.getElementById('screen-login').classList.remove('active');
-  document.getElementById('app').classList.add('active');
+  // Esconde tudo
+  const loading = document.getElementById('loading');
+  const login   = document.getElementById('screen-login');
+  const app     = document.getElementById('app');
+
+  if (loading) loading.style.display = 'none';
+  if (login)   { login.classList.remove('active'); login.style.display = 'none'; }
+  if (app)     { app.classList.add('active'); app.style.display = 'flex'; }
+
   document.getElementById('admin-user-label').textContent = '@' + username;
   loadDashboard();
 }
@@ -470,8 +482,14 @@ async function doAdminLogin() {
   if (user !== ADMIN_USER) { err.textContent = 'Acesso negado.'; err.style.display = 'block'; return; }
 
   const { data, error } = await sb.auth.signInWithPassword({ email: user + '@evvo.app', password: pass });
-  if (error) { err.textContent = 'Usuário ou senha incorretos.'; err.style.display = 'block'; return; }
-  if (data?.session) showApp(user);
+  if (error) {
+    console.error('Login error:', error);
+    err.textContent = 'Usuário ou senha incorretos.';
+    err.style.display = 'block';
+    return;
+  }
+  console.log('Login OK:', data?.session?.user?.email);
+  showApp(user);
 }
 
 async function doLogout() {

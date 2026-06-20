@@ -2433,13 +2433,38 @@ async function criarFicha() {
 }
 
 async function loadFichas() {
-  const { data } = await sb.from('fichas').select('*').eq('user_id', state.user.id).order('created_at',{ascending:false});
   const list = document.getElementById('fichas-list');
-  if (!data || !data.length) {
+
+  const { data: fichas } = await sb.from('fichas')
+    .select('*')
+    .eq('user_id', state.user.id)
+    .order('created_at', { ascending: false });
+
+  if (!fichas || !fichas.length) {
     list.innerHTML = '<div style="padding:20px;text-align:center;color:var(--text3);font-size:13px">Nenhuma ficha ainda</div>';
     return;
   }
-  list.innerHTML = data.map(f => `
+
+  // Para cada ficha busca dias e sessoes realizadas
+  const fichasComDados = await Promise.all(fichas.map(async f => {
+    const [{ count: totalDias }, { data: sessoes }] = await Promise.all([
+      sb.from('dias_treino').select('id', { count: 'exact', head: true }).eq('ficha_id', f.id),
+      sb.from('sessoes').select('volume_total_kg').eq('ficha_id', f.id).not('finalizado_em', 'is', null)
+    ]);
+    const totalSessoes = sessoes?.length || 0;
+    const volumeTotal  = sessoes?.reduce((acc, s) => acc + (s.volume_total_kg || 0), 0) || 0;
+    const volumeMedio  = totalSessoes > 0 ? Math.round(volumeTotal / totalSessoes) : 0;
+    const inicio = new Date(f.created_at).toLocaleDateString('pt-BR', { day:'2-digit', month:'short', year:'numeric' });
+    const fim    = f.archived_at ? new Date(f.archived_at).toLocaleDateString('pt-BR', { day:'2-digit', month:'short' }) : 'hoje';
+    return { ...f, totalDias: totalDias || 0, totalSessoes, volumeMedio, inicio, fim };
+  }));
+
+  list.innerHTML = fichasComDados.map(f => {
+    const nomeEscapado = f.nome.replace(/'/g, "\'");
+    const volStr = f.volumeMedio >= 1000
+      ? (f.volumeMedio/1000).toFixed(1) + 't'
+      : f.volumeMedio > 0 ? f.volumeMedio + 'kg' : '—';
+    return `
     <div class="ficha-card ${f.status==='ativa'?'ativa':''}">
       <div class="ficha-top">
         <div class="ficha-ico ${f.status==='ativa'?'fire':'arch'}">
@@ -2451,14 +2476,22 @@ async function loadFichas() {
         </div>
         <div class="ficha-info">
           <div class="ficha-name">${f.nome}</div>
-          <div class="ficha-meta">${new Date(f.created_at).toLocaleDateString('pt-BR')} ${f.status==='arquivada'?'· arquivada':''}</div>
+          <div class="ficha-meta">${f.inicio}${f.status==='arquivada'?' → '+f.fim:''}</div>
         </div>
         <div style="display:flex;gap:6px;align-items:center;flex-shrink:0">
           <span class="card-badge ${f.status==='ativa'?'badge-accent':'badge-muted'}">${f.status==='ativa'?'Ativa':'Arq.'}</span>
-          <button class="btn-sm" style="background:var(--border)" onclick="editarNomeFicha('${f.id}','${f.nome.replace(/'/g, String.fromCharCode(92)+'\'')}')" title="Renomear"><svg viewBox="0 0 24 24" fill="none" stroke="var(--text3)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"/></svg></button>
+          <button class="btn-sm" style="background:var(--border)" onclick="editarNomeFicha('${f.id}','${nomeEscapado}')" title="Renomear">
+            <svg viewBox="0 0 24 24" fill="none" stroke="var(--text3)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"/></svg>
+          </button>
         </div>
       </div>
-    </div>`).join('');
+      <div class="ficha-stats">
+        <div class="fst"><div class="v">${f.totalDias}</div><div class="l">Dias</div></div>
+        <div class="fst"><div class="v">${f.totalSessoes}</div><div class="l">Treinos</div></div>
+        <div class="fst"><div class="v">${volStr}</div><div class="l">Vol. médio</div></div>
+      </div>
+    </div>`;
+  }).join('');
 }
 
 // ═══════════════════════════════════════════

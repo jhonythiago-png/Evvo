@@ -2272,8 +2272,9 @@ function prevEx() {
 
 async function finalizarTreino() {
   await encerrarSessao();
+  state.exsConcluidos = new Set();
   showToast('🎉 Treino finalizado!');
-  goTo('screen-dia');
+  goTo('screen-treino');
 }
 
 // ═══════════════════════════════════════════

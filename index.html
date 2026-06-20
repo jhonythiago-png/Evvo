@@ -2145,9 +2145,49 @@ function renderExec() {
     ? `<svg viewBox="0 0 24 24" style="width:16px;height:16px;stroke:#fff;fill:none;stroke-width:2.5;stroke-linecap:round;stroke-linejoin:round"><polyline points="20 6 9 17 4 12"/></svg> Finalizar`
     : `Próximo <svg viewBox="0 0 24 24" style="width:16px;height:16px;stroke:#fff;fill:none;stroke-width:2.5;stroke-linecap:round;stroke-linejoin:round"><polyline points="9 18 15 12 9 6"/></svg>`;
 
-  // séries
-  const series = ex.series_template || [];
   const cont = document.getElementById('exec-series');
+
+  // ── CARDIO: tela própria ──
+  if (ex.tipo === 'cardio') {
+    const serie = (ex.series_template || [])[0] || {};
+    const jaFeito = ex._cardio_concluido || false;
+    cont.innerHTML = `
+      <div style="padding:16px 0 8px">
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:16px">
+          <div style="background:var(--border);border:1px solid var(--border2);border-radius:12px;padding:12px 8px;text-align:center">
+            <input type="number" id="cardio-dur"
+              style="background:none;border:none;outline:none;font-size:22px;font-weight:900;color:var(--text);width:100%;text-align:center"
+              value="${serie.duracao_min || ''}" placeholder="30">
+            <div style="font-size:9px;color:var(--text3);text-transform:uppercase;letter-spacing:.08em;margin-top:4px">min</div>
+          </div>
+          <div style="background:var(--border);border:1px solid var(--border2);border-radius:12px;padding:12px 8px;text-align:center">
+            <input type="number" id="cardio-vel"
+              style="background:none;border:none;outline:none;font-size:22px;font-weight:900;color:var(--text);width:100%;text-align:center"
+              value="${serie.velocidade || ''}" placeholder="6.5" step="0.5">
+            <div style="font-size:9px;color:var(--text3);text-transform:uppercase;letter-spacing:.08em;margin-top:4px">km/h</div>
+          </div>
+          <div style="background:var(--border);border:1px solid var(--border2);border-radius:12px;padding:12px 8px;text-align:center">
+            <input type="number" id="cardio-inc"
+              style="background:none;border:none;outline:none;font-size:22px;font-weight:900;color:var(--text);width:100%;text-align:center"
+              value="${serie.inclinacao || ''}" placeholder="0" step="0.5">
+            <div style="font-size:9px;color:var(--text3);text-transform:uppercase;letter-spacing:.08em;margin-top:4px">inclin %</div>
+          </div>
+        </div>
+        <button onclick="concluirCardio()" id="btn-cardio-ok"
+          style="width:100%;padding:14px;border-radius:14px;font-size:13px;font-weight:900;text-transform:uppercase;letter-spacing:.1em;
+          background:${jaFeito ? '#39d35330' : 'var(--grad)'};
+          color:${jaFeito ? '#39d353' : '#fff'};
+          border:${jaFeito ? '1px solid #39d35355' : 'none'}">
+          ${jaFeito
+            ? '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle;margin-right:6px"><polyline points="20 6 9 17 4 12"/></svg> Cardio concluído'
+            : '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle;margin-right:6px"><polygon points="5 3 19 12 5 21 5 3"/></svg> Marcar como concluído'}
+        </button>
+      </div>`;
+    return;
+  }
+
+  // ── FORÇA: séries normais ──
+  const series = ex.series_template || [];
   if (!series.length) {
     cont.innerHTML = '<div style="padding:12px 0;text-align:center;color:var(--text3);font-size:12px">Nenhuma série cadastrada</div>';
     return;
@@ -3234,6 +3274,38 @@ async function loadHistorico() {
 async function abrirDetalhesSessao(sessaoId) {
   // Por enquanto só mostra toast — detalhe completo vem na Parte 2
   showToast('Detalhes em breve!');
+}
+
+
+// ═══════════════════════════════════════════
+// CARDIO — CONCLUIR
+// ═══════════════════════════════════════════
+async function concluirCardio() {
+  const ex = state.exerciciosAtual[state.execIdx];
+  if (!ex || ex.tipo !== 'cardio') return;
+
+  // Lê valores digitados
+  const dur = parseFloat(document.getElementById('cardio-dur')?.value) || null;
+  const vel = parseFloat(document.getElementById('cardio-vel')?.value) || null;
+  const inc = parseFloat(document.getElementById('cardio-inc')?.value) || null;
+
+  // Salva no banco como série executada
+  if (state.sessaoAtiva) {
+    await sb.from('series_executadas').insert({
+      sessao_id:    state.sessaoAtiva.id,
+      exercicio_id: ex.id,
+      numero_serie: 1,
+      carga_kg:     vel,       // velocidade guardada no campo carga
+      repeticoes:   dur ? String(dur) + ' min' : null,
+      concluida:    true,
+      executado_em: new Date().toISOString(),
+    });
+  }
+
+  // Marca como concluído visualmente
+  ex._cardio_concluido = true;
+  renderExec();
+  showToast('Cardio concluído! ✓');
 }
 
 // ═══════════════════════════════════════════

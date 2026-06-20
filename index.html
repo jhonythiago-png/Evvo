@@ -2242,6 +2242,8 @@ function renderExec() {
 
     // reset timer
     cardioState.duracaoPrevista = durMin * 60;
+    cardioState.velocidade = vel;    // guarda velocidade para usar ao finalizar
+    cardioState.inclinacao = incl;
     cardioState.iniciado = false;
     cardioState.inicio   = null;
     cardioState.concluido = ex._cardio_concluido || false;
@@ -2885,25 +2887,41 @@ async function abrirEditarEx(exId, nome, grupo, equip) {
   document.getElementById('editar-ex-title').textContent = nome;
   document.getElementById('editar-ex-meta').textContent = [grupo,equip].filter(Boolean).join(' · ');
 
+  // Busca tipo do exercício
+  const { data: exData } = await sb.from('exercicios').select('tipo').eq('id', exId).single();
+  editState.tipoExEditando = exData?.tipo || 'forca';
+
   // carrega series existentes
   const { data: series } = await sb.from('series_template')
     .select('*').eq('exercicio_id', exId).order('numero_serie');
 
-  editState.seriesEditor = series ? series.map(s => ({
-    id: s.id,
-    numero: s.numero_serie,
-    carga: s.carga_kg || '',
-    reps: s.repeticoes || '',
-    obs: s.observacao || ''
-  })) : [];
-
-  // se nao tem series, ja adiciona 3 para comecar
-  if (!editState.seriesEditor.length) {
-    editState.seriesEditor = [
-      {id:null,numero:1,carga:'',reps:'',obs:''},
-      {id:null,numero:2,carga:'',reps:'',obs:''},
-      {id:null,numero:3,carga:'',reps:'',obs:''},
-    ];
+  if (editState.tipoExEditando === 'cardio') {
+    // Para cardio: tempo e velocidade
+    editState.seriesEditor = series ? series.map(s => ({
+      id: s.id,
+      numero: s.numero_serie,
+      duracao: s.duracao_min || '',
+      velocidade: s.velocidade || '',
+      inclinacao: s.inclinacao || ''
+    })) : [];
+    if (!editState.seriesEditor.length) {
+      editState.seriesEditor = [{id:null,numero:1,duracao:'',velocidade:'',inclinacao:''}];
+    }
+  } else {
+    editState.seriesEditor = series ? series.map(s => ({
+      id: s.id,
+      numero: s.numero_serie,
+      carga: s.carga_kg || '',
+      reps: s.repeticoes || '',
+      obs: s.observacao || ''
+    })) : [];
+    if (!editState.seriesEditor.length) {
+      editState.seriesEditor = [
+        {id:null,numero:1,carga:'',reps:'',obs:''},
+        {id:null,numero:2,carga:'',reps:'',obs:''},
+        {id:null,numero:3,carga:'',reps:'',obs:''},
+      ];
+    }
   }
 
   renderSeriesEditor();
@@ -2912,38 +2930,77 @@ async function abrirEditarEx(exId, nome, grupo, equip) {
 
 function renderSeriesEditor() {
   const list = document.getElementById('series-editor-list');
-  list.innerHTML = editState.seriesEditor.map((s, i) => `
-    <div class="serie-editor-row">
-      <div class="se-num">${i+1}</div>
-      <input class="se-input" type="number" placeholder="kg" value="${s.carga}"
-        onchange="editState.seriesEditor[${i}].carga=this.value"
-        oninput="editState.seriesEditor[${i}].carga=this.value" step="0.5" min="0">
-      <input class="se-input" type="text" placeholder="10/15" value="${s.reps}"
-        onchange="editState.seriesEditor[${i}].reps=this.value"
-        oninput="editState.seriesEditor[${i}].reps=this.value" maxlength="8">
-      <input class="se-obs" type="text" placeholder="obs" value="${s.obs}"
-        onchange="editState.seriesEditor[${i}].obs=this.value"
-        oninput="editState.seriesEditor[${i}].obs=this.value" maxlength="20">
-      <button class="btn-del-serie" onclick="removerSerie(${i})">
-        <svg viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
-      </button>
-    </div>
-  `).join('');
+  const isCardio = editState.tipoExEditando === 'cardio';
+
+  // Atualiza cabeçalho da tabela
+  const header = list.closest('div').previousElementSibling;
+  if (header && header.style) {
+    const spans = header.querySelectorAll('span');
+    if (isCardio && spans.length >= 3) {
+      spans[1].textContent = 'Tempo (min)';
+      spans[2].textContent = 'Vel. km/h';
+      spans[3].textContent = 'Inclin. %';
+    }
+  }
+
+  if (isCardio) {
+    list.innerHTML = editState.seriesEditor.map((s, i) => `
+      <div class="serie-editor-row">
+        <div class="se-num">${i+1}</div>
+        <input class="se-input" type="number" placeholder="30" value="${s.duracao}"
+          onchange="editState.seriesEditor[${i}].duracao=this.value"
+          oninput="editState.seriesEditor[${i}].duracao=this.value" step="1" min="1">
+        <input class="se-input" type="number" placeholder="6.5" value="${s.velocidade}"
+          onchange="editState.seriesEditor[${i}].velocidade=this.value"
+          oninput="editState.seriesEditor[${i}].velocidade=this.value" step="0.5" min="0">
+        <input class="se-obs" type="number" placeholder="0" value="${s.inclinacao}"
+          onchange="editState.seriesEditor[${i}].inclinacao=this.value"
+          oninput="editState.seriesEditor[${i}].inclinacao=this.value" step="0.5" min="0">
+        <button class="btn-del-serie" onclick="removerSerie(${i})">
+          <svg viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        </button>
+      </div>
+    `).join('');
+  } else {
+    list.innerHTML = editState.seriesEditor.map((s, i) => `
+      <div class="serie-editor-row">
+        <div class="se-num">${i+1}</div>
+        <input class="se-input" type="number" placeholder="kg" value="${s.carga}"
+          onchange="editState.seriesEditor[${i}].carga=this.value"
+          oninput="editState.seriesEditor[${i}].carga=this.value" step="0.5" min="0">
+        <input class="se-input" type="text" placeholder="10/15" value="${s.reps}"
+          onchange="editState.seriesEditor[${i}].reps=this.value"
+          oninput="editState.seriesEditor[${i}].reps=this.value" maxlength="8">
+        <input class="se-obs" type="text" placeholder="obs" value="${s.obs}"
+          onchange="editState.seriesEditor[${i}].obs=this.value"
+          oninput="editState.seriesEditor[${i}].obs=this.value" maxlength="20">
+        <button class="btn-del-serie" onclick="removerSerie(${i})">
+          <svg viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        </button>
+      </div>
+    `).join('');
+  }
 }
 
 function addSerieEditor() {
   const n = editState.seriesEditor.length + 1;
-  // copia a carga da ultima serie como sugestao
   const ultima = editState.seriesEditor[editState.seriesEditor.length-1];
-  editState.seriesEditor.push({
-    id: null,
-    numero: n,
-    carga: ultima ? ultima.carga : '',
-    reps:  ultima ? ultima.reps  : '',
-    obs:   ''
-  });
+  if (editState.tipoExEditando === 'cardio') {
+    editState.seriesEditor.push({
+      id: null, numero: n,
+      duracao:    ultima ? ultima.duracao    : '',
+      velocidade: ultima ? ultima.velocidade : '',
+      inclinacao: ultima ? ultima.inclinacao : ''
+    });
+  } else {
+    editState.seriesEditor.push({
+      id: null, numero: n,
+      carga: ultima ? ultima.carga : '',
+      reps:  ultima ? ultima.reps  : '',
+      obs:   ''
+    });
+  }
   renderSeriesEditor();
-  // scroll para o fim
   const list = document.getElementById('series-editor-list');
   list.lastElementChild?.scrollIntoView({behavior:'smooth', block:'end'});
 }
@@ -2964,20 +3021,30 @@ async function salvarSeries() {
   // deleta as series existentes e recria (mais simples)
   await sb.from('series_template').delete().eq('exercicio_id', editState.exEditando);
 
+  const isCardio = editState.tipoExEditando === 'cardio';
   const inserts = series.map((s, i) => {
-    const repsNum = parseInt(s.reps);
-    const repsTexto = s.reps && isNaN(repsNum) ? s.reps : null;
-    return {
-      exercicio_id: editState.exEditando,
-      numero_serie: i + 1,
-      carga_kg:    s.carga !== '' ? parseFloat(s.carga) : null,
-      repeticoes:  !isNaN(repsNum) && s.reps !== '' ? repsNum : null,
-      observacao:  repsTexto || s.obs || null,
-      _reps_texto: s.reps // guardamos para exibir
-    };
+    if (isCardio) {
+      return {
+        exercicio_id: editState.exEditando,
+        numero_serie: i + 1,
+        duracao_min:  s.duracao    !== '' ? parseFloat(s.duracao)    : null,
+        velocidade:   s.velocidade !== '' ? parseFloat(s.velocidade) : null,
+        inclinacao:   s.inclinacao !== '' ? parseFloat(s.inclinacao) : null,
+        carga_kg:     null,
+        repeticoes:   null,
+      };
+    } else {
+      const repsNum = parseInt(s.reps);
+      const repsTexto = s.reps && isNaN(repsNum) ? s.reps : null;
+      return {
+        exercicio_id: editState.exEditando,
+        numero_serie: i + 1,
+        carga_kg:    s.carga !== '' ? parseFloat(s.carga) : null,
+        repeticoes:  !isNaN(repsNum) && s.reps !== '' ? String(s.reps) : null,
+        observacao:  repsTexto || s.obs || null,
+      };
+    }
   });
-  // remove campo virtual antes de enviar
-  inserts.forEach(r => delete r._reps_texto);
 
   const { error } = await sb.from('series_template').insert(inserts);
   if (error) { showToast('Erro ao salvar series'); return; }
@@ -3556,10 +3623,9 @@ async function finalizarCardio() {
   const ex = state.exerciciosAtual[state.execIdx];
   if (!ex) return;
 
-  // Busca a velocidade cadastrada para este cardio
-  const serie = (ex.series_template || [])[0] || {};
-  const vel   = serie.velocidade || null;
-  const incl  = serie.inclinacao || null;
+  // Pega velocidade/inclinação do estado (carregado no renderExec)
+  const vel  = cardioState.velocidade || null;
+  const incl = cardioState.inclinacao || null;
 
   // Formata tempo para exibição
   const minReal = Math.round(tempoFinalSeg / 60);
@@ -3945,6 +4011,8 @@ function renderExec() {
 
     // reset timer
     cardioState.duracaoPrevista = durMin * 60;
+    cardioState.velocidade = vel;    // guarda velocidade para usar ao finalizar
+    cardioState.inclinacao = incl;
     cardioState.iniciado = false;
     cardioState.inicio   = null;
     cardioState.concluido = ex._cardio_concluido || false;
@@ -4563,25 +4631,41 @@ async function abrirEditarEx(exId, nome, grupo, equip) {
   document.getElementById('editar-ex-title').textContent = nome;
   document.getElementById('editar-ex-meta').textContent = [grupo,equip].filter(Boolean).join(' · ');
 
+  // Busca tipo do exercício
+  const { data: exData } = await sb.from('exercicios').select('tipo').eq('id', exId).single();
+  editState.tipoExEditando = exData?.tipo || 'forca';
+
   // carrega series existentes
   const { data: series } = await sb.from('series_template')
     .select('*').eq('exercicio_id', exId).order('numero_serie');
 
-  editState.seriesEditor = series ? series.map(s => ({
-    id: s.id,
-    numero: s.numero_serie,
-    carga: s.carga_kg || '',
-    reps: s.repeticoes || '',
-    obs: s.observacao || ''
-  })) : [];
-
-  // se nao tem series, ja adiciona 3 para comecar
-  if (!editState.seriesEditor.length) {
-    editState.seriesEditor = [
-      {id:null,numero:1,carga:'',reps:'',obs:''},
-      {id:null,numero:2,carga:'',reps:'',obs:''},
-      {id:null,numero:3,carga:'',reps:'',obs:''},
-    ];
+  if (editState.tipoExEditando === 'cardio') {
+    // Para cardio: tempo e velocidade
+    editState.seriesEditor = series ? series.map(s => ({
+      id: s.id,
+      numero: s.numero_serie,
+      duracao: s.duracao_min || '',
+      velocidade: s.velocidade || '',
+      inclinacao: s.inclinacao || ''
+    })) : [];
+    if (!editState.seriesEditor.length) {
+      editState.seriesEditor = [{id:null,numero:1,duracao:'',velocidade:'',inclinacao:''}];
+    }
+  } else {
+    editState.seriesEditor = series ? series.map(s => ({
+      id: s.id,
+      numero: s.numero_serie,
+      carga: s.carga_kg || '',
+      reps: s.repeticoes || '',
+      obs: s.observacao || ''
+    })) : [];
+    if (!editState.seriesEditor.length) {
+      editState.seriesEditor = [
+        {id:null,numero:1,carga:'',reps:'',obs:''},
+        {id:null,numero:2,carga:'',reps:'',obs:''},
+        {id:null,numero:3,carga:'',reps:'',obs:''},
+      ];
+    }
   }
 
   renderSeriesEditor();
@@ -4590,38 +4674,77 @@ async function abrirEditarEx(exId, nome, grupo, equip) {
 
 function renderSeriesEditor() {
   const list = document.getElementById('series-editor-list');
-  list.innerHTML = editState.seriesEditor.map((s, i) => `
-    <div class="serie-editor-row">
-      <div class="se-num">${i+1}</div>
-      <input class="se-input" type="number" placeholder="kg" value="${s.carga}"
-        onchange="editState.seriesEditor[${i}].carga=this.value"
-        oninput="editState.seriesEditor[${i}].carga=this.value" step="0.5" min="0">
-      <input class="se-input" type="text" placeholder="10/15" value="${s.reps}"
-        onchange="editState.seriesEditor[${i}].reps=this.value"
-        oninput="editState.seriesEditor[${i}].reps=this.value" maxlength="8">
-      <input class="se-obs" type="text" placeholder="obs" value="${s.obs}"
-        onchange="editState.seriesEditor[${i}].obs=this.value"
-        oninput="editState.seriesEditor[${i}].obs=this.value" maxlength="20">
-      <button class="btn-del-serie" onclick="removerSerie(${i})">
-        <svg viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
-      </button>
-    </div>
-  `).join('');
+  const isCardio = editState.tipoExEditando === 'cardio';
+
+  // Atualiza cabeçalho da tabela
+  const header = list.closest('div').previousElementSibling;
+  if (header && header.style) {
+    const spans = header.querySelectorAll('span');
+    if (isCardio && spans.length >= 3) {
+      spans[1].textContent = 'Tempo (min)';
+      spans[2].textContent = 'Vel. km/h';
+      spans[3].textContent = 'Inclin. %';
+    }
+  }
+
+  if (isCardio) {
+    list.innerHTML = editState.seriesEditor.map((s, i) => `
+      <div class="serie-editor-row">
+        <div class="se-num">${i+1}</div>
+        <input class="se-input" type="number" placeholder="30" value="${s.duracao}"
+          onchange="editState.seriesEditor[${i}].duracao=this.value"
+          oninput="editState.seriesEditor[${i}].duracao=this.value" step="1" min="1">
+        <input class="se-input" type="number" placeholder="6.5" value="${s.velocidade}"
+          onchange="editState.seriesEditor[${i}].velocidade=this.value"
+          oninput="editState.seriesEditor[${i}].velocidade=this.value" step="0.5" min="0">
+        <input class="se-obs" type="number" placeholder="0" value="${s.inclinacao}"
+          onchange="editState.seriesEditor[${i}].inclinacao=this.value"
+          oninput="editState.seriesEditor[${i}].inclinacao=this.value" step="0.5" min="0">
+        <button class="btn-del-serie" onclick="removerSerie(${i})">
+          <svg viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        </button>
+      </div>
+    `).join('');
+  } else {
+    list.innerHTML = editState.seriesEditor.map((s, i) => `
+      <div class="serie-editor-row">
+        <div class="se-num">${i+1}</div>
+        <input class="se-input" type="number" placeholder="kg" value="${s.carga}"
+          onchange="editState.seriesEditor[${i}].carga=this.value"
+          oninput="editState.seriesEditor[${i}].carga=this.value" step="0.5" min="0">
+        <input class="se-input" type="text" placeholder="10/15" value="${s.reps}"
+          onchange="editState.seriesEditor[${i}].reps=this.value"
+          oninput="editState.seriesEditor[${i}].reps=this.value" maxlength="8">
+        <input class="se-obs" type="text" placeholder="obs" value="${s.obs}"
+          onchange="editState.seriesEditor[${i}].obs=this.value"
+          oninput="editState.seriesEditor[${i}].obs=this.value" maxlength="20">
+        <button class="btn-del-serie" onclick="removerSerie(${i})">
+          <svg viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        </button>
+      </div>
+    `).join('');
+  }
 }
 
 function addSerieEditor() {
   const n = editState.seriesEditor.length + 1;
-  // copia a carga da ultima serie como sugestao
   const ultima = editState.seriesEditor[editState.seriesEditor.length-1];
-  editState.seriesEditor.push({
-    id: null,
-    numero: n,
-    carga: ultima ? ultima.carga : '',
-    reps:  ultima ? ultima.reps  : '',
-    obs:   ''
-  });
+  if (editState.tipoExEditando === 'cardio') {
+    editState.seriesEditor.push({
+      id: null, numero: n,
+      duracao:    ultima ? ultima.duracao    : '',
+      velocidade: ultima ? ultima.velocidade : '',
+      inclinacao: ultima ? ultima.inclinacao : ''
+    });
+  } else {
+    editState.seriesEditor.push({
+      id: null, numero: n,
+      carga: ultima ? ultima.carga : '',
+      reps:  ultima ? ultima.reps  : '',
+      obs:   ''
+    });
+  }
   renderSeriesEditor();
-  // scroll para o fim
   const list = document.getElementById('series-editor-list');
   list.lastElementChild?.scrollIntoView({behavior:'smooth', block:'end'});
 }
@@ -4642,20 +4765,30 @@ async function salvarSeries() {
   // deleta as series existentes e recria (mais simples)
   await sb.from('series_template').delete().eq('exercicio_id', editState.exEditando);
 
+  const isCardio = editState.tipoExEditando === 'cardio';
   const inserts = series.map((s, i) => {
-    const repsNum = parseInt(s.reps);
-    const repsTexto = s.reps && isNaN(repsNum) ? s.reps : null;
-    return {
-      exercicio_id: editState.exEditando,
-      numero_serie: i + 1,
-      carga_kg:    s.carga !== '' ? parseFloat(s.carga) : null,
-      repeticoes:  !isNaN(repsNum) && s.reps !== '' ? repsNum : null,
-      observacao:  repsTexto || s.obs || null,
-      _reps_texto: s.reps // guardamos para exibir
-    };
+    if (isCardio) {
+      return {
+        exercicio_id: editState.exEditando,
+        numero_serie: i + 1,
+        duracao_min:  s.duracao    !== '' ? parseFloat(s.duracao)    : null,
+        velocidade:   s.velocidade !== '' ? parseFloat(s.velocidade) : null,
+        inclinacao:   s.inclinacao !== '' ? parseFloat(s.inclinacao) : null,
+        carga_kg:     null,
+        repeticoes:   null,
+      };
+    } else {
+      const repsNum = parseInt(s.reps);
+      const repsTexto = s.reps && isNaN(repsNum) ? s.reps : null;
+      return {
+        exercicio_id: editState.exEditando,
+        numero_serie: i + 1,
+        carga_kg:    s.carga !== '' ? parseFloat(s.carga) : null,
+        repeticoes:  !isNaN(repsNum) && s.reps !== '' ? String(s.reps) : null,
+        observacao:  repsTexto || s.obs || null,
+      };
+    }
   });
-  // remove campo virtual antes de enviar
-  inserts.forEach(r => delete r._reps_texto);
 
   const { error } = await sb.from('series_template').insert(inserts);
   if (error) { showToast('Erro ao salvar series'); return; }
@@ -5234,10 +5367,9 @@ async function finalizarCardio() {
   const ex = state.exerciciosAtual[state.execIdx];
   if (!ex) return;
 
-  // Busca a velocidade cadastrada para este cardio
-  const serie = (ex.series_template || [])[0] || {};
-  const vel   = serie.velocidade || null;
-  const incl  = serie.inclinacao || null;
+  // Pega velocidade/inclinação do estado (carregado no renderExec)
+  const vel  = cardioState.velocidade || null;
+  const incl = cardioState.inclinacao || null;
 
   // Formata tempo para exibição
   const minReal = Math.round(tempoFinalSeg / 60);

@@ -2410,7 +2410,7 @@ function renderExec() {
         ? '<polygon points="5 3 19 12 5 21 5 3"/>'
         : '<circle cx="12" cy="12" r="10"/>';
     const prBadge = (jaFeita && dadosSerie?.isPR)
-      ? `<span id="pr-badge-${si}" style="background:linear-gradient(135deg,#f5a623,#ff6a00);color:#fff;font-size:8px;font-weight:900;padding:2px 6px;border-radius:20px;white-space:nowrap">🏆 PR</span>`
+      ? `<span id="pr-badge-${si}" style="background:linear-gradient(135deg,#f5a623,#ff6a00);color:#fff;font-size:8px;font-weight:900;padding:2px 6px;border-radius:20px;white-space:nowrap">🏆 Recorde</span>`
       : '';
     return `<div class="serie-row" id="sr-${si}">`-${si}" style="position:relative">
       <div class="sn ${cls}">${si+1}</div>
@@ -3589,13 +3589,13 @@ function mostrarBadgePR(si, carga) {
   badge.id = `pr-badge-${si}`;
   badge.className = 'pr-badge';
   badge.style.cssText = 'background:linear-gradient(135deg,#f5a623,#ff6a00);color:#fff;font-size:8px;font-weight:900;padding:2px 6px;border-radius:20px;letter-spacing:.06em;text-transform:uppercase;white-space:nowrap;animation:prPop .4s cubic-bezier(.175,.885,.32,1.275)';
-  badge.textContent = '🏆 PR';
+  badge.textContent = '🏆 Recorde';
 
   // Insere após o botão de check dentro da grade
   btn.insertAdjacentElement('afterend', badge);
 
   // Toast comemorativo
-  showToast(`🏆 Novo PR! ${carga}kg`);
+  showToast(`🏆 Novo recorde! ${carga}kg`);
 }
 
 async function carregarPRs() {
@@ -4716,7 +4716,7 @@ function renderExec() {
         ? '<polygon points="5 3 19 12 5 21 5 3"/>'
         : '<circle cx="12" cy="12" r="10"/>';
     const prBadge = (jaFeita && dadosSerie?.isPR)
-      ? `<div class="pr-badge" style="position:absolute;right:40px;top:50%;transform:translateY(-50%);background:linear-gradient(135deg,#f5a623,#ff6a00);color:#fff;font-size:9px;font-weight:900;padding:3px 8px;border-radius:20px;letter-spacing:.06em;text-transform:uppercase;display:flex;align-items:center;gap:3px">🏆 PR</div>`
+      ? `<div class="pr-badge" style="position:absolute;right:40px;top:50%;transform:translateY(-50%);background:linear-gradient(135deg,#f5a623,#ff6a00);color:#fff;font-size:9px;font-weight:900;padding:3px 8px;border-radius:20px;letter-spacing:.06em;text-transform:uppercase;display:flex;align-items:center;gap:3px">🏆 Recorde</div>`
       : '';
     return `<div class="serie-row" id="sr-${si}" style="position:relative">
       <div class="sn ${cls}">${si+1}</div>
@@ -5549,13 +5549,13 @@ function mostrarBadgePR(si, carga) {
   badge.id = `pr-badge-${si}`;
   badge.className = 'pr-badge';
   badge.style.cssText = 'background:linear-gradient(135deg,#f5a623,#ff6a00);color:#fff;font-size:8px;font-weight:900;padding:2px 6px;border-radius:20px;letter-spacing:.06em;text-transform:uppercase;white-space:nowrap;animation:prPop .4s cubic-bezier(.175,.885,.32,1.275)';
-  badge.textContent = '🏆 PR';
+  badge.textContent = '🏆 Recorde';
 
   // Insere após o botão de check dentro da grade
   btn.insertAdjacentElement('afterend', badge);
 
   // Toast comemorativo
-  showToast(`🏆 Novo PR! ${carga}kg`);
+  showToast(`🏆 Novo recorde! ${carga}kg`);
 }
 
 async function carregarPRs() {

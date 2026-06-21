@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>EVVO Admin TEST</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body style="background:#080810;color:#fff;font-family:sans-serif;padding:40px;max-width:400px;margin:0 auto">
+
+<h2 style="margin-bottom:20px">EVVO Admin — Teste</h2>
+
+<div id="status" style="background:#0e0e1a;padding:14px;border-radius:10px;margin-bottom:20px;font-size:13px;color:#ff6a00">
+  Verificando sessão...
+</div>
+
+<div id="login-area">
+  <input id="u" type="text" placeholder="usuário" value="jhony"
+    style="display:block;width:100%;padding:12px;margin-bottom:10px;background:#0e0e1a;border:1px solid #ffffff22;border-radius:8px;color:#fff;font-size:14px">
+  <input id="p" type="password" placeholder="senha"
+    style="display:block;width:100%;padding:12px;margin-bottom:10px;background:#0e0e1a;border:1px solid #ffffff22;border-radius:8px;color:#fff;font-size:14px">
+  <button onclick="testarLogin()"
+    style="width:100%;padding:14px;background:linear-gradient(135deg,#ff6a00,#ee0979);border:none;border-radius:10px;color:#fff;font-size:14px;font-weight:700;cursor:pointer">
+    Testar Login
+  </button>
+</div>
+
+<div id="log" style="margin-top:20px;font-size:12px;color:#ffffff55;white-space:pre-wrap;background:#0e0e1a;padding:14px;border-radius:10px;min-height:60px">
+  Console log aqui...
+</div>
+
+<script>
+const SUPA_URL  = 'https://igxvsboqqmwzzyzgsbjw.supabase.co';
+const SUPA_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlneHZzYm9xcW13enp5emdzYmp3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE4Njc3MTgsImV4cCI6MjA5NzQ0MzcxOH0.ClLggfxlLEMqRdqqcbcugbMcUfviJAEMORitiku3MUw';
+const sb = supabase.createClient(SUPA_URL, SUPA_ANON);
+
+function log(msg) {
+  const el = document.getElementById('log');
+  el.textContent += '\n' + msg;
+  console.log(msg);
+}
+
+function status(msg, cor) {
+  const el = document.getElementById('status');
+  el.textContent = msg;
+  el.style.color = cor || '#ff6a00';
+}
+
+async function testarLogin() {
+  const user = document.getElementById('u').value.trim().toLowerCase();
+  const pass = document.getElementById('p').value;
+  log('Tentando login: ' + user + '@evvo.app');
+  status('Tentando login...', '#ff6a00');
+
+  const { data, error } = await sb.auth.signInWithPassword({
+    email: user + '@evvo.app',
+    password: pass
+  });
+
+  if (error) {
+    log('ERRO: ' + JSON.stringify(error));
+    status('ERRO: ' + error.message, '#ee0979');
+    return;
+  }
+
+  log('LOGIN OK!');
+  log('User: ' + data.user.email);
+  log('Session: ' + (data.session ? 'OK' : 'NULL'));
+  status('LOGIN FUNCIONOU! User: ' + data.user.email, '#39d353');
+
+  document.getElementById('login-area').innerHTML = '<p style="color:#39d353;font-size:14px">✓ Login OK — o problema não é o Supabase, é o código do admin.html</p>';
+}
+
+// Verifica sessao atual
+async function init() {
+  const { data: { session } } = await sb.auth.getSession();
+  if (session) {
+    log('Sessao ativa: ' + session.user.email);
+    status('Sessão ativa: ' + session.user.email, '#39d353');
+  } else {
+    log('Sem sessão ativa');
+    status('Sem sessão — faça login', '#ffffff55');
+  }
+}
+
+init();
+</script>
+</body>
+</html>

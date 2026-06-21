@@ -3749,7 +3749,8 @@ async function loadHistorico() {
     .select(`
       *,
       dias_treino ( nome, dia_semana ),
-      fichas ( nome )
+      fichas ( nome ),
+      series_executadas ( is_pr )
     `)
     .eq('user_id', state.user.id)
     .not('finalizado_em', 'is', null)
@@ -3791,7 +3792,7 @@ async function loadHistorico() {
           <div style="font-size:10px;color:var(--text3);margin-top:2px">${nomeFicha}</div>
         </div>
         <div style="text-align:right;flex-shrink:0">
-          <div style="font-size:15px;font-weight:900;color:var(--text)">${volume}</div>
+          ${s.series_executadas?.some(se => se.is_pr) ? '<div style="font-size:9px;font-weight:900;background:linear-gradient(135deg,#f5a623,#ff6a00);color:#fff;padding:2px 7px;border-radius:10px;margin-bottom:4px;display:inline-block">🏆 Recorde</div>' : ''}<div style="font-size:15px;font-weight:900;color:var(--text)">${volume}</div>
           <div style="font-size:10px;color:var(--text3);margin-top:2px">${duracaoMin > 0 ? duracaoMin + ' min' : '—'}</div>
         </div>
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--text4)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0"><polyline points="9 18 15 12 9 6"/></svg>
@@ -3874,10 +3875,14 @@ async function abrirDetalhesSessao(sessaoId) {
             const txt = vel ? durStr + ' · ' + vel : durStr;
             return `<span style="background:#00cfff15;border:1px solid #00cfff22;border-radius:6px;padding:4px 10px;font-size:11px;font-weight:700;color:#00cfff">${txt}</span>`;
           }).join('')
-        : ex.series.map((s, i) =>
-            `<span style="background:var(--border);border-radius:6px;padding:3px 8px;font-size:10px;font-weight:700;color:var(--text3)">
-              ${s.carga_kg != null ? s.carga_kg+'kg' : '—'} × ${s.repeticoes || '—'}
-            </span>`).join('');
+        : ex.series.map((s, i) => {
+            const prBadge = s.is_pr
+              ? `<span style="background:linear-gradient(135deg,#f5a623,#ff6a00);color:#fff;font-size:8px;font-weight:900;padding:2px 5px;border-radius:10px;margin-left:3px">🏆</span>`
+              : '';
+            return `<span style="background:var(--border);border-radius:6px;padding:3px 8px;font-size:10px;font-weight:700;color:var(--text3);display:inline-flex;align-items:center;gap:2px">
+              ${s.carga_kg != null ? s.carga_kg+'kg' : '—'} × ${s.repeticoes || '—'}${prBadge}
+            </span>`;
+          }).join('');
 
       return `<div style="background:var(--bg2);border-radius:14px;border:1px solid var(--border);padding:12px 14px">
         <div style="display:flex;align-items:center;gap:10px;margin-bottom:${chipsHTML ? '10px' : '0'}">
@@ -3892,8 +3897,9 @@ async function abrirDetalhesSessao(sessaoId) {
             <div style="font-size:13px;font-weight:800;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${ex.nome}</div>
             <div style="font-size:10px;color:var(--text3);margin-top:2px">${ex.grupo}</div>
           </div>
-          <div style="font-size:11px;font-weight:800;color:#39d353;background:#39d35318;padding:3px 9px;border-radius:7px;white-space:nowrap;flex-shrink:0">
+          <div style="font-size:11px;font-weight:800;color:#39d353;background:#39d35318;padding:3px 9px;border-radius:7px;white-space:nowrap;flex-shrink:0;display:flex;align-items:center;gap:4px">
             ${isCardio ? '✓ Feito' : totalSeries+'/'+totalSeries+' séries'}
+            ${ex.series.some(s => s.is_pr) ? '<span style="background:linear-gradient(135deg,#f5a623,#ff6a00);color:#fff;font-size:9px;font-weight:900;padding:2px 6px;border-radius:10px">🏆 Recorde</span>' : ''}
           </div>
         </div>
         ${chipsHTML ? `<div style="display:flex;flex-wrap:wrap;gap:5px">${chipsHTML}</div>` : ''}
@@ -5806,7 +5812,8 @@ async function loadHistorico() {
     .select(`
       *,
       dias_treino ( nome, dia_semana ),
-      fichas ( nome )
+      fichas ( nome ),
+      series_executadas ( is_pr )
     `)
     .eq('user_id', state.user.id)
     .not('finalizado_em', 'is', null)
@@ -5931,10 +5938,14 @@ async function abrirDetalhesSessao(sessaoId) {
             const txt = vel ? durStr + ' · ' + vel : durStr;
             return `<span style="background:#00cfff15;border:1px solid #00cfff22;border-radius:6px;padding:4px 10px;font-size:11px;font-weight:700;color:#00cfff">${txt}</span>`;
           }).join('')
-        : ex.series.map((s, i) =>
-            `<span style="background:var(--border);border-radius:6px;padding:3px 8px;font-size:10px;font-weight:700;color:var(--text3)">
-              ${s.carga_kg != null ? s.carga_kg+'kg' : '—'} × ${s.repeticoes || '—'}
-            </span>`).join('');
+        : ex.series.map((s, i) => {
+            const prBadge = s.is_pr
+              ? `<span style="background:linear-gradient(135deg,#f5a623,#ff6a00);color:#fff;font-size:8px;font-weight:900;padding:2px 5px;border-radius:10px;margin-left:3px">🏆</span>`
+              : '';
+            return `<span style="background:var(--border);border-radius:6px;padding:3px 8px;font-size:10px;font-weight:700;color:var(--text3);display:inline-flex;align-items:center;gap:2px">
+              ${s.carga_kg != null ? s.carga_kg+'kg' : '—'} × ${s.repeticoes || '—'}${prBadge}
+            </span>`;
+          }).join('');
 
       return `<div style="background:var(--bg2);border-radius:14px;border:1px solid var(--border);padding:12px 14px">
         <div style="display:flex;align-items:center;gap:10px;margin-bottom:${chipsHTML ? '10px' : '0'}">
@@ -5949,8 +5960,9 @@ async function abrirDetalhesSessao(sessaoId) {
             <div style="font-size:13px;font-weight:800;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${ex.nome}</div>
             <div style="font-size:10px;color:var(--text3);margin-top:2px">${ex.grupo}</div>
           </div>
-          <div style="font-size:11px;font-weight:800;color:#39d353;background:#39d35318;padding:3px 9px;border-radius:7px;white-space:nowrap;flex-shrink:0">
+          <div style="font-size:11px;font-weight:800;color:#39d353;background:#39d35318;padding:3px 9px;border-radius:7px;white-space:nowrap;flex-shrink:0;display:flex;align-items:center;gap:4px">
             ${isCardio ? '✓ Feito' : totalSeries+'/'+totalSeries+' séries'}
+            ${ex.series.some(s => s.is_pr) ? '<span style="background:linear-gradient(135deg,#f5a623,#ff6a00);color:#fff;font-size:9px;font-weight:900;padding:2px 6px;border-radius:10px">🏆 Recorde</span>' : ''}
           </div>
         </div>
         ${chipsHTML ? `<div style="display:flex;flex-wrap:wrap;gap:5px">${chipsHTML}</div>` : ''}

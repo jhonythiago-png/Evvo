@@ -1600,6 +1600,11 @@ select.form-input option{background:#0e0e1a;color:#fff}
           <span>Upgrade para Pro</span>
           <svg class="arr" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg>
         </div>
+        <div class="menu-item" id="btn-admin" style="display:none;background:#ff6a0010;border-color:#ff6a0030" onclick="window.open('./admin.html','_blank')">
+          <svg viewBox="0 0 24 24" style="stroke:var(--accent)"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+          <span style="color:var(--accent);font-weight:800">Painel Admin</span>
+          <svg class="arr" viewBox="0 0 24 24" style="stroke:var(--accent)"><polyline points="9 18 15 12 9 6"/></svg>
+        </div>
       </div>
 
       <div class="sec-lbl" style="margin-top:16px">Conta</div>
@@ -2009,6 +2014,9 @@ async function loadPerfil() {
     document.getElementById('profile-name').textContent = data.nome;
     const username = data.email.replace('@evvo.app','');
     document.getElementById('profile-email').textContent = '@' + username;
+    // Mostra botão admin só para jhony
+    const btnAdmin = document.getElementById('btn-admin');
+    if (btnAdmin) btnAdmin.style.display = username === 'jhony' ? 'flex' : 'none';
     const planEl = document.getElementById('profile-plan');
     planEl.textContent = data.plano === 'pro' ? '⭐ Pro' : 'Free';
     planEl.className = 'profile-plan ' + (data.plano === 'pro' ? 'plan-pro' : 'plan-free');
@@ -3878,6 +3886,9 @@ async function loadPerfil() {
     document.getElementById('profile-name').textContent = data.nome;
     const username = data.email.replace('@evvo.app','');
     document.getElementById('profile-email').textContent = '@' + username;
+    // Mostra botão admin só para jhony
+    const btnAdmin = document.getElementById('btn-admin');
+    if (btnAdmin) btnAdmin.style.display = username === 'jhony' ? 'flex' : 'none';
     const planEl = document.getElementById('profile-plan');
     planEl.textContent = data.plano === 'pro' ? '⭐ Pro' : 'Free';
     planEl.className = 'profile-plan ' + (data.plano === 'pro' ? 'plan-pro' : 'plan-free');

@@ -2412,7 +2412,7 @@ function renderExec() {
     const prBadge = (jaFeita && dadosSerie?.isPR)
       ? `<span id="pr-badge-${si}" style="background:linear-gradient(135deg,#f5a623,#ff6a00);color:#fff;font-size:8px;font-weight:900;padding:2px 6px;border-radius:20px;white-space:nowrap">🏆 Recorde</span>`
       : '';
-    return `<div class="serie-row" id="sr-${si}">`-${si}" style="position:relative">
+    return `<div class="serie-row" id="sr-${si}">
       <div class="sn ${cls}">${si+1}</div>
       <div class="sf ${cls}" onclick="editCarga(${si})">
         <div class="v">${s.carga_kg != null ? s.carga_kg+'kg' : '—'}</div>

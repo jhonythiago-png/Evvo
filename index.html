@@ -2501,18 +2501,86 @@ function toggleSerie(si) {
 
 
 function editCarga(si) {
-  const val = prompt('Carga (kg):');
-  if (val !== null && !isNaN(val)) {
-    const el = document.querySelector(`#sr-${si} .sf:first-of-type .v`);
-    if (el) el.textContent = val + 'kg';
+  const row = document.getElementById(`sr-${si}`);
+  const jaFeita = row?.querySelector('.sn')?.classList.contains('done');
+
+  // Pega valor atual
+  const el = document.querySelector(`#sr-${si} .sf:first-of-type .v`);
+  const atual = el ? el.textContent.replace('kg','').trim() : '';
+
+  const val = prompt('Carga (kg):', atual);
+  if (val === null) return;
+  const num = parseFloat(val);
+  if (isNaN(num) || num < 0) return;
+
+  // Atualiza visual
+  if (el) el.textContent = num + 'kg';
+
+  // Atualiza no seriesExecutadas local
+  const key = `${state.execIdx}_${si}`;
+  if (!seriesExecutadas[key]) seriesExecutadas[key] = {};
+  seriesExecutadas[key].carga = num;
+
+  // Se a série já foi marcada como feita, atualiza no banco
+  if (jaFeita && state.sessaoAtiva) {
+    const ex = state.exerciciosAtual[state.execIdx];
+    if (ex) {
+      sb.from('series_executadas')
+        .update({ carga_kg: num })
+        .eq('sessao_id', state.sessaoAtiva.id)
+        .eq('exercicio_id', ex.id)
+        .eq('numero_serie', si + 1)
+        .then(({ error }) => {
+          if (!error) {
+            // Revalida se é recorde com nova carga
+            const prAtual = state.prs?.[ex.id];
+            if (!prAtual || num > prAtual) {
+              if (!state.prs) state.prs = {};
+              state.prs[ex.id] = num;
+              seriesExecutadas[key].isPR = true;
+              mostrarBadgePR(si, num);
+              // Atualiza tabela prs
+              sb.from('prs').upsert({
+                user_id: state.user.id,
+                exercicio_id: ex.id,
+                carga_kg: num,
+                conquistado_em: new Date().toISOString(),
+              }, { onConflict: 'user_id,exercicio_id' });
+            }
+          }
+        });
+    }
   }
 }
 
 function editReps(si) {
-  const val = prompt('Repetições:');
-  if (val !== null && !isNaN(val)) {
-    const el = document.querySelectorAll(`#sr-${si} .sf`)[1]?.querySelector('.v');
-    if (el) el.textContent = val;
+  // Pega valor atual
+  const el = document.querySelectorAll(`#sr-${si} .sf`)[1]?.querySelector('.v');
+  const atual = el ? el.textContent.trim() : '';
+
+  const val = prompt('Repetições:', atual);
+  if (val === null || val.trim() === '') return;
+
+  // Atualiza visual
+  if (el) el.textContent = val;
+
+  // Atualiza no seriesExecutadas local
+  const key = `${state.execIdx}_${si}`;
+  if (!seriesExecutadas[key]) seriesExecutadas[key] = {};
+  seriesExecutadas[key].reps = val;
+
+  // Se a série já foi marcada como feita, atualiza no banco
+  const row = document.getElementById(`sr-${si}`);
+  const jaFeita = row?.querySelector('.sn')?.classList.contains('done');
+  if (jaFeita && state.sessaoAtiva) {
+    const ex = state.exerciciosAtual[state.execIdx];
+    if (ex) {
+      sb.from('series_executadas')
+        .update({ repeticoes: String(val) })
+        .eq('sessao_id', state.sessaoAtiva.id)
+        .eq('exercicio_id', ex.id)
+        .eq('numero_serie', si + 1);
+    }
   }
 }
 
@@ -4749,18 +4817,86 @@ function renderExec() {
 
 
 function editCarga(si) {
-  const val = prompt('Carga (kg):');
-  if (val !== null && !isNaN(val)) {
-    const el = document.querySelector(`#sr-${si} .sf:first-of-type .v`);
-    if (el) el.textContent = val + 'kg';
+  const row = document.getElementById(`sr-${si}`);
+  const jaFeita = row?.querySelector('.sn')?.classList.contains('done');
+
+  // Pega valor atual
+  const el = document.querySelector(`#sr-${si} .sf:first-of-type .v`);
+  const atual = el ? el.textContent.replace('kg','').trim() : '';
+
+  const val = prompt('Carga (kg):', atual);
+  if (val === null) return;
+  const num = parseFloat(val);
+  if (isNaN(num) || num < 0) return;
+
+  // Atualiza visual
+  if (el) el.textContent = num + 'kg';
+
+  // Atualiza no seriesExecutadas local
+  const key = `${state.execIdx}_${si}`;
+  if (!seriesExecutadas[key]) seriesExecutadas[key] = {};
+  seriesExecutadas[key].carga = num;
+
+  // Se a série já foi marcada como feita, atualiza no banco
+  if (jaFeita && state.sessaoAtiva) {
+    const ex = state.exerciciosAtual[state.execIdx];
+    if (ex) {
+      sb.from('series_executadas')
+        .update({ carga_kg: num })
+        .eq('sessao_id', state.sessaoAtiva.id)
+        .eq('exercicio_id', ex.id)
+        .eq('numero_serie', si + 1)
+        .then(({ error }) => {
+          if (!error) {
+            // Revalida se é recorde com nova carga
+            const prAtual = state.prs?.[ex.id];
+            if (!prAtual || num > prAtual) {
+              if (!state.prs) state.prs = {};
+              state.prs[ex.id] = num;
+              seriesExecutadas[key].isPR = true;
+              mostrarBadgePR(si, num);
+              // Atualiza tabela prs
+              sb.from('prs').upsert({
+                user_id: state.user.id,
+                exercicio_id: ex.id,
+                carga_kg: num,
+                conquistado_em: new Date().toISOString(),
+              }, { onConflict: 'user_id,exercicio_id' });
+            }
+          }
+        });
+    }
   }
 }
 
 function editReps(si) {
-  const val = prompt('Repetições:');
-  if (val !== null && !isNaN(val)) {
-    const el = document.querySelectorAll(`#sr-${si} .sf`)[1]?.querySelector('.v');
-    if (el) el.textContent = val;
+  // Pega valor atual
+  const el = document.querySelectorAll(`#sr-${si} .sf`)[1]?.querySelector('.v');
+  const atual = el ? el.textContent.trim() : '';
+
+  const val = prompt('Repetições:', atual);
+  if (val === null || val.trim() === '') return;
+
+  // Atualiza visual
+  if (el) el.textContent = val;
+
+  // Atualiza no seriesExecutadas local
+  const key = `${state.execIdx}_${si}`;
+  if (!seriesExecutadas[key]) seriesExecutadas[key] = {};
+  seriesExecutadas[key].reps = val;
+
+  // Se a série já foi marcada como feita, atualiza no banco
+  const row = document.getElementById(`sr-${si}`);
+  const jaFeita = row?.querySelector('.sn')?.classList.contains('done');
+  if (jaFeita && state.sessaoAtiva) {
+    const ex = state.exerciciosAtual[state.execIdx];
+    if (ex) {
+      sb.from('series_executadas')
+        .update({ repeticoes: String(val) })
+        .eq('sessao_id', state.sessaoAtiva.id)
+        .eq('exercicio_id', ex.id)
+        .eq('numero_serie', si + 1);
+    }
   }
 }
 

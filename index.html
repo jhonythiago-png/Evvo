@@ -1585,7 +1585,7 @@ select.form-input option{background:#0e0e1a;color:#fff}
 
       <div class="sec-lbl">Configurações</div>
       <div class="menu-list">
-        <div class="menu-item">
+        <div class="menu-item" onclick="abrirEditarPerfil()">
           <svg viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
           <span>Editar perfil</span>
           <svg class="arr" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg>
@@ -1866,6 +1866,69 @@ select.form-input option{background:#0e0e1a;color:#fff}
       <div class="sec-lbl">Exercícios realizados</div>
       <div id="sessao-exercicios" style="padding:0 16px;display:flex;flex-direction:column;gap:10px"></div>
 
+      <div style="height:20px"></div>
+    </div>
+  </div>
+
+
+  <!-- ══════════ TELA: EDITAR PERFIL ══════════ -->
+  <div class="screen" id="screen-editar-perfil">
+    <div class="scroll">
+      <div class="back-row">
+        <button class="btn-back" onclick="goTo('screen-perfil')">
+          <svg viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg>
+        </button>
+        <span class="back-label">Perfil</span>
+      </div>
+      <div class="hero" style="padding-top:12px">
+        <div class="hero-glow"></div>
+        <div class="hero-label">Configurações</div>
+        <div class="hero-title">Editar perfil</div>
+      </div>
+
+      <div style="padding:0 16px;display:flex;flex-direction:column;gap:10px">
+
+        <!-- Avatar -->
+        <div style="display:flex;justify-content:center;padding:8px 0 16px">
+          <div id="edit-avatar" style="width:72px;height:72px;border-radius:50%;background:var(--grad);display:flex;align-items:center;justify-content:center;font-size:26px;font-weight:900;color:#fff;border:3px solid var(--bg2)">?</div>
+        </div>
+
+        <!-- Nome -->
+        <div style="background:var(--bg2);border-radius:16px;border:1px solid var(--border);overflow:hidden">
+          <div style="padding:10px 14px 0;font-size:9px;color:var(--accent);font-weight:800;text-transform:uppercase;letter-spacing:.12em">Dados pessoais</div>
+          <div style="padding:12px 14px;border-bottom:1px solid var(--border)">
+            <label style="font-size:10px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.1em;display:block;margin-bottom:6px">Nome completo</label>
+            <input class="form-input" type="text" id="ep-nome" placeholder="Seu nome completo">
+          </div>
+          <div style="padding:12px 14px">
+            <label style="font-size:10px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.1em;display:block;margin-bottom:6px">Sexo</label>
+            <div style="display:flex;gap:8px">
+              <button id="ep-masc" onclick="setSexo('masculino')" style="flex:1;padding:10px;border-radius:11px;background:var(--border);border:1.5px solid transparent;color:var(--text3);font-size:12px;font-weight:700;transition:all .2s">♂ Masculino</button>
+              <button id="ep-fem" onclick="setSexo('feminino')" style="flex:1;padding:10px;border-radius:11px;background:var(--border);border:1.5px solid transparent;color:var(--text3);font-size:12px;font-weight:700;transition:all .2s">♀ Feminino</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Senha -->
+        <div style="background:var(--bg2);border-radius:16px;border:1px solid var(--border);overflow:hidden">
+          <div style="padding:10px 14px 0;font-size:9px;color:var(--accent);font-weight:800;text-transform:uppercase;letter-spacing:.12em">Alterar senha</div>
+          <div style="padding:12px 14px;border-bottom:1px solid var(--border)">
+            <label style="font-size:10px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.1em;display:block;margin-bottom:6px">Nova senha</label>
+            <input class="form-input" type="password" id="ep-senha" placeholder="mínimo 6 caracteres (deixe vazio para não alterar)">
+          </div>
+          <div style="padding:12px 14px">
+            <label style="font-size:10px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.1em;display:block;margin-bottom:6px">Confirmar nova senha</label>
+            <input class="form-input" type="password" id="ep-senha2" placeholder="repita a nova senha">
+          </div>
+        </div>
+
+        <div id="ep-erro" style="background:#ee09791a;border:1px solid #ee097933;border-radius:10px;padding:10px 14px;font-size:12px;color:#ee0979;display:none"></div>
+
+        <button class="btn-main" style="margin:6px 0 0;width:100%" onclick="salvarPerfil()">
+          <svg viewBox="0 0 24 24" style="width:18px;height:18px;stroke:#fff;fill:none;stroke-width:2.5;stroke-linecap:round;stroke-linejoin:round"><polyline points="20 6 9 17 4 12"/></svg>
+          Salvar alterações
+        </button>
+      </div>
       <div style="height:20px"></div>
     </div>
   </div>
@@ -3790,6 +3853,116 @@ function todasFeitas() {
   setTimeout(() => nextEx(), 600);
 }
 
+
+// ═══════════════════════════════════════════
+// EDITAR PERFIL
+// ═══════════════════════════════════════════
+let sexoSelecionado = 'masculino';
+
+function setSexo(s) {
+  sexoSelecionado = s;
+  const btns = {
+    'masculino': 'ep-masc',
+    'feminino':  'ep-fem',
+  };
+  Object.entries(btns).forEach(([val, id]) => {
+    const el = document.getElementById(id);
+    if (!el) return;
+    if (val === s) {
+      el.style.background = 'var(--grad)';
+      el.style.color = '#fff';
+      el.style.borderColor = 'transparent';
+    } else {
+      el.style.background = 'var(--border)';
+      el.style.color = 'var(--text3)';
+      el.style.borderColor = 'transparent';
+    }
+  });
+}
+
+function abrirEditarPerfil() {
+  if (!state.perfil) return;
+
+  // Preenche campos
+  document.getElementById('ep-nome').value = state.perfil.nome || '';
+  document.getElementById('ep-senha').value = '';
+  document.getElementById('ep-senha2').value = '';
+  document.getElementById('ep-erro').style.display = 'none';
+
+  // Avatar
+  const ini = (state.perfil.nome || '?').charAt(0).toUpperCase();
+  document.getElementById('edit-avatar').textContent = ini;
+
+  // Sexo
+  sexoSelecionado = state.perfil.sexo || 'masculino';
+  setSexo(sexoSelecionado);
+
+  goTo('screen-editar-perfil');
+}
+
+async function salvarPerfil() {
+  const nome   = document.getElementById('ep-nome').value.trim();
+  const senha  = document.getElementById('ep-senha').value;
+  const senha2 = document.getElementById('ep-senha2').value;
+  const erro   = document.getElementById('ep-erro');
+  erro.style.display = 'none';
+
+  if (!nome) {
+    erro.textContent = 'Digite seu nome.';
+    erro.style.display = 'block';
+    return;
+  }
+
+  if (senha && senha.length < 6) {
+    erro.textContent = 'Senha deve ter ao menos 6 caracteres.';
+    erro.style.display = 'block';
+    return;
+  }
+
+  if (senha && senha !== senha2) {
+    erro.textContent = 'As senhas não coincidem.';
+    erro.style.display = 'block';
+    return;
+  }
+
+  // Atualiza perfil no banco
+  const { error: errPerfil } = await sb.from('perfis')
+    .update({ nome, sexo: sexoSelecionado })
+    .eq('id', state.user.id);
+
+  if (errPerfil) {
+    erro.textContent = 'Erro ao salvar perfil.';
+    erro.style.display = 'block';
+    return;
+  }
+
+  // Atualiza senha se foi preenchida
+  if (senha) {
+    const { error: errSenha } = await sb.auth.updateUser({ password: senha });
+    if (errSenha) {
+      erro.textContent = 'Perfil salvo, mas erro ao alterar senha: ' + errSenha.message;
+      erro.style.display = 'block';
+      return;
+    }
+  }
+
+  // Atualiza estado local
+  if (state.perfil) {
+    state.perfil.nome = nome;
+    state.perfil.sexo = sexoSelecionado;
+  }
+
+  // Atualiza tela de perfil
+  document.getElementById('profile-name').textContent = nome;
+  document.getElementById('profile-avatar').textContent = nome.charAt(0).toUpperCase();
+
+  showToast('Perfil atualizado!');
+  goTo('screen-perfil');
+
+  // Atualiza saudação
+  updateGreeting();
+}
+
 // ═══════════════════════════════════════════
 // START
 // ═══════════════════════════════════════════
@@ -4283,86 +4456,6 @@ async function loadFichas() {
 // ═══════════════════════════════════════════
 // BONECO SVG COM MEDIDAS POSICIONADAS
 // ═══════════════════════════════════════════
-function gerarBonecoHTML(medida, sexo) {
-  const s = sexo || 'neutro';
-  const med = medida || {};
-
-  // SVG original do boneco — palito simples
-  const svgOriginal = `<svg viewBox="0 0 54 80" fill="none" xmlns="http://www.w3.org/2000/svg" width="100%" height="100%">
-    <circle cx="27" cy="10" r="9" stroke="#ff6a00" stroke-width="1.5" fill="none"/>
-    <path d="M14 24 Q27 20 40 24 L42 50 Q27 54 12 50 Z" stroke="#ff6a00" stroke-width="1.2" fill="none" opacity=".7"/>
-    <path d="M14 26 L8 48 Q10 50 14 48 L18 30" stroke="#ff6a00" stroke-width="1.2" fill="none" opacity=".6"/>
-    <path d="M40 26 L46 48 Q44 50 40 48 L36 30" stroke="#ff6a00" stroke-width="1.2" fill="none" opacity=".6"/>
-    <path d="M18 50 L16 72 Q18 74 22 72 L24 52" stroke="#ff6a00" stroke-width="1.2" fill="none" opacity=".6"/>
-    <path d="M36 50 L38 72 Q36 74 32 72 L30 52" stroke="#ff6a00" stroke-width="1.2" fill="none" opacity=".6"/>
-  </svg>`;
-
-  // Mesmo SVG para todos os sexos (boneco neutro original)
-  const svgAtual = svgOriginal;
-
-  // Coluna esquerda: direito do usuário (como espelho)
-  const esquerda = [
-    { l:'Ombros',  v: med.ombros_cm   },
-    { l:'Braço D', v: med.braco_d_cm  },
-    { l:'Cintura', v: med.cintura_cm  },
-    { l:'Glúteo',  v: med.gluteo_cm   },
-    { l:'Coxa D',  v: med.coxa_d_cm   },
-  ];
-
-  // Coluna direita: esquerdo do usuário
-  const direita = [
-    { l:'Peito',    v: med.peito_cm       },
-    { l:'Braço E',  v: med.braco_e_cm     },
-    { l:'Abdômen',  v: med.abdomen_cm     },
-    { l:'Panturr.', v: med.panturrilha_cm },
-    { l:'Coxa E',   v: med.coxa_e_cm      },
-  ];
-
-  function renderCol(items, align) {
-    return items.map(item => {
-      const val = item.v
-        ? `<span style="font-size:16px;font-weight:900;color:var(--text);line-height:1">${item.v}</span><span style="font-size:9px;color:var(--text3);margin-left:1px">cm</span>`
-        : `<span style="font-size:12px;color:var(--text4)">—</span>`;
-      return `<div style="text-align:${align};flex:1">
-        <div style="font-size:8px;color:var(--text4);font-weight:700;text-transform:uppercase;letter-spacing:.06em;line-height:1">${item.l}</div>
-        <div style="margin-top:3px">${val}</div>
-      </div>`;
-    }).join('');
-  }
-
-  const pesoVal  = med.peso_kg   || '—';
-  const altVal   = med.altura_cm ? med.altura_cm + ' m' : '—';
-  const sexoIcon = s === 'masculino' ? '♂' : s === 'feminino' ? '♀' : '—';
-  const sexoTxt  = s === 'masculino' ? 'Masculino' : s === 'feminino' ? 'Feminino' : 'Não inf.';
-
-  return `
-    <div style="display:flex;justify-content:space-around;align-items:center;padding:14px 16px;border-bottom:1px solid var(--border)">
-      <div style="text-align:center">
-        <div style="font-size:26px;font-weight:900;color:var(--text);line-height:1">${pesoVal}<span style="font-size:11px;color:var(--text3);margin-left:2px">kg</span></div>
-        <div style="font-size:9px;color:var(--text3);text-transform:uppercase;letter-spacing:.1em;margin-top:3px">Peso</div>
-      </div>
-      <div style="width:1px;height:36px;background:var(--border)"></div>
-      <div style="text-align:center">
-        <div style="font-size:26px;font-weight:900;color:var(--text);line-height:1">${altVal}</div>
-        <div style="font-size:9px;color:var(--text3);text-transform:uppercase;letter-spacing:.1em;margin-top:3px">Altura</div>
-      </div>
-      <div style="width:1px;height:36px;background:var(--border)"></div>
-      <div style="text-align:center">
-        <div style="font-size:22px;font-weight:900;color:var(--accent);line-height:1">${sexoIcon}</div>
-        <div style="font-size:9px;color:var(--text3);text-transform:uppercase;letter-spacing:.08em;margin-top:3px">${sexoTxt}</div>
-      </div>
-    </div>
-    <div style="display:flex;align-items:center;padding:16px 12px;gap:8px">
-      <div style="display:flex;flex-direction:column;gap:16px;flex:1">
-        ${renderCol(esquerda, 'right')}
-      </div>
-      <div style="width:80px;height:120px;flex-shrink:0;opacity:.8">${svgAtual}</div>
-      <div style="display:flex;flex-direction:column;gap:16px;flex:1">
-        ${renderCol(direita, 'left')}
-      </div>
-    </div>
-  `;
-}
 
 // ═══════════════════════════════════════════
 // MEDIDAS
@@ -5394,6 +5487,116 @@ function todasFeitas() {
 
   showToast(`${total} séries concluídas! 💪`);
   setTimeout(() => nextEx(), 600);
+}
+
+
+// ═══════════════════════════════════════════
+// EDITAR PERFIL
+// ═══════════════════════════════════════════
+let sexoSelecionado = 'masculino';
+
+function setSexo(s) {
+  sexoSelecionado = s;
+  const btns = {
+    'masculino': 'ep-masc',
+    'feminino':  'ep-fem',
+  };
+  Object.entries(btns).forEach(([val, id]) => {
+    const el = document.getElementById(id);
+    if (!el) return;
+    if (val === s) {
+      el.style.background = 'var(--grad)';
+      el.style.color = '#fff';
+      el.style.borderColor = 'transparent';
+    } else {
+      el.style.background = 'var(--border)';
+      el.style.color = 'var(--text3)';
+      el.style.borderColor = 'transparent';
+    }
+  });
+}
+
+function abrirEditarPerfil() {
+  if (!state.perfil) return;
+
+  // Preenche campos
+  document.getElementById('ep-nome').value = state.perfil.nome || '';
+  document.getElementById('ep-senha').value = '';
+  document.getElementById('ep-senha2').value = '';
+  document.getElementById('ep-erro').style.display = 'none';
+
+  // Avatar
+  const ini = (state.perfil.nome || '?').charAt(0).toUpperCase();
+  document.getElementById('edit-avatar').textContent = ini;
+
+  // Sexo
+  sexoSelecionado = state.perfil.sexo || 'masculino';
+  setSexo(sexoSelecionado);
+
+  goTo('screen-editar-perfil');
+}
+
+async function salvarPerfil() {
+  const nome   = document.getElementById('ep-nome').value.trim();
+  const senha  = document.getElementById('ep-senha').value;
+  const senha2 = document.getElementById('ep-senha2').value;
+  const erro   = document.getElementById('ep-erro');
+  erro.style.display = 'none';
+
+  if (!nome) {
+    erro.textContent = 'Digite seu nome.';
+    erro.style.display = 'block';
+    return;
+  }
+
+  if (senha && senha.length < 6) {
+    erro.textContent = 'Senha deve ter ao menos 6 caracteres.';
+    erro.style.display = 'block';
+    return;
+  }
+
+  if (senha && senha !== senha2) {
+    erro.textContent = 'As senhas não coincidem.';
+    erro.style.display = 'block';
+    return;
+  }
+
+  // Atualiza perfil no banco
+  const { error: errPerfil } = await sb.from('perfis')
+    .update({ nome, sexo: sexoSelecionado })
+    .eq('id', state.user.id);
+
+  if (errPerfil) {
+    erro.textContent = 'Erro ao salvar perfil.';
+    erro.style.display = 'block';
+    return;
+  }
+
+  // Atualiza senha se foi preenchida
+  if (senha) {
+    const { error: errSenha } = await sb.auth.updateUser({ password: senha });
+    if (errSenha) {
+      erro.textContent = 'Perfil salvo, mas erro ao alterar senha: ' + errSenha.message;
+      erro.style.display = 'block';
+      return;
+    }
+  }
+
+  // Atualiza estado local
+  if (state.perfil) {
+    state.perfil.nome = nome;
+    state.perfil.sexo = sexoSelecionado;
+  }
+
+  // Atualiza tela de perfil
+  document.getElementById('profile-name').textContent = nome;
+  document.getElementById('profile-avatar').textContent = nome.charAt(0).toUpperCase();
+
+  showToast('Perfil atualizado!');
+  goTo('screen-perfil');
+
+  // Atualiza saudação
+  updateGreeting();
 }
 
 // ═══════════════════════════════════════════

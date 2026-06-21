@@ -3603,11 +3603,33 @@ async function salvarSerieExecutada(si) {
   const serie = (ex.series_template || [])[si];
   if (!serie) return;
 
-  // Pega valores atuais da tela
+  // Prioriza valores editados manualmente (seriesExecutadas local)
+  // senão pega da tela, senão pega do template
+  const key0 = `${state.execIdx}_${si}`;
+  const editado = seriesExecutadas[key0];
+
   const cargaEl  = document.querySelector(`#sr-${si} .sf:first-of-type .v`);
   const repsEl   = document.querySelectorAll(`#sr-${si} .sf`)[1]?.querySelector('.v');
-  const cargaVal = cargaEl ? parseFloat(cargaEl.textContent) || null : serie.carga_kg;
-  const repsVal  = repsEl  ? repsEl.textContent : serie.repeticoes;
+
+  // Carga: prioridade 1=editado local, 2=tela, 3=template
+  let cargaVal = null;
+  if (editado?.carga != null) {
+    cargaVal = parseFloat(editado.carga) || null;
+  } else if (cargaEl) {
+    cargaVal = parseFloat(cargaEl.textContent) || null;
+  } else {
+    cargaVal = serie.carga_kg || null;
+  }
+
+  // Reps: prioridade 1=editado local, 2=tela, 3=template
+  let repsVal = null;
+  if (editado?.reps != null) {
+    repsVal = String(editado.reps);
+  } else if (repsEl) {
+    repsVal = repsEl.textContent;
+  } else {
+    repsVal = serie.repeticoes || null;
+  }
 
   // Verifica se é PR
   let isPR = false;
@@ -5635,11 +5657,33 @@ async function salvarSerieExecutada(si) {
   const serie = (ex.series_template || [])[si];
   if (!serie) return;
 
-  // Pega valores atuais da tela
+  // Prioriza valores editados manualmente (seriesExecutadas local)
+  // senão pega da tela, senão pega do template
+  const key0 = `${state.execIdx}_${si}`;
+  const editado = seriesExecutadas[key0];
+
   const cargaEl  = document.querySelector(`#sr-${si} .sf:first-of-type .v`);
   const repsEl   = document.querySelectorAll(`#sr-${si} .sf`)[1]?.querySelector('.v');
-  const cargaVal = cargaEl ? parseFloat(cargaEl.textContent) || null : serie.carga_kg;
-  const repsVal  = repsEl  ? repsEl.textContent : serie.repeticoes;
+
+  // Carga: prioridade 1=editado local, 2=tela, 3=template
+  let cargaVal = null;
+  if (editado?.carga != null) {
+    cargaVal = parseFloat(editado.carga) || null;
+  } else if (cargaEl) {
+    cargaVal = parseFloat(cargaEl.textContent) || null;
+  } else {
+    cargaVal = serie.carga_kg || null;
+  }
+
+  // Reps: prioridade 1=editado local, 2=tela, 3=template
+  let repsVal = null;
+  if (editado?.reps != null) {
+    repsVal = String(editado.reps);
+  } else if (repsEl) {
+    repsVal = repsEl.textContent;
+  } else {
+    repsVal = serie.repeticoes || null;
+  }
 
   // Verifica se é PR
   let isPR = false;

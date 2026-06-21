@@ -1925,7 +1925,7 @@ select.form-input option{background:#0e0e1a;color:#fff}
             </div>
             <div style="margin-top:14px">
               <div style="font-size:10px;color:var(--text3);font-weight:700;text-transform:uppercase;letter-spacing:.08em;margin-bottom:6px">Zoom</div>
-              <input type="range" id="crop-zoom" min="0.3" max="3" step="0.05" value="1" oninput="atualizarCrop()" style="width:100%;accent-color:var(--accent)">
+              <input type="range" id="crop-zoom" min="1" max="3" step="0.05" value="1" oninput="atualizarCrop()" style="width:100%;accent-color:var(--accent)">
             </div>
             <div style="display:flex;gap:8px;margin-top:16px">
               <button onclick="fecharCrop()" style="flex:1;background:var(--bg3);border:1px solid var(--border2);border-radius:12px;padding:12px;color:var(--text2);font-size:12px;font-weight:700">Cancelar</button>
@@ -3954,62 +3954,73 @@ function previewFoto(event) {
 function abrirCrop() {
   if (!crop.srcBase64) return;
   const modal = document.getElementById('crop-modal');
-  const img   = document.getElementById('crop-img');
   modal.style.display = 'flex';
 
-  // Carrega imagem para obter dimensões
   const tmpImg = new Image();
   tmpImg.onload = () => {
     crop.imgW = tmpImg.width;
     crop.imgH = tmpImg.height;
-    // Calcula zoom inicial para que a foto preencha o círculo de 280px
-    const minDim = Math.min(tmpImg.width, tmpImg.height);
-    const zoomInicial = Math.max(0.3, 280 / minDim);
-    crop.zoom = zoomInicial;
+
+    // zoomBase = fator para encaixar a foto inteira dentro dos 280px
+    // zoom 1 = foto inteira visível, zoom > 1 = ampliada
+    const maxDim = Math.max(tmpImg.width, tmpImg.height);
+    crop.zoomBase = 280 / maxDim;
+
+    // Começa com zoom 1 (foto inteira enquadrada)
+    crop.zoom = 1;
     crop.x = 0;
     crop.y = 0;
-    document.getElementById('crop-zoom').value = zoomInicial;
+    document.getElementById('crop-zoom').value = 1;
+
+    const img = document.getElementById('crop-img');
     img.src = crop.srcBase64;
     atualizarCrop();
   };
   tmpImg.src = crop.srcBase64;
 
-  // Drag para mover a foto
-  const container = document.getElementById('crop-img').parentElement;
-  let isDragging = false, lastX = 0, lastY = 0;
+  // Drag — registra uma única vez
+  if (!crop._dragInit) {
+    crop._dragInit = true;
+    let isDragging = false, lastX = 0, lastY = 0;
+    const img2 = document.getElementById('crop-img');
 
-  function onStart(e) {
-    isDragging = true;
-    const pt = e.touches ? e.touches[0] : e;
-    lastX = pt.clientX; lastY = pt.clientY;
-  }
-  function onMove(e) {
-    if (!isDragging) return;
-    e.preventDefault();
-    const pt = e.touches ? e.touches[0] : e;
-    const dx = pt.clientX - lastX;
-    const dy = pt.clientY - lastY;
-    lastX = pt.clientX; lastY = pt.clientY;
-    crop.x += dx; crop.y += dy;
-    atualizarCrop();
-  }
-  function onEnd() { isDragging = false; }
+    function onStart(e) {
+      isDragging = true;
+      const pt = e.touches ? e.touches[0] : e;
+      lastX = pt.clientX; lastY = pt.clientY;
+      e.preventDefault();
+    }
+    function onMove(e) {
+      if (!isDragging) return;
+      e.preventDefault();
+      const pt = e.touches ? e.touches[0] : e;
+      crop.x += pt.clientX - lastX;
+      crop.y += pt.clientY - lastY;
+      lastX = pt.clientX; lastY = pt.clientY;
+      atualizarCrop();
+    }
+    function onEnd() { isDragging = false; }
 
-  const img2 = document.getElementById('crop-img');
-  img2.onmousedown = onStart;
-  img2.ontouchstart = onStart;
-  document.onmousemove = onMove;
-  document.ontouchmove = onMove;
-  document.onmouseup = onEnd;
-  document.ontouchend = onEnd;
+    img2.addEventListener('mousedown',  onStart);
+    img2.addEventListener('touchstart', onStart, { passive: false });
+    document.addEventListener('mousemove',  onMove);
+    document.addEventListener('touchmove',  onMove, { passive: false });
+    document.addEventListener('mouseup',  onEnd);
+    document.addEventListener('touchend', onEnd);
+  }
 }
 
 function atualizarCrop() {
   const img  = document.getElementById('crop-img');
-  const zoom = parseFloat(document.getElementById('crop-zoom').value);
-  crop.zoom  = zoom;
-  const w = crop.imgW * zoom;
-  const h = crop.imgH * zoom;
+  if (!img || !crop.zoomBase) return;
+
+  // zoom real = zoomBase * fator do slider
+  // slider 1 = foto inteira, slider 3 = 3x ampliada
+  const fator  = parseFloat(document.getElementById('crop-zoom').value);
+  const zoomR  = crop.zoomBase * fator;
+  const w = crop.imgW * zoomR;
+  const h = crop.imgH * zoomR;
+
   img.style.width  = w + 'px';
   img.style.height = h + 'px';
   img.style.left   = (140 - w/2 + crop.x) + 'px';
@@ -4036,7 +4047,14 @@ function confirmarCrop() {
 
   const tmpImg = new Image();
   tmpImg.onload = () => {
-    ctx.drawImage(tmpImg, -offX, -offY, rect.width, rect.height);
+    // Converte coordenadas da tela para coordenadas da imagem original
+    const fator = parseFloat(document.getElementById('crop-zoom').value);
+    const zoomR = crop.zoomBase * fator;
+    const srcX  = (-offX) / zoomR;
+    const srcY  = (-offY) / zoomR;
+    const srcW  = 280 / zoomR;
+    const srcH  = 280 / zoomR;
+    ctx.drawImage(tmpImg, srcX, srcY, srcW, srcH, 0, 0, 280, 280);
     fotoBase64 = canvas.toDataURL('image/jpeg', 0.85);
     fotoExcluir = false;
 
@@ -5833,62 +5851,73 @@ function previewFoto(event) {
 function abrirCrop() {
   if (!crop.srcBase64) return;
   const modal = document.getElementById('crop-modal');
-  const img   = document.getElementById('crop-img');
   modal.style.display = 'flex';
 
-  // Carrega imagem para obter dimensões
   const tmpImg = new Image();
   tmpImg.onload = () => {
     crop.imgW = tmpImg.width;
     crop.imgH = tmpImg.height;
-    // Calcula zoom inicial para que a foto preencha o círculo de 280px
-    const minDim = Math.min(tmpImg.width, tmpImg.height);
-    const zoomInicial = Math.max(0.3, 280 / minDim);
-    crop.zoom = zoomInicial;
+
+    // zoomBase = fator para encaixar a foto inteira dentro dos 280px
+    // zoom 1 = foto inteira visível, zoom > 1 = ampliada
+    const maxDim = Math.max(tmpImg.width, tmpImg.height);
+    crop.zoomBase = 280 / maxDim;
+
+    // Começa com zoom 1 (foto inteira enquadrada)
+    crop.zoom = 1;
     crop.x = 0;
     crop.y = 0;
-    document.getElementById('crop-zoom').value = zoomInicial;
+    document.getElementById('crop-zoom').value = 1;
+
+    const img = document.getElementById('crop-img');
     img.src = crop.srcBase64;
     atualizarCrop();
   };
   tmpImg.src = crop.srcBase64;
 
-  // Drag para mover a foto
-  const container = document.getElementById('crop-img').parentElement;
-  let isDragging = false, lastX = 0, lastY = 0;
+  // Drag — registra uma única vez
+  if (!crop._dragInit) {
+    crop._dragInit = true;
+    let isDragging = false, lastX = 0, lastY = 0;
+    const img2 = document.getElementById('crop-img');
 
-  function onStart(e) {
-    isDragging = true;
-    const pt = e.touches ? e.touches[0] : e;
-    lastX = pt.clientX; lastY = pt.clientY;
-  }
-  function onMove(e) {
-    if (!isDragging) return;
-    e.preventDefault();
-    const pt = e.touches ? e.touches[0] : e;
-    const dx = pt.clientX - lastX;
-    const dy = pt.clientY - lastY;
-    lastX = pt.clientX; lastY = pt.clientY;
-    crop.x += dx; crop.y += dy;
-    atualizarCrop();
-  }
-  function onEnd() { isDragging = false; }
+    function onStart(e) {
+      isDragging = true;
+      const pt = e.touches ? e.touches[0] : e;
+      lastX = pt.clientX; lastY = pt.clientY;
+      e.preventDefault();
+    }
+    function onMove(e) {
+      if (!isDragging) return;
+      e.preventDefault();
+      const pt = e.touches ? e.touches[0] : e;
+      crop.x += pt.clientX - lastX;
+      crop.y += pt.clientY - lastY;
+      lastX = pt.clientX; lastY = pt.clientY;
+      atualizarCrop();
+    }
+    function onEnd() { isDragging = false; }
 
-  const img2 = document.getElementById('crop-img');
-  img2.onmousedown = onStart;
-  img2.ontouchstart = onStart;
-  document.onmousemove = onMove;
-  document.ontouchmove = onMove;
-  document.onmouseup = onEnd;
-  document.ontouchend = onEnd;
+    img2.addEventListener('mousedown',  onStart);
+    img2.addEventListener('touchstart', onStart, { passive: false });
+    document.addEventListener('mousemove',  onMove);
+    document.addEventListener('touchmove',  onMove, { passive: false });
+    document.addEventListener('mouseup',  onEnd);
+    document.addEventListener('touchend', onEnd);
+  }
 }
 
 function atualizarCrop() {
   const img  = document.getElementById('crop-img');
-  const zoom = parseFloat(document.getElementById('crop-zoom').value);
-  crop.zoom  = zoom;
-  const w = crop.imgW * zoom;
-  const h = crop.imgH * zoom;
+  if (!img || !crop.zoomBase) return;
+
+  // zoom real = zoomBase * fator do slider
+  // slider 1 = foto inteira, slider 3 = 3x ampliada
+  const fator  = parseFloat(document.getElementById('crop-zoom').value);
+  const zoomR  = crop.zoomBase * fator;
+  const w = crop.imgW * zoomR;
+  const h = crop.imgH * zoomR;
+
   img.style.width  = w + 'px';
   img.style.height = h + 'px';
   img.style.left   = (140 - w/2 + crop.x) + 'px';
@@ -5915,7 +5944,14 @@ function confirmarCrop() {
 
   const tmpImg = new Image();
   tmpImg.onload = () => {
-    ctx.drawImage(tmpImg, -offX, -offY, rect.width, rect.height);
+    // Converte coordenadas da tela para coordenadas da imagem original
+    const fator = parseFloat(document.getElementById('crop-zoom').value);
+    const zoomR = crop.zoomBase * fator;
+    const srcX  = (-offX) / zoomR;
+    const srcY  = (-offY) / zoomR;
+    const srcW  = 280 / zoomR;
+    const srcH  = 280 / zoomR;
+    ctx.drawImage(tmpImg, srcX, srcY, srcW, srcH, 0, 0, 280, 280);
     fotoBase64 = canvas.toDataURL('image/jpeg', 0.85);
     fotoExcluir = false;
 

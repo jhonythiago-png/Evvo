@@ -1979,6 +1979,65 @@ select.form-input option{background:#0e0e1a;color:#fff}
     </div>
   </div>
 
+
+  <!-- ══════════ TELA: EVOLUÇÃO DO EXERCÍCIO ══════════ -->
+  <div class="screen" id="screen-evolucao-ex">
+    <div class="scroll">
+      <div class="back-row">
+        <button class="btn-back" onclick="goTo('screen-detalhe-sessao')">
+          <svg viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg>
+        </button>
+        <span class="back-label">Treino</span>
+      </div>
+      <div class="hero" style="padding-top:12px">
+        <div class="hero-glow"></div>
+        <div class="hero-label">Evolução</div>
+        <div class="hero-title" id="grafico-ex-nome">Exercício</div>
+        <div class="hero-sub" id="grafico-ex-sub">—</div>
+      </div>
+
+      <!-- Stats rápidos -->
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;padding:0 16px 16px">
+        <div style="background:var(--bg2);border-radius:14px;border:1px solid var(--border);padding:14px;text-align:center">
+          <div style="font-size:22px;font-weight:900;color:var(--accent);line-height:1" id="grafico-max">—</div>
+          <div style="font-size:9px;color:var(--text3);text-transform:uppercase;letter-spacing:.08em;margin-top:4px">Recorde</div>
+        </div>
+        <div style="background:var(--bg2);border-radius:14px;border:1px solid var(--border);padding:14px;text-align:center">
+          <div style="font-size:22px;font-weight:900;color:var(--text);line-height:1" id="grafico-total">—</div>
+          <div style="font-size:9px;color:var(--text3);text-transform:uppercase;letter-spacing:.08em;margin-top:4px">Treinos</div>
+        </div>
+        <div style="background:var(--bg2);border-radius:14px;border:1px solid var(--border);padding:14px;text-align:center">
+          <div style="font-size:22px;font-weight:900;color:var(--success);line-height:1" id="grafico-evolucao">—</div>
+          <div style="font-size:9px;color:var(--text3);text-transform:uppercase;letter-spacing:.08em;margin-top:4px">Evolução</div>
+        </div>
+      </div>
+
+      <!-- Gráfico -->
+      <div style="margin:0 16px 16px;background:var(--bg2);border-radius:18px;border:1px solid var(--border);padding:16px;overflow:hidden">
+        <div style="font-size:11px;font-weight:800;color:var(--text);margin-bottom:4px">Progressão de carga</div>
+        <div style="font-size:10px;color:var(--text3);margin-bottom:16px" id="grafico-periodo">—</div>
+        <div style="position:relative;width:100%;overflow-x:auto">
+          <canvas id="grafico-canvas" style="display:block"></canvas>
+        </div>
+        <div style="display:flex;align-items:center;gap:12px;margin-top:12px;flex-wrap:wrap">
+          <div style="display:flex;align-items:center;gap:5px">
+            <div style="width:20px;height:2px;background:var(--accent);border-radius:2px"></div>
+            <span style="font-size:10px;color:var(--text3)">Carga máx.</span>
+          </div>
+          <div style="display:flex;align-items:center;gap:5px">
+            <div style="width:10px;height:10px;border-radius:50%;background:linear-gradient(135deg,#f5a623,#ff6a00)"></div>
+            <span style="font-size:10px;color:var(--text3)">🏆 Recorde</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Histórico de sessões do exercício -->
+      <div class="sec-lbl">Histórico</div>
+      <div style="padding:0 16px;display:flex;flex-direction:column;gap:8px" id="grafico-historico"></div>
+      <div style="height:20px"></div>
+    </div>
+  </div>
+
   <!-- ══════════ MODAL NOVA FICHA ══════════ -->
   <div class="modal-overlay" id="modal-ficha">
     <div class="modal">
@@ -3884,7 +3943,8 @@ async function abrirDetalhesSessao(sessaoId) {
             </span>`;
           }).join('');
 
-      return `<div style="background:var(--bg2);border-radius:14px;border:1px solid var(--border);padding:12px 14px">
+      return `<div style="background:var(--bg2);border-radius:14px;border:1px solid var(--border);padding:12px 14px;cursor:pointer"
+        onclick="abrirGraficoExercicio('${Object.keys(exMap)[Object.values(exMap).indexOf(ex)]}','${ex.nome.replace(/'/g,"'")}','${ex.grupo}')">
         <div style="display:flex;align-items:center;gap:10px;margin-bottom:${chipsHTML ? '10px' : '0'}">
           <div class="card-icon ${iconeColor}" style="width:34px;height:34px;border-radius:10px">
             <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -4435,6 +4495,215 @@ function atualizarAvatarPerfil() {
   } else {
     av.textContent = (state.perfil?.nome || '?').charAt(0).toUpperCase();
   }
+}
+
+
+// ═══════════════════════════════════════════
+// GRÁFICO DE EVOLUÇÃO POR EXERCÍCIO
+// ═══════════════════════════════════════════
+async function abrirGraficoExercicio(exId, nome, grupo) {
+  document.getElementById('grafico-ex-nome').textContent = nome;
+  document.getElementById('grafico-ex-sub').textContent  = grupo || '—';
+
+  // Busca todas as séries executadas deste exercício ordenadas por data
+  const { data: series } = await sb.from('series_executadas')
+    .select('carga_kg, repeticoes, is_pr, executado_em, sessoes(iniciado_em)')
+    .eq('exercicio_id', exId)
+    .eq('concluida', true)
+    .not('carga_kg', 'is', null)
+    .order('executado_em', { ascending: true });
+
+  if (!series || !series.length) {
+    showToast('Nenhum dado ainda para este exercício');
+    return;
+  }
+
+  // Agrupa por data de sessão — pega a carga máxima de cada dia
+  const porDia = {};
+  series.forEach(s => {
+    const data = new Date(s.sessoes?.iniciado_em || s.executado_em)
+      .toLocaleDateString('pt-BR', { day:'2-digit', month:'short' });
+    if (!porDia[data]) porDia[data] = { carga: 0, isPR: false, dataFull: s.sessoes?.iniciado_em || s.executado_em };
+    if (s.carga_kg > porDia[data].carga) {
+      porDia[data].carga = s.carga_kg;
+      if (s.is_pr) porDia[data].isPR = true;
+    }
+    if (s.is_pr) porDia[data].isPR = true;
+  });
+
+  const labels = Object.keys(porDia);
+  const valores = labels.map(l => porDia[l].carga);
+  const isPRs   = labels.map(l => porDia[l].isPR);
+
+  // Stats
+  const maxCarga = Math.max(...valores);
+  const primeiro = valores[0];
+  const ultimo   = valores[valores.length - 1];
+  const evolucao = ultimo - primeiro;
+
+  document.getElementById('grafico-max').textContent     = maxCarga + 'kg';
+  document.getElementById('grafico-total').textContent   = labels.length;
+  document.getElementById('grafico-evolucao').textContent = (evolucao >= 0 ? '+' : '') + evolucao + 'kg';
+  document.getElementById('grafico-evolucao').style.color = evolucao >= 0 ? 'var(--success)' : '#ee0979';
+
+  // Período
+  if (labels.length >= 2) {
+    document.getElementById('grafico-periodo').textContent = labels[0] + ' → ' + labels[labels.length-1];
+  } else {
+    document.getElementById('grafico-periodo').textContent = labels[0] || '—';
+  }
+
+  // Desenha gráfico no canvas
+  desenharGrafico(labels, valores, isPRs);
+
+  // Histórico por sessão
+  const hist = document.getElementById('grafico-historico');
+  hist.innerHTML = [...labels].reverse().map((l, i) => {
+    const idx = labels.length - 1 - i;
+    const v = valores[idx];
+    const pr = isPRs[idx];
+    return `<div style="background:var(--bg2);border-radius:12px;border:1px solid var(--border);padding:12px 14px;display:flex;align-items:center;justify-content:space-between">
+      <div>
+        <div style="font-size:13px;font-weight:800;color:var(--text)">${l}</div>
+        <div style="font-size:10px;color:var(--text3);margin-top:2px">Carga máxima</div>
+      </div>
+      <div style="display:flex;align-items:center;gap:8px">
+        ${pr ? '<span style="background:linear-gradient(135deg,#f5a623,#ff6a00);color:#fff;font-size:9px;font-weight:900;padding:2px 7px;border-radius:10px">🏆 Recorde</span>' : ''}
+        <div style="font-size:18px;font-weight:900;color:var(--text)">${v}<span style="font-size:10px;color:var(--text3);margin-left:2px">kg</span></div>
+      </div>
+    </div>`;
+  }).join('');
+
+  goTo('screen-evolucao-ex');
+}
+
+function desenharGrafico(labels, valores, isPRs) {
+  const canvas = document.getElementById('grafico-canvas');
+  const dpr    = window.devicePixelRatio || 1;
+  const W      = canvas.parentElement.clientWidth - 32;
+  const H      = 180;
+
+  canvas.width  = W * dpr;
+  canvas.height = H * dpr;
+  canvas.style.width  = W + 'px';
+  canvas.style.height = H + 'px';
+
+  const ctx = canvas.getContext('2d');
+  ctx.scale(dpr, dpr);
+  ctx.clearRect(0, 0, W, H);
+
+  if (valores.length < 2) {
+    // Só um ponto — mostra mensagem
+    ctx.fillStyle = 'rgba(255,255,255,0.3)';
+    ctx.font = '12px -apple-system, sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText('Faça mais treinos para ver a evolução', W/2, H/2);
+    return;
+  }
+
+  const pad   = { top: 20, right: 20, bottom: 30, left: 40 };
+  const gW    = W - pad.left - pad.right;
+  const gH    = H - pad.top  - pad.bottom;
+  const minV  = Math.min(...valores) * 0.92;
+  const maxV  = Math.max(...valores) * 1.05;
+  const range = maxV - minV || 1;
+
+  const xPos = (i) => pad.left + (i / (valores.length - 1)) * gW;
+  const yPos = (v) => pad.top  + gH - ((v - minV) / range) * gH;
+
+  // Grade horizontal
+  ctx.strokeStyle = 'rgba(255,255,255,0.06)';
+  ctx.lineWidth = 1;
+  for (let i = 0; i <= 4; i++) {
+    const y = pad.top + (i / 4) * gH;
+    ctx.beginPath();
+    ctx.moveTo(pad.left, y);
+    ctx.lineTo(pad.left + gW, y);
+    ctx.stroke();
+  }
+
+  // Labels eixo Y
+  ctx.fillStyle = 'rgba(255,255,255,0.35)';
+  ctx.font = `${10 * dpr / dpr}px -apple-system, sans-serif`;
+  ctx.textAlign = 'right';
+  for (let i = 0; i <= 2; i++) {
+    const v = minV + (range * i / 2);
+    const y = yPos(v);
+    ctx.fillText(Math.round(v) + 'kg', pad.left - 4, y + 4);
+  }
+
+  // Área preenchida sob a linha
+  const grad = ctx.createLinearGradient(0, pad.top, 0, pad.top + gH);
+  grad.addColorStop(0, 'rgba(255,106,0,0.3)');
+  grad.addColorStop(1, 'rgba(255,106,0,0.0)');
+  ctx.beginPath();
+  ctx.moveTo(xPos(0), yPos(valores[0]));
+  for (let i = 1; i < valores.length; i++) {
+    ctx.lineTo(xPos(i), yPos(valores[i]));
+  }
+  ctx.lineTo(xPos(valores.length - 1), pad.top + gH);
+  ctx.lineTo(xPos(0), pad.top + gH);
+  ctx.closePath();
+  ctx.fillStyle = grad;
+  ctx.fill();
+
+  // Linha principal
+  ctx.beginPath();
+  ctx.moveTo(xPos(0), yPos(valores[0]));
+  for (let i = 1; i < valores.length; i++) {
+    ctx.lineTo(xPos(i), yPos(valores[i]));
+  }
+  ctx.strokeStyle = '#ff6a00';
+  ctx.lineWidth = 2.5;
+  ctx.lineJoin = 'round';
+  ctx.lineCap  = 'round';
+  ctx.stroke();
+
+  // Pontos
+  valores.forEach((v, i) => {
+    const x = xPos(i);
+    const y = yPos(v);
+
+    if (isPRs[i]) {
+      // Ponto dourado para recorde
+      const prGrad = ctx.createRadialGradient(x, y, 0, x, y, 8);
+      prGrad.addColorStop(0, '#f5a623');
+      prGrad.addColorStop(1, '#ff6a00');
+      ctx.beginPath();
+      ctx.arc(x, y, 6, 0, Math.PI * 2);
+      ctx.fillStyle = prGrad;
+      ctx.fill();
+      ctx.strokeStyle = '#fff';
+      ctx.lineWidth = 1.5;
+      ctx.stroke();
+    } else {
+      // Ponto normal
+      ctx.beginPath();
+      ctx.arc(x, y, 4, 0, Math.PI * 2);
+      ctx.fillStyle = '#ff6a00';
+      ctx.fill();
+      ctx.strokeStyle = '#0e0e1a';
+      ctx.lineWidth = 1.5;
+      ctx.stroke();
+    }
+
+    // Label da carga acima do ponto
+    ctx.fillStyle = 'rgba(255,255,255,0.7)';
+    ctx.font = '9px -apple-system, sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText(v + 'kg', x, y - 10);
+  });
+
+  // Labels eixo X (datas — só mostra alguns para não sobrepor)
+  ctx.fillStyle = 'rgba(255,255,255,0.35)';
+  ctx.font = '9px -apple-system, sans-serif';
+  ctx.textAlign = 'center';
+  const step = Math.max(1, Math.floor(labels.length / 5));
+  labels.forEach((l, i) => {
+    if (i % step === 0 || i === labels.length - 1) {
+      ctx.fillText(l, xPos(i), H - 6);
+    }
+  });
 }
 
 // ═══════════════════════════════════════════
@@ -5947,7 +6216,8 @@ async function abrirDetalhesSessao(sessaoId) {
             </span>`;
           }).join('');
 
-      return `<div style="background:var(--bg2);border-radius:14px;border:1px solid var(--border);padding:12px 14px">
+      return `<div style="background:var(--bg2);border-radius:14px;border:1px solid var(--border);padding:12px 14px;cursor:pointer"
+        onclick="abrirGraficoExercicio('${Object.keys(exMap)[Object.values(exMap).indexOf(ex)]}','${ex.nome.replace(/'/g,"'")}','${ex.grupo}')">
         <div style="display:flex;align-items:center;gap:10px;margin-bottom:${chipsHTML ? '10px' : '0'}">
           <div class="card-icon ${iconeColor}" style="width:34px;height:34px;border-radius:10px">
             <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -6497,6 +6767,215 @@ function atualizarAvatarPerfil() {
   } else {
     av.textContent = (state.perfil?.nome || '?').charAt(0).toUpperCase();
   }
+}
+
+
+// ═══════════════════════════════════════════
+// GRÁFICO DE EVOLUÇÃO POR EXERCÍCIO
+// ═══════════════════════════════════════════
+async function abrirGraficoExercicio(exId, nome, grupo) {
+  document.getElementById('grafico-ex-nome').textContent = nome;
+  document.getElementById('grafico-ex-sub').textContent  = grupo || '—';
+
+  // Busca todas as séries executadas deste exercício ordenadas por data
+  const { data: series } = await sb.from('series_executadas')
+    .select('carga_kg, repeticoes, is_pr, executado_em, sessoes(iniciado_em)')
+    .eq('exercicio_id', exId)
+    .eq('concluida', true)
+    .not('carga_kg', 'is', null)
+    .order('executado_em', { ascending: true });
+
+  if (!series || !series.length) {
+    showToast('Nenhum dado ainda para este exercício');
+    return;
+  }
+
+  // Agrupa por data de sessão — pega a carga máxima de cada dia
+  const porDia = {};
+  series.forEach(s => {
+    const data = new Date(s.sessoes?.iniciado_em || s.executado_em)
+      .toLocaleDateString('pt-BR', { day:'2-digit', month:'short' });
+    if (!porDia[data]) porDia[data] = { carga: 0, isPR: false, dataFull: s.sessoes?.iniciado_em || s.executado_em };
+    if (s.carga_kg > porDia[data].carga) {
+      porDia[data].carga = s.carga_kg;
+      if (s.is_pr) porDia[data].isPR = true;
+    }
+    if (s.is_pr) porDia[data].isPR = true;
+  });
+
+  const labels = Object.keys(porDia);
+  const valores = labels.map(l => porDia[l].carga);
+  const isPRs   = labels.map(l => porDia[l].isPR);
+
+  // Stats
+  const maxCarga = Math.max(...valores);
+  const primeiro = valores[0];
+  const ultimo   = valores[valores.length - 1];
+  const evolucao = ultimo - primeiro;
+
+  document.getElementById('grafico-max').textContent     = maxCarga + 'kg';
+  document.getElementById('grafico-total').textContent   = labels.length;
+  document.getElementById('grafico-evolucao').textContent = (evolucao >= 0 ? '+' : '') + evolucao + 'kg';
+  document.getElementById('grafico-evolucao').style.color = evolucao >= 0 ? 'var(--success)' : '#ee0979';
+
+  // Período
+  if (labels.length >= 2) {
+    document.getElementById('grafico-periodo').textContent = labels[0] + ' → ' + labels[labels.length-1];
+  } else {
+    document.getElementById('grafico-periodo').textContent = labels[0] || '—';
+  }
+
+  // Desenha gráfico no canvas
+  desenharGrafico(labels, valores, isPRs);
+
+  // Histórico por sessão
+  const hist = document.getElementById('grafico-historico');
+  hist.innerHTML = [...labels].reverse().map((l, i) => {
+    const idx = labels.length - 1 - i;
+    const v = valores[idx];
+    const pr = isPRs[idx];
+    return `<div style="background:var(--bg2);border-radius:12px;border:1px solid var(--border);padding:12px 14px;display:flex;align-items:center;justify-content:space-between">
+      <div>
+        <div style="font-size:13px;font-weight:800;color:var(--text)">${l}</div>
+        <div style="font-size:10px;color:var(--text3);margin-top:2px">Carga máxima</div>
+      </div>
+      <div style="display:flex;align-items:center;gap:8px">
+        ${pr ? '<span style="background:linear-gradient(135deg,#f5a623,#ff6a00);color:#fff;font-size:9px;font-weight:900;padding:2px 7px;border-radius:10px">🏆 Recorde</span>' : ''}
+        <div style="font-size:18px;font-weight:900;color:var(--text)">${v}<span style="font-size:10px;color:var(--text3);margin-left:2px">kg</span></div>
+      </div>
+    </div>`;
+  }).join('');
+
+  goTo('screen-evolucao-ex');
+}
+
+function desenharGrafico(labels, valores, isPRs) {
+  const canvas = document.getElementById('grafico-canvas');
+  const dpr    = window.devicePixelRatio || 1;
+  const W      = canvas.parentElement.clientWidth - 32;
+  const H      = 180;
+
+  canvas.width  = W * dpr;
+  canvas.height = H * dpr;
+  canvas.style.width  = W + 'px';
+  canvas.style.height = H + 'px';
+
+  const ctx = canvas.getContext('2d');
+  ctx.scale(dpr, dpr);
+  ctx.clearRect(0, 0, W, H);
+
+  if (valores.length < 2) {
+    // Só um ponto — mostra mensagem
+    ctx.fillStyle = 'rgba(255,255,255,0.3)';
+    ctx.font = '12px -apple-system, sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText('Faça mais treinos para ver a evolução', W/2, H/2);
+    return;
+  }
+
+  const pad   = { top: 20, right: 20, bottom: 30, left: 40 };
+  const gW    = W - pad.left - pad.right;
+  const gH    = H - pad.top  - pad.bottom;
+  const minV  = Math.min(...valores) * 0.92;
+  const maxV  = Math.max(...valores) * 1.05;
+  const range = maxV - minV || 1;
+
+  const xPos = (i) => pad.left + (i / (valores.length - 1)) * gW;
+  const yPos = (v) => pad.top  + gH - ((v - minV) / range) * gH;
+
+  // Grade horizontal
+  ctx.strokeStyle = 'rgba(255,255,255,0.06)';
+  ctx.lineWidth = 1;
+  for (let i = 0; i <= 4; i++) {
+    const y = pad.top + (i / 4) * gH;
+    ctx.beginPath();
+    ctx.moveTo(pad.left, y);
+    ctx.lineTo(pad.left + gW, y);
+    ctx.stroke();
+  }
+
+  // Labels eixo Y
+  ctx.fillStyle = 'rgba(255,255,255,0.35)';
+  ctx.font = `${10 * dpr / dpr}px -apple-system, sans-serif`;
+  ctx.textAlign = 'right';
+  for (let i = 0; i <= 2; i++) {
+    const v = minV + (range * i / 2);
+    const y = yPos(v);
+    ctx.fillText(Math.round(v) + 'kg', pad.left - 4, y + 4);
+  }
+
+  // Área preenchida sob a linha
+  const grad = ctx.createLinearGradient(0, pad.top, 0, pad.top + gH);
+  grad.addColorStop(0, 'rgba(255,106,0,0.3)');
+  grad.addColorStop(1, 'rgba(255,106,0,0.0)');
+  ctx.beginPath();
+  ctx.moveTo(xPos(0), yPos(valores[0]));
+  for (let i = 1; i < valores.length; i++) {
+    ctx.lineTo(xPos(i), yPos(valores[i]));
+  }
+  ctx.lineTo(xPos(valores.length - 1), pad.top + gH);
+  ctx.lineTo(xPos(0), pad.top + gH);
+  ctx.closePath();
+  ctx.fillStyle = grad;
+  ctx.fill();
+
+  // Linha principal
+  ctx.beginPath();
+  ctx.moveTo(xPos(0), yPos(valores[0]));
+  for (let i = 1; i < valores.length; i++) {
+    ctx.lineTo(xPos(i), yPos(valores[i]));
+  }
+  ctx.strokeStyle = '#ff6a00';
+  ctx.lineWidth = 2.5;
+  ctx.lineJoin = 'round';
+  ctx.lineCap  = 'round';
+  ctx.stroke();
+
+  // Pontos
+  valores.forEach((v, i) => {
+    const x = xPos(i);
+    const y = yPos(v);
+
+    if (isPRs[i]) {
+      // Ponto dourado para recorde
+      const prGrad = ctx.createRadialGradient(x, y, 0, x, y, 8);
+      prGrad.addColorStop(0, '#f5a623');
+      prGrad.addColorStop(1, '#ff6a00');
+      ctx.beginPath();
+      ctx.arc(x, y, 6, 0, Math.PI * 2);
+      ctx.fillStyle = prGrad;
+      ctx.fill();
+      ctx.strokeStyle = '#fff';
+      ctx.lineWidth = 1.5;
+      ctx.stroke();
+    } else {
+      // Ponto normal
+      ctx.beginPath();
+      ctx.arc(x, y, 4, 0, Math.PI * 2);
+      ctx.fillStyle = '#ff6a00';
+      ctx.fill();
+      ctx.strokeStyle = '#0e0e1a';
+      ctx.lineWidth = 1.5;
+      ctx.stroke();
+    }
+
+    // Label da carga acima do ponto
+    ctx.fillStyle = 'rgba(255,255,255,0.7)';
+    ctx.font = '9px -apple-system, sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText(v + 'kg', x, y - 10);
+  });
+
+  // Labels eixo X (datas — só mostra alguns para não sobrepor)
+  ctx.fillStyle = 'rgba(255,255,255,0.35)';
+  ctx.font = '9px -apple-system, sans-serif';
+  ctx.textAlign = 'center';
+  const step = Math.max(1, Math.floor(labels.length / 5));
+  labels.forEach((l, i) => {
+    if (i % step === 0 || i === labels.length - 1) {
+      ctx.fillText(l, xPos(i), H - 6);
+    }
+  });
 }
 
 // ═══════════════════════════════════════════

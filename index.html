@@ -2504,17 +2504,20 @@ function editCarga(si) {
   const row = document.getElementById(`sr-${si}`);
   const jaFeita = row?.querySelector('.sn')?.classList.contains('done');
 
-  // Pega valor atual
+  // Pega valor atual diretamente do data attribute ou do texto
   const el = document.querySelector(`#sr-${si} .sf:first-of-type .v`);
-  const atual = el ? el.textContent.replace('kg','').trim() : '';
+  const atual = el ? el.textContent.replace('kg','').replace('—','').trim() : '';
 
   const val = prompt('Carga (kg):', atual);
   if (val === null) return;
   const num = parseFloat(val);
   if (isNaN(num) || num < 0) return;
 
-  // Atualiza visual
-  if (el) el.textContent = num + 'kg';
+  // Atualiza visual E armazena no data attribute para leitura confiável
+  if (el) {
+    el.textContent = num + 'kg';
+    el.setAttribute('data-carga', num);
+  }
 
   // Atualiza no seriesExecutadas local
   const key = `${state.execIdx}_${si}`;
@@ -3603,17 +3606,17 @@ async function salvarSerieExecutada(si) {
   const serie = (ex.series_template || [])[si];
   if (!serie) return;
 
-  // Prioriza valores editados manualmente (seriesExecutadas local)
-  // senão pega da tela, senão pega do template
   const key0 = `${state.execIdx}_${si}`;
   const editado = seriesExecutadas[key0];
 
-  const cargaEl  = document.querySelector(`#sr-${si} .sf:first-of-type .v`);
-  const repsEl   = document.querySelectorAll(`#sr-${si} .sf`)[1]?.querySelector('.v');
+  const cargaEl = document.querySelector(`#sr-${si} .sf:first-of-type .v`);
+  const repsEl  = document.querySelectorAll(`#sr-${si} .sf`)[1]?.querySelector('.v');
 
-  // Carga: prioridade 1=editado local, 2=tela, 3=template
+  // Carga: data-carga > editado local > tela > template
   let cargaVal = null;
-  if (editado?.carga != null) {
+  if (cargaEl?.getAttribute('data-carga')) {
+    cargaVal = parseFloat(cargaEl.getAttribute('data-carga'));
+  } else if (editado?.carga != null) {
     cargaVal = parseFloat(editado.carga) || null;
   } else if (cargaEl) {
     cargaVal = parseFloat(cargaEl.textContent) || null;
@@ -3621,7 +3624,7 @@ async function salvarSerieExecutada(si) {
     cargaVal = serie.carga_kg || null;
   }
 
-  // Reps: prioridade 1=editado local, 2=tela, 3=template
+  // Reps: editado local > tela > template
   let repsVal = null;
   if (editado?.reps != null) {
     repsVal = String(editado.reps);
@@ -4842,17 +4845,20 @@ function editCarga(si) {
   const row = document.getElementById(`sr-${si}`);
   const jaFeita = row?.querySelector('.sn')?.classList.contains('done');
 
-  // Pega valor atual
+  // Pega valor atual diretamente do data attribute ou do texto
   const el = document.querySelector(`#sr-${si} .sf:first-of-type .v`);
-  const atual = el ? el.textContent.replace('kg','').trim() : '';
+  const atual = el ? el.textContent.replace('kg','').replace('—','').trim() : '';
 
   const val = prompt('Carga (kg):', atual);
   if (val === null) return;
   const num = parseFloat(val);
   if (isNaN(num) || num < 0) return;
 
-  // Atualiza visual
-  if (el) el.textContent = num + 'kg';
+  // Atualiza visual E armazena no data attribute para leitura confiável
+  if (el) {
+    el.textContent = num + 'kg';
+    el.setAttribute('data-carga', num);
+  }
 
   // Atualiza no seriesExecutadas local
   const key = `${state.execIdx}_${si}`;
@@ -5657,17 +5663,17 @@ async function salvarSerieExecutada(si) {
   const serie = (ex.series_template || [])[si];
   if (!serie) return;
 
-  // Prioriza valores editados manualmente (seriesExecutadas local)
-  // senão pega da tela, senão pega do template
   const key0 = `${state.execIdx}_${si}`;
   const editado = seriesExecutadas[key0];
 
-  const cargaEl  = document.querySelector(`#sr-${si} .sf:first-of-type .v`);
-  const repsEl   = document.querySelectorAll(`#sr-${si} .sf`)[1]?.querySelector('.v');
+  const cargaEl = document.querySelector(`#sr-${si} .sf:first-of-type .v`);
+  const repsEl  = document.querySelectorAll(`#sr-${si} .sf`)[1]?.querySelector('.v');
 
-  // Carga: prioridade 1=editado local, 2=tela, 3=template
+  // Carga: data-carga > editado local > tela > template
   let cargaVal = null;
-  if (editado?.carga != null) {
+  if (cargaEl?.getAttribute('data-carga')) {
+    cargaVal = parseFloat(cargaEl.getAttribute('data-carga'));
+  } else if (editado?.carga != null) {
     cargaVal = parseFloat(editado.carga) || null;
   } else if (cargaEl) {
     cargaVal = parseFloat(cargaEl.textContent) || null;
@@ -5675,7 +5681,7 @@ async function salvarSerieExecutada(si) {
     cargaVal = serie.carga_kg || null;
   }
 
-  // Reps: prioridade 1=editado local, 2=tela, 3=template
+  // Reps: editado local > tela > template
   let repsVal = null;
   if (editado?.reps != null) {
     repsVal = String(editado.reps);

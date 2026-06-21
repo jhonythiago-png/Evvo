@@ -296,6 +296,7 @@ button{cursor:pointer;background:none}
 .badge-success{color:var(--success);background:#39d35318}
 .badge-muted{color:var(--text4);background:var(--border)}
 .badge-now{color:#fff;background:var(--grad)}
+@keyframes prPop{from{transform:translateY(-50%) scale(0)}to{transform:translateY(-50%) scale(1)}}
 
 /* ═══════════════════════════════════════════
    TELA: MEU TREINO (dias)
@@ -2055,6 +2056,7 @@ function showApp() {
   updateGreeting();
   loadMedidas();
   updateShareProfile();
+  carregarPRs();
 }
 
 // ═══════════════════════════════════════════
@@ -2398,6 +2400,7 @@ function renderExec() {
   cont.innerHTML = series.map((s, si) => {
     // Verifica se já foi marcada como feita nesta sessão
     const jaFeita = !!(seriesExecutadas[`${state.execIdx}_${si}`]);
+    const dadosSerie = seriesExecutadas[`${state.execIdx}_${si}`];
     // Primeira não feita = 'now', feitas = 'done', demais = 'next'
     const primeiraAberta = series.findIndex((_, i) => !seriesExecutadas[`${state.execIdx}_${i}`]);
     const cls = jaFeita ? 'done' : (si === primeiraAberta ? 'now' : 'next');
@@ -2406,7 +2409,10 @@ function renderExec() {
       : cls === 'now'
         ? '<polygon points="5 3 19 12 5 21 5 3"/>'
         : '<circle cx="12" cy="12" r="10"/>';
-    return `<div class="serie-row" id="sr-${si}">
+    const prBadge = (jaFeita && dadosSerie?.isPR)
+      ? `<div class="pr-badge" style="position:absolute;right:40px;top:50%;transform:translateY(-50%);background:linear-gradient(135deg,#f5a623,#ff6a00);color:#fff;font-size:9px;font-weight:900;padding:3px 8px;border-radius:20px;letter-spacing:.06em;text-transform:uppercase;display:flex;align-items:center;gap:3px">🏆 PR</div>`
+      : '';
+    return `<div class="serie-row" id="sr-${si}" style="position:relative">
       <div class="sn ${cls}">${si+1}</div>
       <div class="sf ${cls}" onclick="editCarga(${si})">
         <div class="v">${s.carga_kg != null ? s.carga_kg+'kg' : '—'}</div>
@@ -2419,6 +2425,7 @@ function renderExec() {
       <button class="sc ${cls}" onclick="toggleSerie(${si})" id="sc-${si}">
         <svg viewBox="0 0 24 24"><${svgBotao}/></svg>
       </button>
+      ${prBadge}
     </div>`;
   }).join('');
 }
@@ -3516,17 +3523,26 @@ async function iniciarSessao() {
 async function salvarSerieExecutada(si) {
   if (!state.sessaoAtiva) return;
 
-  const ex  = state.exerciciosAtual[state.execIdx];
+  const ex = state.exerciciosAtual[state.execIdx];
   if (!ex) return;
 
   const serie = (ex.series_template || [])[si];
   if (!serie) return;
 
-  // Pega valores atuais da tela (podem ter sido editados)
-  const cargaEl = document.querySelector(`#sr-${si} .sf:first-of-type .v`);
-  const repsEl  = document.querySelectorAll(`#sr-${si} .sf`)[1]?.querySelector('.v');
+  // Pega valores atuais da tela
+  const cargaEl  = document.querySelector(`#sr-${si} .sf:first-of-type .v`);
+  const repsEl   = document.querySelectorAll(`#sr-${si} .sf`)[1]?.querySelector('.v');
   const cargaVal = cargaEl ? parseFloat(cargaEl.textContent) || null : serie.carga_kg;
   const repsVal  = repsEl  ? repsEl.textContent : serie.repeticoes;
+
+  // Verifica se é PR
+  let isPR = false;
+  if (cargaVal && cargaVal > 0) {
+    const prAtual = state.prs?.[ex.id];
+    if (!prAtual || cargaVal > prAtual) {
+      isPR = true;
+    }
+  }
 
   await sb.from('series_executadas').insert({
     sessao_id:    state.sessaoAtiva.id,
@@ -3535,12 +3551,65 @@ async function salvarSerieExecutada(si) {
     carga_kg:     cargaVal,
     repeticoes:   repsVal ? String(repsVal) : null,
     concluida:    true,
+    is_pr:        isPR,
     executado_em: new Date().toISOString(),
   });
 
+  // Se for PR, atualiza tabela prs e estado local
+  if (isPR) {
+    await sb.from('prs').upsert({
+      user_id:       state.user.id,
+      exercicio_id:  ex.id,
+      carga_kg:      cargaVal,
+      conquistado_em: new Date().toISOString(),
+    }, { onConflict: 'user_id,exercicio_id' });
+
+    // Atualiza cache local
+    if (!state.prs) state.prs = {};
+    state.prs[ex.id] = cargaVal;
+
+    // Mostra badge PR na série
+    mostrarBadgePR(si, cargaVal);
+  }
+
   // Guarda local para calcular volume
   const key = `${state.execIdx}_${si}`;
-  seriesExecutadas[key] = { carga: cargaVal, reps: repsVal };
+  seriesExecutadas[key] = { carga: cargaVal, reps: repsVal, isPR };
+}
+
+function mostrarBadgePR(si, carga) {
+  const row = document.getElementById(`sr-${si}`);
+  if (!row) return;
+
+  // Adiciona badge 🏆 PR na linha da série
+  const existing = row.querySelector('.pr-badge');
+  if (existing) return;
+
+  const badge = document.createElement('div');
+  badge.className = 'pr-badge';
+  badge.style.cssText = `
+    position:absolute; right:40px; top:50%; transform:translateY(-50%);
+    background:linear-gradient(135deg,#f5a623,#ff6a00);
+    color:#fff; font-size:9px; font-weight:900; padding:3px 8px;
+    border-radius:20px; letter-spacing:.06em; text-transform:uppercase;
+    display:flex; align-items:center; gap:3px; box-shadow:0 2px 8px #ff6a0055;
+    animation: prPop .4s cubic-bezier(.175,.885,.32,1.275);
+  `;
+  badge.innerHTML = '🏆 PR';
+  row.style.position = 'relative';
+  row.appendChild(badge);
+
+  // Toast comemorativo
+  showToast(`🏆 Novo PR! ${carga}kg`);
+}
+
+async function carregarPRs() {
+  if (!state.user) return;
+  const { data } = await sb.from('prs')
+    .select('exercicio_id, carga_kg')
+    .eq('user_id', state.user.id);
+  state.prs = {};
+  (data || []).forEach(p => { state.prs[p.exercicio_id] = p.carga_kg; });
 }
 
 async function desmarcarSerieExecutada(si) {
@@ -4298,6 +4367,7 @@ function showApp() {
   updateGreeting();
   loadMedidas();
   updateShareProfile();
+  carregarPRs();
 }
 
 // ═══════════════════════════════════════════
@@ -4641,6 +4711,7 @@ function renderExec() {
   cont.innerHTML = series.map((s, si) => {
     // Verifica se já foi marcada como feita nesta sessão
     const jaFeita = !!(seriesExecutadas[`${state.execIdx}_${si}`]);
+    const dadosSerie = seriesExecutadas[`${state.execIdx}_${si}`];
     // Primeira não feita = 'now', feitas = 'done', demais = 'next'
     const primeiraAberta = series.findIndex((_, i) => !seriesExecutadas[`${state.execIdx}_${i}`]);
     const cls = jaFeita ? 'done' : (si === primeiraAberta ? 'now' : 'next');
@@ -4649,7 +4720,10 @@ function renderExec() {
       : cls === 'now'
         ? '<polygon points="5 3 19 12 5 21 5 3"/>'
         : '<circle cx="12" cy="12" r="10"/>';
-    return `<div class="serie-row" id="sr-${si}">
+    const prBadge = (jaFeita && dadosSerie?.isPR)
+      ? `<div class="pr-badge" style="position:absolute;right:40px;top:50%;transform:translateY(-50%);background:linear-gradient(135deg,#f5a623,#ff6a00);color:#fff;font-size:9px;font-weight:900;padding:3px 8px;border-radius:20px;letter-spacing:.06em;text-transform:uppercase;display:flex;align-items:center;gap:3px">🏆 PR</div>`
+      : '';
+    return `<div class="serie-row" id="sr-${si}" style="position:relative">
       <div class="sn ${cls}">${si+1}</div>
       <div class="sf ${cls}" onclick="editCarga(${si})">
         <div class="v">${s.carga_kg != null ? s.carga_kg+'kg' : '—'}</div>
@@ -4662,6 +4736,7 @@ function renderExec() {
       <button class="sc ${cls}" onclick="toggleSerie(${si})" id="sc-${si}">
         <svg viewBox="0 0 24 24"><${svgBotao}/></svg>
       </button>
+      ${prBadge}
     </div>`;
   }).join('');
 }
@@ -5413,17 +5488,26 @@ async function iniciarSessao() {
 async function salvarSerieExecutada(si) {
   if (!state.sessaoAtiva) return;
 
-  const ex  = state.exerciciosAtual[state.execIdx];
+  const ex = state.exerciciosAtual[state.execIdx];
   if (!ex) return;
 
   const serie = (ex.series_template || [])[si];
   if (!serie) return;
 
-  // Pega valores atuais da tela (podem ter sido editados)
-  const cargaEl = document.querySelector(`#sr-${si} .sf:first-of-type .v`);
-  const repsEl  = document.querySelectorAll(`#sr-${si} .sf`)[1]?.querySelector('.v');
+  // Pega valores atuais da tela
+  const cargaEl  = document.querySelector(`#sr-${si} .sf:first-of-type .v`);
+  const repsEl   = document.querySelectorAll(`#sr-${si} .sf`)[1]?.querySelector('.v');
   const cargaVal = cargaEl ? parseFloat(cargaEl.textContent) || null : serie.carga_kg;
   const repsVal  = repsEl  ? repsEl.textContent : serie.repeticoes;
+
+  // Verifica se é PR
+  let isPR = false;
+  if (cargaVal && cargaVal > 0) {
+    const prAtual = state.prs?.[ex.id];
+    if (!prAtual || cargaVal > prAtual) {
+      isPR = true;
+    }
+  }
 
   await sb.from('series_executadas').insert({
     sessao_id:    state.sessaoAtiva.id,
@@ -5432,12 +5516,65 @@ async function salvarSerieExecutada(si) {
     carga_kg:     cargaVal,
     repeticoes:   repsVal ? String(repsVal) : null,
     concluida:    true,
+    is_pr:        isPR,
     executado_em: new Date().toISOString(),
   });
 
+  // Se for PR, atualiza tabela prs e estado local
+  if (isPR) {
+    await sb.from('prs').upsert({
+      user_id:       state.user.id,
+      exercicio_id:  ex.id,
+      carga_kg:      cargaVal,
+      conquistado_em: new Date().toISOString(),
+    }, { onConflict: 'user_id,exercicio_id' });
+
+    // Atualiza cache local
+    if (!state.prs) state.prs = {};
+    state.prs[ex.id] = cargaVal;
+
+    // Mostra badge PR na série
+    mostrarBadgePR(si, cargaVal);
+  }
+
   // Guarda local para calcular volume
   const key = `${state.execIdx}_${si}`;
-  seriesExecutadas[key] = { carga: cargaVal, reps: repsVal };
+  seriesExecutadas[key] = { carga: cargaVal, reps: repsVal, isPR };
+}
+
+function mostrarBadgePR(si, carga) {
+  const row = document.getElementById(`sr-${si}`);
+  if (!row) return;
+
+  // Adiciona badge 🏆 PR na linha da série
+  const existing = row.querySelector('.pr-badge');
+  if (existing) return;
+
+  const badge = document.createElement('div');
+  badge.className = 'pr-badge';
+  badge.style.cssText = `
+    position:absolute; right:40px; top:50%; transform:translateY(-50%);
+    background:linear-gradient(135deg,#f5a623,#ff6a00);
+    color:#fff; font-size:9px; font-weight:900; padding:3px 8px;
+    border-radius:20px; letter-spacing:.06em; text-transform:uppercase;
+    display:flex; align-items:center; gap:3px; box-shadow:0 2px 8px #ff6a0055;
+    animation: prPop .4s cubic-bezier(.175,.885,.32,1.275);
+  `;
+  badge.innerHTML = '🏆 PR';
+  row.style.position = 'relative';
+  row.appendChild(badge);
+
+  // Toast comemorativo
+  showToast(`🏆 Novo PR! ${carga}kg`);
+}
+
+async function carregarPRs() {
+  if (!state.user) return;
+  const { data } = await sb.from('prs')
+    .select('exercicio_id, carga_kg')
+    .eq('user_id', state.user.id);
+  state.prs = {};
+  (data || []).forEach(p => { state.prs[p.exercicio_id] = p.carga_kg; });
 }
 
 async function desmarcarSerieExecutada(si) {

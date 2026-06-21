@@ -3988,11 +3988,37 @@ async function salvarPerfil() {
     return;
   }
 
-  // Upload de foto se tiver nova
+  // Upload de foto para o Supabase Storage
   let avatarUrl = state.perfil?.avatar_url || null;
   if (fotoBase64) {
-    // Salva como base64 no perfil (simples, sem storage separado)
-    avatarUrl = fotoBase64;
+    showToast('Salvando foto...');
+    try {
+      const res  = await fetch(fotoBase64);
+      const blob = await res.blob();
+      const ext  = blob.type.includes('png') ? 'png' : 'jpg';
+      const path = `${state.user.id}/avatar.${ext}`;
+
+      const { data: upData, error: upErr } = await sb.storage
+        .from('avatares')
+        .upload(path, blob, { upsert: true, contentType: blob.type });
+
+      if (upErr) {
+        // Mostra erro visível na tela
+        erro.textContent = 'Erro ao salvar foto: ' + upErr.message;
+        erro.style.display = 'block';
+        console.error('Upload error:', upErr);
+        return; // para aqui para o usuário ver o erro
+      }
+
+      const { data: urlData } = sb.storage.from('avatares').getPublicUrl(path);
+      avatarUrl = urlData.publicUrl + '?t=' + Date.now();
+      console.log('Avatar URL:', avatarUrl);
+    } catch(e) {
+      erro.textContent = 'Erro inesperado ao salvar foto: ' + e.message;
+      erro.style.display = 'block';
+      console.error('Foto catch:', e);
+      return;
+    }
   }
 
   // Data de nascimento
@@ -5703,11 +5729,37 @@ async function salvarPerfil() {
     return;
   }
 
-  // Upload de foto se tiver nova
+  // Upload de foto para o Supabase Storage
   let avatarUrl = state.perfil?.avatar_url || null;
   if (fotoBase64) {
-    // Salva como base64 no perfil (simples, sem storage separado)
-    avatarUrl = fotoBase64;
+    showToast('Salvando foto...');
+    try {
+      const res  = await fetch(fotoBase64);
+      const blob = await res.blob();
+      const ext  = blob.type.includes('png') ? 'png' : 'jpg';
+      const path = `${state.user.id}/avatar.${ext}`;
+
+      const { data: upData, error: upErr } = await sb.storage
+        .from('avatares')
+        .upload(path, blob, { upsert: true, contentType: blob.type });
+
+      if (upErr) {
+        // Mostra erro visível na tela
+        erro.textContent = 'Erro ao salvar foto: ' + upErr.message;
+        erro.style.display = 'block';
+        console.error('Upload error:', upErr);
+        return; // para aqui para o usuário ver o erro
+      }
+
+      const { data: urlData } = sb.storage.from('avatares').getPublicUrl(path);
+      avatarUrl = urlData.publicUrl + '?t=' + Date.now();
+      console.log('Avatar URL:', avatarUrl);
+    } catch(e) {
+      erro.textContent = 'Erro inesperado ao salvar foto: ' + e.message;
+      erro.style.display = 'block';
+      console.error('Foto catch:', e);
+      return;
+    }
   }
 
   // Data de nascimento

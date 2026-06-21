@@ -4,7 +4,10 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>EVVO Admin</title>
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+<meta http-equiv="Pragma" content="no-cache">
+<meta http-equiv="Expires" content="0">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.39.0/dist/umd/supabase.js"></script>
 <style>
 *{box-sizing:border-box;margin:0;padding:0;-webkit-font-smoothing:antialiased}
 :root{
@@ -566,44 +569,6 @@ function toast(msg) {
 
 init();
 
-// DEBUG VISIVEL NA TELA
-async function debugVisivel() {
-  const div = document.createElement('div');
-  div.id = 'debug-box';
-  div.style.cssText = 'position:fixed;bottom:10px;right:10px;background:#0e0e1a;border:1px solid #ff6a00;padding:14px;border-radius:10px;font-size:11px;color:#fff;z-index:9999;max-width:300px;line-height:1.6';
-  document.body.appendChild(div);
-
-  function dbg(msg) {
-    div.innerHTML += msg + '<br>';
-    console.log('[DEBUG]', msg);
-  }
-
-  dbg('1. Iniciando...');
-
-  // Verifica páginas
-  const pl = document.getElementById('page-login');
-  const pa = document.getElementById('page-app');
-  dbg('2. page-login: ' + (pl ? 'OK' : 'NAO ENCONTRADO'));
-  dbg('3. page-app: ' + (pa ? 'OK' : 'NAO ENCONTRADO'));
-  dbg('4. page-login display: ' + (pl ? pl.style.display || 'css' : '—'));
-  dbg('5. page-app display: ' + (pa ? pa.style.display || 'css' : '—'));
-
-  // Verifica sessao
-  const { data: { session } } = await sb.auth.getSession();
-  dbg('6. Sessao: ' + (session ? session.user.email : 'nenhuma'));
-
-  if (session) {
-    dbg('7. Chamando ir(app)...');
-    ir('app');
-    dbg('8. page-app display apos ir(): ' + pa.style.display);
-  } else {
-    dbg('7. Chamando ir(login)...');
-    ir('login');
-    dbg('8. page-login display apos ir(): ' + pl.style.display);
-  }
-}
-
-setTimeout(debugVisivel, 500);
 </script>
 </body>
 </html>

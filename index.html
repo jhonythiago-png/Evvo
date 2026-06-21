@@ -2316,6 +2316,11 @@ function renderExOverview(doneTo) {
 // EXECUÇÃO FOCADA
 // ═══════════════════════════════════════════
 function startExec(idx) {
+  // Se é início de treino novo, limpa dados anteriores
+  if (idx === 0 && !state.sessaoAtiva) {
+    seriesExecutadas = {};
+    state.exsConcluidos = new Set();
+  }
   state.execIdx = idx;
   // Cria sessão se ainda não existe
   if (!state.sessaoAtiva) {
@@ -2409,7 +2414,8 @@ function renderExec() {
       : cls === 'now'
         ? '<polygon points="5 3 19 12 5 21 5 3"/>'
         : '<circle cx="12" cy="12" r="10"/>';
-    const prBadge = (jaFeita && dadosSerie?.isPR)
+    // Badge só aparece quando a série FOI marcada como feita E é recorde
+    const prBadge = (cls === 'done' && dadosSerie?.isPR)
       ? `<span id="pr-badge-${si}" style="background:linear-gradient(135deg,#f5a623,#ff6a00);color:#fff;font-size:8px;font-weight:900;padding:2px 6px;border-radius:20px;white-space:nowrap">🏆 Recorde</span>`
       : '';
     return `<div class="serie-row" id="sr-${si}">
@@ -3578,23 +3584,22 @@ async function salvarSerieExecutada(si) {
 }
 
 function mostrarBadgePR(si, carga) {
-  // Adiciona badge no botão de check da série
-  const btn = document.getElementById(`sc-${si}`);
-  if (!btn) return;
-  const existing = document.getElementById(`pr-badge-${si}`);
-  if (existing) return;
-
-  // Cria badge ao lado do botão de check
-  const badge = document.createElement('span');
-  badge.id = `pr-badge-${si}`;
-  badge.className = 'pr-badge';
-  badge.style.cssText = 'background:linear-gradient(135deg,#f5a623,#ff6a00);color:#fff;font-size:8px;font-weight:900;padding:2px 6px;border-radius:20px;letter-spacing:.06em;text-transform:uppercase;white-space:nowrap;animation:prPop .4s cubic-bezier(.175,.885,.32,1.275)';
-  badge.textContent = '🏆 Recorde';
-
-  // Insere após o botão de check dentro da grade
-  btn.insertAdjacentElement('afterend', badge);
-
-  // Toast comemorativo
+  // Atualiza o span do badge na linha (já existe no grid)
+  const row = document.getElementById(`sr-${si}`);
+  if (!row) return;
+  const spans = row.querySelectorAll('span');
+  const badgeSpan = spans[spans.length - 1]; // último span é o badge
+  if (badgeSpan) {
+    badgeSpan.style.background = 'linear-gradient(135deg,#f5a623,#ff6a00)';
+    badgeSpan.style.color = '#fff';
+    badgeSpan.style.fontSize = '8px';
+    badgeSpan.style.fontWeight = '900';
+    badgeSpan.style.padding = '2px 7px';
+    badgeSpan.style.borderRadius = '20px';
+    badgeSpan.style.whiteSpace = 'nowrap';
+    badgeSpan.style.flexShrink = '0';
+    badgeSpan.textContent = '🏆 Recorde';
+  }
   showToast(`🏆 Novo recorde! ${carga}kg`);
 }
 
@@ -4622,6 +4627,11 @@ function renderExOverview(doneTo) {
 // EXECUÇÃO FOCADA
 // ═══════════════════════════════════════════
 function startExec(idx) {
+  // Se é início de treino novo, limpa dados anteriores
+  if (idx === 0 && !state.sessaoAtiva) {
+    seriesExecutadas = {};
+    state.exsConcluidos = new Set();
+  }
   state.execIdx = idx;
   // Cria sessão se ainda não existe
   if (!state.sessaoAtiva) {
@@ -4716,9 +4726,9 @@ function renderExec() {
         ? '<polygon points="5 3 19 12 5 21 5 3"/>'
         : '<circle cx="12" cy="12" r="10"/>';
     const prBadge = (jaFeita && dadosSerie?.isPR)
-      ? `<div class="pr-badge" style="position:absolute;right:40px;top:50%;transform:translateY(-50%);background:linear-gradient(135deg,#f5a623,#ff6a00);color:#fff;font-size:9px;font-weight:900;padding:3px 8px;border-radius:20px;letter-spacing:.06em;text-transform:uppercase;display:flex;align-items:center;gap:3px">🏆 Recorde</div>`
-      : '';
-    return `<div class="serie-row" id="sr-${si}" style="position:relative">
+      ? `<span style="background:linear-gradient(135deg,#f5a623,#ff6a00);color:#fff;font-size:8px;font-weight:900;padding:2px 7px;border-radius:20px;white-space:nowrap;flex-shrink:0">🏆 Recorde</span>`
+      : '<span></span>';
+    return `<div class="serie-row" id="sr-${si}">
       <div class="sn ${cls}">${si+1}</div>
       <div class="sf ${cls}" onclick="editCarga(${si})">
         <div class="v">${s.carga_kg != null ? s.carga_kg+'kg' : '—'}</div>
@@ -4733,7 +4743,7 @@ function renderExec() {
       </button>
       ${prBadge}
     </div>`;
-  }).join('');
+  }).join('');;
 }
 
 
@@ -5538,23 +5548,22 @@ async function salvarSerieExecutada(si) {
 }
 
 function mostrarBadgePR(si, carga) {
-  // Adiciona badge no botão de check da série
-  const btn = document.getElementById(`sc-${si}`);
-  if (!btn) return;
-  const existing = document.getElementById(`pr-badge-${si}`);
-  if (existing) return;
-
-  // Cria badge ao lado do botão de check
-  const badge = document.createElement('span');
-  badge.id = `pr-badge-${si}`;
-  badge.className = 'pr-badge';
-  badge.style.cssText = 'background:linear-gradient(135deg,#f5a623,#ff6a00);color:#fff;font-size:8px;font-weight:900;padding:2px 6px;border-radius:20px;letter-spacing:.06em;text-transform:uppercase;white-space:nowrap;animation:prPop .4s cubic-bezier(.175,.885,.32,1.275)';
-  badge.textContent = '🏆 Recorde';
-
-  // Insere após o botão de check dentro da grade
-  btn.insertAdjacentElement('afterend', badge);
-
-  // Toast comemorativo
+  // Atualiza o span do badge na linha (já existe no grid)
+  const row = document.getElementById(`sr-${si}`);
+  if (!row) return;
+  const spans = row.querySelectorAll('span');
+  const badgeSpan = spans[spans.length - 1]; // último span é o badge
+  if (badgeSpan) {
+    badgeSpan.style.background = 'linear-gradient(135deg,#f5a623,#ff6a00)';
+    badgeSpan.style.color = '#fff';
+    badgeSpan.style.fontSize = '8px';
+    badgeSpan.style.fontWeight = '900';
+    badgeSpan.style.padding = '2px 7px';
+    badgeSpan.style.borderRadius = '20px';
+    badgeSpan.style.whiteSpace = 'nowrap';
+    badgeSpan.style.flexShrink = '0';
+    badgeSpan.textContent = '🏆 Recorde';
+  }
   showToast(`🏆 Novo recorde! ${carga}kg`);
 }
 

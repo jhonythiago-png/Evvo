@@ -1,0 +1,422 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>EVVO Admin</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.39.0/dist/umd/supabase.js"></script>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:#080810;color:#fff;font-family:-apple-system,sans-serif;min-height:100vh}
+input,button,select{font-family:inherit;outline:none;border:none}
+button{cursor:pointer}
+
+/* ─ LOGIN ─ */
+#login{
+  min-height:100vh;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  padding:24px;
+}
+.login-box{width:100%;max-width:340px}
+.logo{text-align:center;margin-bottom:32px}
+.logo h1{font-size:28px;font-weight:900;letter-spacing:-1px;margin-top:12px}
+.logo p{font-size:11px;color:#ffffff55;letter-spacing:.2em;text-transform:uppercase;margin-top:4px}
+.label{font-size:10px;font-weight:700;color:#ffffff55;text-transform:uppercase;letter-spacing:.1em;display:block;margin-bottom:6px;margin-top:12px}
+.inp{width:100%;background:#0e0e1a;border:1px solid #ffffff14;border-radius:12px;padding:14px 16px;color:#fff;font-size:15px}
+.inp:focus{border-color:#ff6a00}
+.inp::placeholder{color:#ffffff22}
+.btn-login{width:100%;margin-top:16px;background:linear-gradient(135deg,#ff6a00,#ee0979);border-radius:12px;padding:16px;color:#fff;font-size:14px;font-weight:800;text-transform:uppercase;letter-spacing:.1em}
+.err{background:#ee09791a;border:1px solid #ee097933;border-radius:8px;padding:10px 14px;font-size:12px;color:#ee0979;margin-top:12px}
+
+/* ─ APP ─ */
+#app{display:none;flex-direction:column;min-height:100vh}
+
+.bar{background:#0a0a14;border-bottom:1px solid #ffffff0a;padding:0 24px;height:56px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:10}
+.bar-l{display:flex;align-items:center;gap:10px}
+.bar-logo{font-size:16px;font-weight:900;letter-spacing:-1px}
+.bar-sep{width:1px;height:16px;background:#ffffff14}
+.bar-sub{font-size:11px;color:#ffffff44;font-weight:700;text-transform:uppercase;letter-spacing:.08em}
+.btn-sair{background:#0e0e1a;border:1px solid #ffffff14;border-radius:8px;padding:6px 14px;font-size:12px;font-weight:700;color:#ffffff55}
+
+.main{padding:24px;max-width:1100px;margin:0 auto;width:100%}
+
+/* Stats */
+.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:24px}
+.stat{background:#0e0e1a;border-radius:14px;border:1px solid #ffffff0a;padding:18px}
+.stat-l{font-size:10px;font-weight:700;color:#ffffff44;text-transform:uppercase;letter-spacing:.1em;margin-bottom:8px}
+.stat-v{font-size:30px;font-weight:900;line-height:1}
+
+/* Toolbar */
+.toolbar{display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap;align-items:center}
+.search{flex:1;min-width:160px;background:#0e0e1a;border:1px solid #ffffff14;border-radius:10px;padding:9px 14px;color:#fff;font-size:13px}
+.search::placeholder{color:#ffffff33}
+.sel{background:#0e0e1a;border:1px solid #ffffff14;border-radius:10px;padding:9px 12px;color:#fff;font-size:12px}
+.sel option{background:#0e0e1a}
+.btn-novo{background:linear-gradient(135deg,#ff6a00,#ee0979);border-radius:10px;padding:9px 18px;color:#fff;font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:.06em;white-space:nowrap}
+
+/* Tabela */
+.tbl{background:#0e0e1a;border-radius:14px;border:1px solid #ffffff0a;overflow:hidden}
+.thead{display:grid;grid-template-columns:2fr 1fr 1fr 1fr 1fr 120px;border-bottom:1px solid #ffffff0a}
+.th{padding:10px 14px;font-size:10px;font-weight:700;color:#ffffff33;text-transform:uppercase;letter-spacing:.08em}
+.trow{display:grid;grid-template-columns:2fr 1fr 1fr 1fr 1fr 120px;border-bottom:1px solid #ffffff0a;align-items:center}
+.trow:last-child{border-bottom:none}
+.trow:hover{background:#141428}
+.td{padding:12px 14px;font-size:13px;color:#ffffffcc}
+.av{width:30px;height:30px;border-radius:50%;background:linear-gradient(135deg,#ff6a00,#ee0979);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:900;color:#fff;flex-shrink:0}
+.uinfo{display:flex;align-items:center;gap:10px}
+.un{font-size:13px;font-weight:700;color:#fff}
+.uh{font-size:11px;color:#ffffff44}
+.bdg{display:inline-flex;align-items:center;gap:3px;font-size:10px;font-weight:800;padding:3px 9px;border-radius:20px}
+.bpro{background:linear-gradient(135deg,#ff6a00,#ee0979);color:#fff}
+.bfree{background:#ffffff0a;border:1px solid #ffffff14;color:#ffffff44}
+.bativo{background:#39d35318;color:#39d353;border:1px solid #39d35330}
+.bbloq{background:#ee097918;color:#ee0979;border:1px solid #ee097930}
+.dot{width:5px;height:5px;border-radius:50%;background:currentColor}
+.acts{display:flex;gap:5px;justify-content:flex-end;padding-right:14px}
+.ba{width:28px;height:28px;border-radius:8px;background:#141428;border:1px solid #ffffff14;display:flex;align-items:center;justify-content:center}
+.ba svg{width:13px;height:13px;fill:none;stroke:#ffffff44;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.ba:hover{border-color:#ff6a00}
+.ba:hover svg{stroke:#ff6a00}
+.ba.d:hover{border-color:#ee0979}
+.ba.d:hover svg{stroke:#ee0979}
+.empty{padding:36px;text-align:center;color:#ffffff33;font-size:13px}
+
+/* Modal */
+.ov{position:fixed;inset:0;background:rgba(0,0,0,.8);backdrop-filter:blur(10px);display:none;align-items:center;justify-content:center;padding:20px;z-index:100}
+.ov.on{display:flex}
+.modal{background:#0e0e1a;border-radius:18px;border:1px solid #ffffff14;width:100%;max-width:380px;padding:24px}
+.modal h3{font-size:17px;font-weight:900;margin-bottom:6px}
+.modal p{font-size:13px;color:#ffffff55;margin-bottom:18px;line-height:1.5}
+.mbtns{display:flex;gap:8px;justify-content:flex-end;margin-top:16px}
+.bcancl{background:#141428;border:1px solid #ffffff14;border-radius:10px;padding:9px 16px;color:#ffffffcc;font-size:12px;font-weight:700}
+.bconf{background:linear-gradient(135deg,#ff6a00,#ee0979);border-radius:10px;padding:9px 18px;color:#fff;font-size:12px;font-weight:800;text-transform:uppercase}
+.bdel{background:#ee097922;border:1px solid #ee097944;border-radius:10px;padding:9px 18px;color:#ee0979;font-size:12px;font-weight:800;text-transform:uppercase}
+.merr{background:#ee09791a;border:1px solid #ee097933;border-radius:8px;padding:9px 12px;font-size:12px;color:#ee0979;margin-bottom:10px;display:none}
+
+/* Toast */
+.toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:#0e0e1a;border:1px solid #ffffff14;border-radius:10px;padding:11px 20px;font-size:13px;font-weight:700;white-space:nowrap;z-index:999;opacity:0;transition:opacity .3s;pointer-events:none}
+.toast.on{opacity:1}
+
+@media(max-width:700px){
+  .stats{grid-template-columns:1fr 1fr}
+  .thead,.trow{grid-template-columns:2fr 1fr 1fr 90px}
+  .th:nth-child(3),.td:nth-child(3),.th:nth-child(5),.td:nth-child(5){display:none}
+}
+</style>
+</head>
+<body>
+
+<!-- LOGIN -->
+<div id="login">
+  <div class="login-box">
+    <div class="logo">
+      <svg width="52" height="52" viewBox="0 0 52 52" fill="none">
+        <rect width="52" height="52" rx="14" fill="url(#g0)"/>
+        <defs><linearGradient id="g0" x1="0" y1="0" x2="52" y2="52"><stop offset="0%" stop-color="#ff6a00"/><stop offset="100%" stop-color="#ee0979"/></linearGradient></defs>
+        <path d="M13 18 L26 37 L39 18" stroke="white" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round" fill="none" opacity=".35"/>
+        <path d="M18 18 L26 33 L34 18" stroke="white" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+        <circle cx="26" cy="14" r="2.8" fill="white"/>
+      </svg>
+      <h1>EVVO</h1>
+      <p>Painel Admin</p>
+    </div>
+    <div id="lerr" class="err" style="display:none"></div>
+    <label class="label">Usuário</label>
+    <input class="inp" id="lu" type="text" placeholder="usuário" autocapitalize="none">
+    <label class="label">Senha</label>
+    <input class="inp" id="lp" type="password" placeholder="••••••••">
+    <button class="btn-login" id="lbtn" onclick="login()">Entrar</button>
+  </div>
+</div>
+
+<!-- APP -->
+<div id="app">
+  <div class="bar">
+    <div class="bar-l">
+      <span class="bar-logo">EVVO</span>
+      <div class="bar-sep"></div>
+      <span class="bar-sub">Admin</span>
+    </div>
+    <div style="display:flex;align-items:center;gap:10px">
+      <span style="font-size:12px;color:#ffffff44;font-weight:600" id="lbl"></span>
+      <button class="btn-sair" onclick="logout()">Sair</button>
+    </div>
+  </div>
+  <div class="main">
+    <div class="stats">
+      <div class="stat"><div class="stat-l">Total</div><div class="stat-v" id="st">—</div></div>
+      <div class="stat"><div class="stat-l">Pro</div><div class="stat-v" id="sp" style="color:#ff6a00">—</div></div>
+      <div class="stat"><div class="stat-l">Ativos</div><div class="stat-v" id="sa" style="color:#39d353">—</div></div>
+      <div class="stat"><div class="stat-l">Bloqueados</div><div class="stat-v" id="sb2" style="color:#ee0979">—</div></div>
+    </div>
+    <div class="toolbar">
+      <input class="search" id="busca" placeholder="Buscar..." oninput="filtrar()">
+      <select class="sel" id="fp" onchange="filtrar()">
+        <option value="">Todos planos</option>
+        <option value="pro">Pro</option>
+        <option value="free">Free</option>
+      </select>
+      <select class="sel" id="fs" onchange="filtrar()">
+        <option value="">Todos status</option>
+        <option value="ativo">Ativos</option>
+        <option value="bloqueado">Bloqueados</option>
+      </select>
+      <button class="btn-novo" onclick="abrirNovo()">+ Novo usuário</button>
+    </div>
+    <div class="tbl">
+      <div class="thead">
+        <div class="th">Usuário</div>
+        <div class="th">Cadastro</div>
+        <div class="th">Plano</div>
+        <div class="th">Status</div>
+        <div class="th">Treinos</div>
+        <div class="th" style="text-align:right;padding-right:20px">Ações</div>
+      </div>
+      <div id="tbody"><div class="empty">Carregando...</div></div>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL NOVO -->
+<div class="ov" id="m1">
+  <div class="modal">
+    <h3>Novo usuário</h3>
+    <p>Cadastre manualmente.</p>
+    <div class="merr" id="m1e"></div>
+    <label class="label">Nome</label>
+    <input class="inp" id="n1" placeholder="Nome completo" style="margin-bottom:8px">
+    <label class="label">Usuário</label>
+    <input class="inp" id="n2" placeholder="sem espaços" autocapitalize="none" style="margin-bottom:8px">
+    <label class="label">Senha</label>
+    <input class="inp" id="n3" placeholder="mínimo 6 caracteres" style="margin-bottom:8px">
+    <label class="label">Plano</label>
+    <select class="inp sel" id="n4" style="padding:14px 16px">
+      <option value="free">Free</option>
+      <option value="pro">Pro</option>
+    </select>
+    <div class="mbtns">
+      <button class="bcancl" onclick="fechar('m1')">Cancelar</button>
+      <button class="bconf" onclick="criarUser()">Criar</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL EDITAR -->
+<div class="ov" id="m2">
+  <div class="modal">
+    <h3>Editar usuário</h3>
+    <p id="m2d"></p>
+    <input type="hidden" id="m2id">
+    <label class="label">Plano</label>
+    <select class="inp sel" id="m2p" style="padding:14px 16px;margin-bottom:8px">
+      <option value="free">Free</option>
+      <option value="pro">Pro</option>
+    </select>
+    <label class="label">Status</label>
+    <select class="inp sel" id="m2s" style="padding:14px 16px">
+      <option value="ativo">Ativo</option>
+      <option value="bloqueado">Bloqueado</option>
+    </select>
+    <div class="mbtns">
+      <button class="bcancl" onclick="fechar('m2')">Cancelar</button>
+      <button class="bconf" onclick="salvarEdit()">Salvar</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL DELETAR -->
+<div class="ov" id="m3">
+  <div class="modal">
+    <h3>Excluir usuário</h3>
+    <p id="m3d"></p>
+    <input type="hidden" id="m3id">
+    <div class="mbtns">
+      <button class="bcancl" onclick="fechar('m3')">Cancelar</button>
+      <button class="bdel" onclick="delUser()">Excluir</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="tst"></div>
+
+<script>
+const URL_  = 'https://igxvsboqqmwzzyzgsbjw.supabase.co';
+const KEY_  = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlneHZzYm9xcW13enp5emdzYmp3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE4Njc3MTgsImV4cCI6MjA5NzQ0MzcxOH0.ClLggfxlLEMqRdqqcbcugbMcUfviJAEMORitiku3MUw';
+const ADM   = 'jhony';
+const sb    = supabase.createClient(URL_, KEY_);
+let users   = [];
+
+function show(id)  { const e=document.getElementById(id); e.style.display=id==='app'?'flex':'flex'; if(id==='app') e.style.flexDirection='column'; }
+function hide(id)  { document.getElementById(id).style.display='none'; }
+function abrir(id) { document.getElementById(id).classList.add('on'); }
+function fechar(id){ document.getElementById(id).classList.remove('on'); }
+
+function toast(m){
+  const t=document.getElementById('tst');
+  t.textContent=m; t.classList.add('on');
+  setTimeout(()=>t.classList.remove('on'),2500);
+}
+
+// ─ INIT ─
+(async()=>{
+  const {data:{session}} = await sb.auth.getSession();
+  if(session && session.user.email.replace('@evvo.app','')===ADM){
+    document.getElementById('lbl').textContent='@'+ADM;
+    hide('login'); show('app'); load();
+  }
+})();
+
+// ─ LOGIN ─
+async function login(){
+  const u=document.getElementById('lu').value.trim().toLowerCase();
+  const p=document.getElementById('lp').value;
+  const e=document.getElementById('lerr');
+  e.style.display='none';
+  if(!u||!p){e.textContent='Preencha os campos.';e.style.display='block';return;}
+  if(u!==ADM){e.textContent='Acesso negado.';e.style.display='block';return;}
+  const btn=document.getElementById('lbtn');
+  btn.textContent='Aguarde...'; btn.disabled=true;
+  const {data,error}=await sb.auth.signInWithPassword({email:u+'@evvo.app',password:p});
+  btn.textContent='Entrar'; btn.disabled=false;
+  if(error){e.textContent='Usuário ou senha incorretos.';e.style.display='block';return;}
+  document.getElementById('lbl').textContent='@'+u;
+  hide('login'); show('app'); load();
+}
+
+document.getElementById('lp').addEventListener('keydown',e=>{if(e.key==='Enter')login();});
+
+async function logout(){
+  await sb.auth.signOut();
+  hide('app'); show('login');
+}
+
+// ─ DADOS ─
+async function load(){
+  const {data:p}=await sb.from('perfis').select('*').order('created_at',{ascending:false});
+  if(!p) return;
+  const {data:s}=await sb.from('sessoes').select('user_id').not('finalizado_em','is',null);
+  const mp={};
+  (s||[]).forEach(x=>{mp[x.user_id]=(mp[x.user_id]||0)+1;});
+  users=p.map(x=>({...x,username:x.email.replace('@evvo.app',''),treinos:mp[x.id]||0}));
+  stats(); render(users);
+}
+
+function stats(){
+  document.getElementById('st').textContent=users.length;
+  document.getElementById('sp').textContent=users.filter(u=>u.plano==='pro').length;
+  document.getElementById('sa').textContent=users.filter(u=>u.status!=='bloqueado').length;
+  document.getElementById('sb2').textContent=users.filter(u=>u.status==='bloqueado').length;
+}
+
+function render(list){
+  const b=document.getElementById('tbody');
+  if(!list.length){b.innerHTML='<div class="empty">Nenhum resultado</div>';return;}
+  b.innerHTML=list.map(u=>{
+    const ini=(u.nome||'?').charAt(0).toUpperCase();
+    const dt=new Date(u.created_at).toLocaleDateString('pt-BR',{day:'2-digit',month:'short',year:'2-digit'});
+    const bloq=u.status==='bloqueado';
+    const pro=u.plano==='pro';
+    const ne=(u.nome||'').replace(/'/g,"\\'");
+    return `<div class="trow">
+      <div class="td"><div class="uinfo"><div class="av">${ini}</div><div><div class="un">${u.nome||'—'}</div><div class="uh">@${u.username}</div></div></div></div>
+      <div class="td" style="font-size:11px;color:#ffffff44">${dt}</div>
+      <div class="td"><span class="bdg ${pro?'bpro':'bfree'}">${pro?'⭐ Pro':'Free'}</span></div>
+      <div class="td"><span class="bdg ${bloq?'bbloq':'bativo'}"><span class="dot"></span>${bloq?'Bloqueado':'Ativo'}</span></div>
+      <div class="td" style="font-weight:700;color:${u.treinos>0?'#fff':'#ffffff33'}">${u.treinos}</div>
+      <div class="td acts">
+        <button class="ba" onclick="abrirEdit('${u.id}','${ne}','${u.plano}','${u.status||'ativo'}')" title="Editar">
+          <svg viewBox="0 0 24 24"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+        </button>
+        <button class="ba ${bloq?'':'d'}" onclick="${bloq?'unlock':'block_'}('${u.id}')" title="${bloq?'Desbloquear':'Bloquear'}">
+          <svg viewBox="0 0 24 24">${bloq?'<rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/>':'<rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 9.9-1"/>'}</svg>
+        </button>
+        <button class="ba d" onclick="abrirDel('${u.id}','${ne}')" title="Excluir">
+          <svg viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg>
+        </button>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function filtrar(){
+  const q=document.getElementById('busca').value.toLowerCase();
+  const fp=document.getElementById('fp').value;
+  const fs=document.getElementById('fs').value;
+  render(users.filter(u=>{
+    const mq=!q||u.nome?.toLowerCase().includes(q)||u.username.includes(q);
+    const mp=!fp||u.plano===fp;
+    const ms=!fs||(u.status||'ativo')===fs;
+    return mq&&mp&&ms;
+  }));
+}
+
+async function block_(id){await sb.from('perfis').update({status:'bloqueado'}).eq('id',id);toast('Bloqueado');load();}
+async function unlock(id){await sb.from('perfis').update({status:'ativo'}).eq('id',id);toast('Desbloqueado');load();}
+
+// Novo
+function abrirNovo(){
+  ['n1','n2','n3'].forEach(x=>document.getElementById(x).value='');
+  document.getElementById('n4').value='free';
+  document.getElementById('m1e').style.display='none';
+  abrir('m1');
+}
+async function criarUser(){
+  const n=document.getElementById('n1').value.trim();
+  const u=document.getElementById('n2').value.trim().toLowerCase().replace(/\s+/g,'');
+  const p=document.getElementById('n3').value;
+  const pl=document.getElementById('n4').value;
+  const e=document.getElementById('m1e');
+  e.style.display='none';
+  if(!n||!u||!p){e.textContent='Preencha todos os campos.';e.style.display='block';return;}
+  if(p.length<6){e.textContent='Senha mínimo 6 caracteres.';e.style.display='block';return;}
+  const {error}=await sb.auth.signUp({email:u+'@evvo.app',password:p,options:{data:{nome:n}}});
+  if(error){e.textContent=error.message.includes('already')?'Usuário já existe.':error.message;e.style.display='block';return;}
+  if(pl==='pro'){
+    setTimeout(async()=>{
+      const {data:pf}=await sb.from('perfis').select('id').eq('email',u+'@evvo.app').single();
+      if(pf) await sb.from('perfis').update({plano:'pro'}).eq('id',pf.id);
+      load();
+    },1500);
+  }
+  fechar('m1'); toast('Usuário criado!'); setTimeout(()=>load(),1500);
+}
+
+// Editar
+function abrirEdit(id,nome,plano,status){
+  document.getElementById('m2id').value=id;
+  document.getElementById('m2d').textContent='Editando: '+nome;
+  document.getElementById('m2p').value=plano;
+  document.getElementById('m2s').value=status;
+  abrir('m2');
+}
+async function salvarEdit(){
+  const id=document.getElementById('m2id').value;
+  const pl=document.getElementById('m2p').value;
+  const st=document.getElementById('m2s').value;
+  const {error}=await sb.from('perfis').update({plano:pl,status:st}).eq('id',id);
+  if(!error){fechar('m2');toast('Salvo!');load();}
+  else toast('Erro ao salvar');
+}
+
+// Deletar
+function abrirDel(id,nome){
+  document.getElementById('m3id').value=id;
+  document.getElementById('m3d').textContent='Excluir "'+nome+'"? Esta ação é permanente.';
+  abrir('m3');
+}
+async function delUser(){
+  const id=document.getElementById('m3id').value;
+  const {error}=await sb.from('perfis').delete().eq('id',id);
+  if(!error){fechar('m3');toast('Excluído');load();}
+  else toast('Erro ao excluir');
+}
+
+// Fechar modal clicando fora
+['m1','m2','m3'].forEach(id=>{
+  document.getElementById(id).addEventListener('click',function(e){if(e.target===this)fechar(id);});
+});
+</script>
+</body>
+</html>

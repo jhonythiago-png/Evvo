@@ -4,6 +4,15 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>EVVO Admin</title>
+<script>
+// Desregistra service workers que possam interceptar esta página
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.getRegistrations().then(function(registrations) {
+    for (let r of registrations) { r.unregister(); }
+  });
+  navigator.serviceWorker.ready.then(function(r) { r.unregister(); }).catch(()=>{});
+}
+</script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.39.0/dist/umd/supabase.js"></script>
 <style>
 *{box-sizing:border-box;margin:0;padding:0}

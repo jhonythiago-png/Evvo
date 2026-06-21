@@ -520,8 +520,8 @@ button{cursor:pointer;background:none}
 
 .serie-row{
   display:grid;
-  grid-template-columns:24px 1fr 1fr 30px;
-  gap:8px;
+  grid-template-columns:24px 1fr 1fr 30px auto;
+  gap:6px;
   align-items:center;
   padding:4px 0;
 }
@@ -2410,9 +2410,9 @@ function renderExec() {
         ? '<polygon points="5 3 19 12 5 21 5 3"/>'
         : '<circle cx="12" cy="12" r="10"/>';
     const prBadge = (jaFeita && dadosSerie?.isPR)
-      ? `<div class="pr-badge" style="position:absolute;right:40px;top:50%;transform:translateY(-50%);background:linear-gradient(135deg,#f5a623,#ff6a00);color:#fff;font-size:9px;font-weight:900;padding:3px 8px;border-radius:20px;letter-spacing:.06em;text-transform:uppercase;display:flex;align-items:center;gap:3px">🏆 PR</div>`
+      ? `<span id="pr-badge-${si}" style="background:linear-gradient(135deg,#f5a623,#ff6a00);color:#fff;font-size:8px;font-weight:900;padding:2px 6px;border-radius:20px;white-space:nowrap">🏆 PR</span>`
       : '';
-    return `<div class="serie-row" id="sr-${si}" style="position:relative">
+    return `<div class="serie-row" id="sr-${si}">`-${si}" style="position:relative">
       <div class="sn ${cls}">${si+1}</div>
       <div class="sf ${cls}" onclick="editCarga(${si})">
         <div class="v">${s.carga_kg != null ? s.carga_kg+'kg' : '—'}</div>
@@ -3578,26 +3578,21 @@ async function salvarSerieExecutada(si) {
 }
 
 function mostrarBadgePR(si, carga) {
-  const row = document.getElementById(`sr-${si}`);
-  if (!row) return;
-
-  // Adiciona badge 🏆 PR na linha da série
-  const existing = row.querySelector('.pr-badge');
+  // Adiciona badge no botão de check da série
+  const btn = document.getElementById(`sc-${si}`);
+  if (!btn) return;
+  const existing = document.getElementById(`pr-badge-${si}`);
   if (existing) return;
 
-  const badge = document.createElement('div');
+  // Cria badge ao lado do botão de check
+  const badge = document.createElement('span');
+  badge.id = `pr-badge-${si}`;
   badge.className = 'pr-badge';
-  badge.style.cssText = `
-    position:absolute; right:40px; top:50%; transform:translateY(-50%);
-    background:linear-gradient(135deg,#f5a623,#ff6a00);
-    color:#fff; font-size:9px; font-weight:900; padding:3px 8px;
-    border-radius:20px; letter-spacing:.06em; text-transform:uppercase;
-    display:flex; align-items:center; gap:3px; box-shadow:0 2px 8px #ff6a0055;
-    animation: prPop .4s cubic-bezier(.175,.885,.32,1.275);
-  `;
-  badge.innerHTML = '🏆 PR';
-  row.style.position = 'relative';
-  row.appendChild(badge);
+  badge.style.cssText = 'background:linear-gradient(135deg,#f5a623,#ff6a00);color:#fff;font-size:8px;font-weight:900;padding:2px 6px;border-radius:20px;letter-spacing:.06em;text-transform:uppercase;white-space:nowrap;animation:prPop .4s cubic-bezier(.175,.885,.32,1.275)';
+  badge.textContent = '🏆 PR';
+
+  // Insere após o botão de check dentro da grade
+  btn.insertAdjacentElement('afterend', badge);
 
   // Toast comemorativo
   showToast(`🏆 Novo PR! ${carga}kg`);
@@ -5543,26 +5538,21 @@ async function salvarSerieExecutada(si) {
 }
 
 function mostrarBadgePR(si, carga) {
-  const row = document.getElementById(`sr-${si}`);
-  if (!row) return;
-
-  // Adiciona badge 🏆 PR na linha da série
-  const existing = row.querySelector('.pr-badge');
+  // Adiciona badge no botão de check da série
+  const btn = document.getElementById(`sc-${si}`);
+  if (!btn) return;
+  const existing = document.getElementById(`pr-badge-${si}`);
   if (existing) return;
 
-  const badge = document.createElement('div');
+  // Cria badge ao lado do botão de check
+  const badge = document.createElement('span');
+  badge.id = `pr-badge-${si}`;
   badge.className = 'pr-badge';
-  badge.style.cssText = `
-    position:absolute; right:40px; top:50%; transform:translateY(-50%);
-    background:linear-gradient(135deg,#f5a623,#ff6a00);
-    color:#fff; font-size:9px; font-weight:900; padding:3px 8px;
-    border-radius:20px; letter-spacing:.06em; text-transform:uppercase;
-    display:flex; align-items:center; gap:3px; box-shadow:0 2px 8px #ff6a0055;
-    animation: prPop .4s cubic-bezier(.175,.885,.32,1.275);
-  `;
-  badge.innerHTML = '🏆 PR';
-  row.style.position = 'relative';
-  row.appendChild(badge);
+  badge.style.cssText = 'background:linear-gradient(135deg,#f5a623,#ff6a00);color:#fff;font-size:8px;font-weight:900;padding:2px 6px;border-radius:20px;letter-spacing:.06em;text-transform:uppercase;white-space:nowrap;animation:prPop .4s cubic-bezier(.175,.885,.32,1.275)';
+  badge.textContent = '🏆 PR';
+
+  // Insere após o botão de check dentro da grade
+  btn.insertAdjacentElement('afterend', badge);
 
   // Toast comemorativo
   showToast(`🏆 Novo PR! ${carga}kg`);

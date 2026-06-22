@@ -3523,22 +3523,50 @@ function _desenharFotoCanvas(img) {
   const textY  = posicaoOverlay === 'top' ? 80 : H - overlayH + 60;
   const padding = 60;
 
-  // Logo EVVO
-  ctx.fillStyle = '#ff6a00';
-  ctx.font = 'bold 36px -apple-system, sans-serif';
+  // Logo + nome EVVO + slogan
+  // Desenha o ícone SVG convertido em imagem
+  const iconSize = 52;
+  const logoSVG = `<svg xmlns="http://www.w3.org/2000/svg" width="${iconSize}" height="${iconSize}" viewBox="0 0 72 72">
+    <rect width="72" height="72" rx="20" fill="url(#lg)"/>
+    <defs><linearGradient id="lg" x1="0" y1="0" x2="72" y2="72">
+      <stop offset="0%" stop-color="#ff6a00"/>
+      <stop offset="100%" stop-color="#ee0979"/>
+    </linearGradient></defs>
+    <path d="M18 24 L36 52 L54 24" stroke="white" stroke-width="5" stroke-linecap="round" stroke-linejoin="round" fill="none" opacity=".35"/>
+    <path d="M24 24 L36 44 L48 24" stroke="white" stroke-width="5" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+    <circle cx="36" cy="19" r="3.5" fill="white"/>
+  </svg>`;
+
+  const blob = new Blob([logoSVG], {type: 'image/svg+xml'});
+  const logoUrl = URL.createObjectURL(blob);
+  const logoImg = new Image();
+  logoImg.onload = () => {
+    ctx.drawImage(logoImg, padding, textY - iconSize + 4, iconSize, iconSize);
+    URL.revokeObjectURL(logoUrl);
+  };
+  logoImg.src = logoUrl;
+
+  // Nome EVVO ao lado do ícone
+  ctx.fillStyle = '#ffffff';
+  ctx.font = 'bold 46px -apple-system, sans-serif';
   ctx.textAlign = 'left';
-  ctx.fillText('EVVO', padding, textY);
+  ctx.fillText('EVVO', padding + iconSize + 14, textY - 10);
+
+  // Slogan
+  ctx.font = '22px -apple-system, sans-serif';
+  ctx.fillStyle = 'rgba(255,255,255,0.55)';
+  ctx.fillText('evolua todo dia', padding + iconSize + 14, textY + 16);
 
   // Linha laranja
   ctx.strokeStyle = '#ff6a00';
   ctx.lineWidth = 3;
   ctx.beginPath();
-  ctx.moveTo(padding, textY + 16);
-  ctx.lineTo(W - padding, textY + 16);
+  ctx.moveTo(padding, textY + 30);
+  ctx.lineTo(W - padding, textY + 30);
   ctx.stroke();
 
   // Stats
-  const statsY = textY + 90;
+  const statsY = textY + 110;
   const scStats = document.getElementById('sc-stats');
   const statsItems = scStats ? scStats.querySelectorAll('.sc-stat') : [];
   ctx.font = 'bold 60px -apple-system, sans-serif';
@@ -6365,22 +6393,50 @@ function _desenharFotoCanvas(img) {
   const textY  = posicaoOverlay === 'top' ? 80 : H - overlayH + 60;
   const padding = 60;
 
-  // Logo EVVO
-  ctx.fillStyle = '#ff6a00';
-  ctx.font = 'bold 36px -apple-system, sans-serif';
+  // Logo + nome EVVO + slogan
+  // Desenha o ícone SVG convertido em imagem
+  const iconSize = 52;
+  const logoSVG = `<svg xmlns="http://www.w3.org/2000/svg" width="${iconSize}" height="${iconSize}" viewBox="0 0 72 72">
+    <rect width="72" height="72" rx="20" fill="url(#lg)"/>
+    <defs><linearGradient id="lg" x1="0" y1="0" x2="72" y2="72">
+      <stop offset="0%" stop-color="#ff6a00"/>
+      <stop offset="100%" stop-color="#ee0979"/>
+    </linearGradient></defs>
+    <path d="M18 24 L36 52 L54 24" stroke="white" stroke-width="5" stroke-linecap="round" stroke-linejoin="round" fill="none" opacity=".35"/>
+    <path d="M24 24 L36 44 L48 24" stroke="white" stroke-width="5" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+    <circle cx="36" cy="19" r="3.5" fill="white"/>
+  </svg>`;
+
+  const blob = new Blob([logoSVG], {type: 'image/svg+xml'});
+  const logoUrl = URL.createObjectURL(blob);
+  const logoImg = new Image();
+  logoImg.onload = () => {
+    ctx.drawImage(logoImg, padding, textY - iconSize + 4, iconSize, iconSize);
+    URL.revokeObjectURL(logoUrl);
+  };
+  logoImg.src = logoUrl;
+
+  // Nome EVVO ao lado do ícone
+  ctx.fillStyle = '#ffffff';
+  ctx.font = 'bold 46px -apple-system, sans-serif';
   ctx.textAlign = 'left';
-  ctx.fillText('EVVO', padding, textY);
+  ctx.fillText('EVVO', padding + iconSize + 14, textY - 10);
+
+  // Slogan
+  ctx.font = '22px -apple-system, sans-serif';
+  ctx.fillStyle = 'rgba(255,255,255,0.55)';
+  ctx.fillText('evolua todo dia', padding + iconSize + 14, textY + 16);
 
   // Linha laranja
   ctx.strokeStyle = '#ff6a00';
   ctx.lineWidth = 3;
   ctx.beginPath();
-  ctx.moveTo(padding, textY + 16);
-  ctx.lineTo(W - padding, textY + 16);
+  ctx.moveTo(padding, textY + 30);
+  ctx.lineTo(W - padding, textY + 30);
   ctx.stroke();
 
   // Stats
-  const statsY = textY + 90;
+  const statsY = textY + 110;
   const scStats = document.getElementById('sc-stats');
   const statsItems = scStats ? scStats.querySelectorAll('.sc-stat') : [];
   ctx.font = 'bold 60px -apple-system, sans-serif';

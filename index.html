@@ -1660,8 +1660,15 @@ select.form-input option{background:#0e0e1a;color:#fff}
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
             Compartilhar
           </button>
-          <button onclick="baixarFoto()" style="width:50px;height:50px;background:var(--bg2);border:1px solid var(--border2);border-radius:14px;display:flex;align-items:center;justify-content:center;flex-shrink:0;cursor:pointer">
+          <button onclick="baixarFoto()" title="Baixar com foto" style="width:50px;height:50px;background:var(--bg2);border:1px solid var(--border2);border-radius:14px;display:flex;align-items:center;justify-content:center;flex-shrink:0;cursor:pointer">
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--text3)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+          </button>
+        </div>
+        <!-- Botão baixar só marca d'água -->
+        <div style="padding:8px 16px 0">
+          <button onclick="baixarMarcaDagua()" style="width:100%;background:var(--bg2);border:1px solid var(--border2);border-radius:14px;padding:13px;display:flex;align-items:center;justify-content:center;gap:7px;font-size:11px;font-weight:700;color:var(--text3);cursor:pointer">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+            Baixar só a marca d'água (fundo transparente)
           </button>
         </div>
       </div>
@@ -2357,6 +2364,62 @@ function updateShareProfile() {
   document.getElementById('sc-username').textContent = '@' + state.perfil.nome.toLowerCase().replace(/\s+/g,'');
 }
 
+async function updateShareTreino() {
+  // Pega a última sessão finalizada para o card
+  const { data } = await sb.from('sessoes')
+    .select('*, dias_treino(nome), fichas(nome)')
+    .eq('user_id', state.user.id)
+    .not('finalizado_em', 'is', null)
+    .order('finalizado_em', { ascending: false })
+    .limit(1)
+    .single();
+
+  if (!data) return;
+
+  // Conta séries e calcula volume
+  const { data: series } = await sb.from('series_executadas')
+    .select('carga_kg, repeticoes, is_pr')
+    .eq('sessao_id', data.id)
+    .eq('concluida', true);
+
+  const totalSeries = series?.length || 0;
+  const volume = series?.reduce((acc, s) => {
+    const c = parseFloat(s.carga_kg) || 0;
+    const r = parseInt(s.repeticoes) || 1;
+    return acc + c * r;
+  }, 0) || 0;
+  const temPR = series?.some(s => s.is_pr);
+
+  const volStr = volume >= 1000
+    ? (volume / 1000).toFixed(1) + 't'
+    : volume > 0 ? Math.round(volume) + 'kg' : '—';
+
+  // Atualiza card
+  const nomeDia = data.dias_treino?.nome || 'Meu treino';
+  document.getElementById('sc-workout').textContent = nomeDia;
+  document.getElementById('sc-sub').textContent = data.fichas?.nome || '';
+
+  const statsEl = document.getElementById('sc-stats');
+  if (statsEl) {
+    statsEl.innerHTML = `
+      <div class="sc-stat"><div class="v">${totalSeries}</div><div class="l">séries</div></div>
+      <div class="sc-stat"><div class="v">${volStr}</div><div class="l">volume</div></div>
+    `;
+  }
+
+  // Se teve recorde, muda emoji para troféu automaticamente
+  if (temPR) {
+    document.getElementById('sc-emoji').textContent = '🏆';
+    document.querySelectorAll('.ej').forEach(el => el.classList.remove('sel'));
+    document.getElementById('ej3')?.classList.add('sel');
+  }
+
+  // Atualiza data
+  const inicio = new Date(data.iniciado_em);
+  document.getElementById('sc-sub').textContent =
+    inicio.toLocaleDateString('pt-BR', { weekday:'long', day:'2-digit', month:'long' });
+}
+
 // ═══════════════════════════════════════════
 // NAVEGAÇÃO
 // ═══════════════════════════════════════════
@@ -2932,6 +2995,7 @@ async function finalizarTreino() {
   cardioState.concluido = false;
   atualizarBotaoDia();
   showToast('🎉 Treino finalizado!');
+  updateShareTreino(); // atualiza card com dados do treino recém finalizado
   goTo('screen-treino');
 }
 
@@ -3522,6 +3586,98 @@ async function baixarFoto() {
   showToast('Foto salva!');
 }
 
+async function baixarMarcaDagua() {
+  // Gera canvas com fundo transparente e só a marca d'água
+  const W = formatoFoto === 'story' ? 1080 : 1080;
+  const H = formatoFoto === 'story' ? 1920 : 1080;
+  const opacity = parseFloat(document.getElementById('overlay-opacity').value);
+
+  const canvas = document.createElement('canvas');
+  canvas.width  = W;
+  canvas.height = H;
+  const ctx = canvas.getContext('2d');
+  // Fundo transparente
+
+  const overlayH = formatoFoto === 'story' ? 600 : 420;
+  const overlayY = posicaoOverlay === 'top' ? 0 : H - overlayH;
+  const grad = ctx.createLinearGradient(0, overlayY, 0, overlayY + overlayH);
+  if (posicaoOverlay === 'top') {
+    grad.addColorStop(0, `rgba(0,0,0,${opacity})`);
+    grad.addColorStop(1, 'rgba(0,0,0,0)');
+  } else {
+    grad.addColorStop(0, 'rgba(0,0,0,0)');
+    grad.addColorStop(1, `rgba(0,0,0,${opacity})`);
+  }
+  ctx.fillStyle = grad;
+  ctx.fillRect(0, overlayY, W, overlayH);
+
+  const textY = posicaoOverlay === 'top' ? 80 : H - overlayH + 60;
+  const padding = 60;
+
+  // Logo EVVO
+  ctx.fillStyle = '#ff6a00';
+  ctx.font = 'bold 36px -apple-system, sans-serif';
+  ctx.textAlign = 'left';
+  ctx.fillText('EVVO', padding, textY);
+
+  ctx.strokeStyle = '#ff6a00';
+  ctx.lineWidth = 3;
+  ctx.beginPath();
+  ctx.moveTo(padding, textY + 16);
+  ctx.lineTo(W - padding, textY + 16);
+  ctx.stroke();
+
+  const nomeTreino = document.getElementById('sc-workout').textContent || 'Meu Treino';
+  ctx.fillStyle = '#ffffff';
+  ctx.font = 'bold 72px -apple-system, sans-serif';
+  ctx.textAlign = 'left';
+  const palavras = nomeTreino.split(' ');
+  let linha1 = '', linha2 = '';
+  palavras.forEach(p => {
+    if (ctx.measureText(linha1 + p).width < W - padding*2 - 20) linha1 += p + ' ';
+    else linha2 += p + ' ';
+  });
+  ctx.fillText(linha1.trim(), padding, textY + 80);
+  if (linha2.trim()) ctx.fillText(linha2.trim(), padding, textY + 160);
+
+  const statsY = linha2.trim() ? textY + 220 : textY + 160;
+  const scStats = document.getElementById('sc-stats');
+  const statsItems = scStats ? scStats.querySelectorAll('.sc-stat') : [];
+  ctx.font = 'bold 52px -apple-system, sans-serif';
+  let xStat = padding;
+  statsItems.forEach((el, i) => {
+    const v = el.querySelector('.v')?.textContent || '—';
+    const l = el.querySelector('.l')?.textContent || '';
+    ctx.fillStyle = i === 0 ? '#ff6a00' : '#ffffff';
+    ctx.textAlign = 'left';
+    ctx.fillText(v, xStat, statsY);
+    ctx.font = '28px -apple-system, sans-serif';
+    ctx.fillStyle = 'rgba(255,255,255,0.6)';
+    ctx.fillText(l.toUpperCase(), xStat, statsY + 36);
+    ctx.font = 'bold 52px -apple-system, sans-serif';
+    xStat += 200;
+  });
+
+  const dataStr = new Date().toLocaleDateString('pt-BR', { day:'2-digit', month:'long', year:'numeric' });
+  ctx.font = '28px -apple-system, sans-serif';
+  ctx.fillStyle = 'rgba(255,255,255,0.5)';
+  ctx.textAlign = 'left';
+  ctx.fillText(dataStr, padding, statsY + 80);
+
+  const username = state.perfil?.nome?.toLowerCase().replace(/\s+/g,'') || 'usuario';
+  ctx.font = 'bold 30px -apple-system, sans-serif';
+  ctx.fillStyle = 'rgba(255,255,255,0.7)';
+  ctx.textAlign = 'right';
+  ctx.fillText('@' + username + ' • EVVO', W - padding, H - 50);
+
+  // Salva como PNG (suporta transparência)
+  const link = document.createElement('a');
+  link.download = 'evvo-marcadagua.png';
+  link.href = canvas.toDataURL('image/png');
+  link.click();
+  showToast("Marca dagua salva!");
+}
+
 // ═══════════════════════════════════════════
 // TOAST
 // ═══════════════════════════════════════════
@@ -3540,6 +3696,7 @@ window.navTo = function(screenId, btn) {
   origNavTo(screenId, btn);
   if (screenId === 'screen-evolucao') { loadFichas(); loadHistorico(); }
   if (screenId === 'screen-medidas') setupMedidasDate();
+  if (screenId === 'screen-share') updateShareTreino();
 };
 
 
@@ -5553,6 +5710,62 @@ function updateShareProfile() {
   document.getElementById('sc-username').textContent = '@' + state.perfil.nome.toLowerCase().replace(/\s+/g,'');
 }
 
+async function updateShareTreino() {
+  // Pega a última sessão finalizada para o card
+  const { data } = await sb.from('sessoes')
+    .select('*, dias_treino(nome), fichas(nome)')
+    .eq('user_id', state.user.id)
+    .not('finalizado_em', 'is', null)
+    .order('finalizado_em', { ascending: false })
+    .limit(1)
+    .single();
+
+  if (!data) return;
+
+  // Conta séries e calcula volume
+  const { data: series } = await sb.from('series_executadas')
+    .select('carga_kg, repeticoes, is_pr')
+    .eq('sessao_id', data.id)
+    .eq('concluida', true);
+
+  const totalSeries = series?.length || 0;
+  const volume = series?.reduce((acc, s) => {
+    const c = parseFloat(s.carga_kg) || 0;
+    const r = parseInt(s.repeticoes) || 1;
+    return acc + c * r;
+  }, 0) || 0;
+  const temPR = series?.some(s => s.is_pr);
+
+  const volStr = volume >= 1000
+    ? (volume / 1000).toFixed(1) + 't'
+    : volume > 0 ? Math.round(volume) + 'kg' : '—';
+
+  // Atualiza card
+  const nomeDia = data.dias_treino?.nome || 'Meu treino';
+  document.getElementById('sc-workout').textContent = nomeDia;
+  document.getElementById('sc-sub').textContent = data.fichas?.nome || '';
+
+  const statsEl = document.getElementById('sc-stats');
+  if (statsEl) {
+    statsEl.innerHTML = `
+      <div class="sc-stat"><div class="v">${totalSeries}</div><div class="l">séries</div></div>
+      <div class="sc-stat"><div class="v">${volStr}</div><div class="l">volume</div></div>
+    `;
+  }
+
+  // Se teve recorde, muda emoji para troféu automaticamente
+  if (temPR) {
+    document.getElementById('sc-emoji').textContent = '🏆';
+    document.querySelectorAll('.ej').forEach(el => el.classList.remove('sel'));
+    document.getElementById('ej3')?.classList.add('sel');
+  }
+
+  // Atualiza data
+  const inicio = new Date(data.iniciado_em);
+  document.getElementById('sc-sub').textContent =
+    inicio.toLocaleDateString('pt-BR', { weekday:'long', day:'2-digit', month:'long' });
+}
+
 // ═══════════════════════════════════════════
 // NAVEGAÇÃO
 // ═══════════════════════════════════════════
@@ -6204,6 +6417,98 @@ async function baixarFoto() {
   showToast('Foto salva!');
 }
 
+async function baixarMarcaDagua() {
+  // Gera canvas com fundo transparente e só a marca d'água
+  const W = formatoFoto === 'story' ? 1080 : 1080;
+  const H = formatoFoto === 'story' ? 1920 : 1080;
+  const opacity = parseFloat(document.getElementById('overlay-opacity').value);
+
+  const canvas = document.createElement('canvas');
+  canvas.width  = W;
+  canvas.height = H;
+  const ctx = canvas.getContext('2d');
+  // Fundo transparente
+
+  const overlayH = formatoFoto === 'story' ? 600 : 420;
+  const overlayY = posicaoOverlay === 'top' ? 0 : H - overlayH;
+  const grad = ctx.createLinearGradient(0, overlayY, 0, overlayY + overlayH);
+  if (posicaoOverlay === 'top') {
+    grad.addColorStop(0, `rgba(0,0,0,${opacity})`);
+    grad.addColorStop(1, 'rgba(0,0,0,0)');
+  } else {
+    grad.addColorStop(0, 'rgba(0,0,0,0)');
+    grad.addColorStop(1, `rgba(0,0,0,${opacity})`);
+  }
+  ctx.fillStyle = grad;
+  ctx.fillRect(0, overlayY, W, overlayH);
+
+  const textY = posicaoOverlay === 'top' ? 80 : H - overlayH + 60;
+  const padding = 60;
+
+  // Logo EVVO
+  ctx.fillStyle = '#ff6a00';
+  ctx.font = 'bold 36px -apple-system, sans-serif';
+  ctx.textAlign = 'left';
+  ctx.fillText('EVVO', padding, textY);
+
+  ctx.strokeStyle = '#ff6a00';
+  ctx.lineWidth = 3;
+  ctx.beginPath();
+  ctx.moveTo(padding, textY + 16);
+  ctx.lineTo(W - padding, textY + 16);
+  ctx.stroke();
+
+  const nomeTreino = document.getElementById('sc-workout').textContent || 'Meu Treino';
+  ctx.fillStyle = '#ffffff';
+  ctx.font = 'bold 72px -apple-system, sans-serif';
+  ctx.textAlign = 'left';
+  const palavras = nomeTreino.split(' ');
+  let linha1 = '', linha2 = '';
+  palavras.forEach(p => {
+    if (ctx.measureText(linha1 + p).width < W - padding*2 - 20) linha1 += p + ' ';
+    else linha2 += p + ' ';
+  });
+  ctx.fillText(linha1.trim(), padding, textY + 80);
+  if (linha2.trim()) ctx.fillText(linha2.trim(), padding, textY + 160);
+
+  const statsY = linha2.trim() ? textY + 220 : textY + 160;
+  const scStats = document.getElementById('sc-stats');
+  const statsItems = scStats ? scStats.querySelectorAll('.sc-stat') : [];
+  ctx.font = 'bold 52px -apple-system, sans-serif';
+  let xStat = padding;
+  statsItems.forEach((el, i) => {
+    const v = el.querySelector('.v')?.textContent || '—';
+    const l = el.querySelector('.l')?.textContent || '';
+    ctx.fillStyle = i === 0 ? '#ff6a00' : '#ffffff';
+    ctx.textAlign = 'left';
+    ctx.fillText(v, xStat, statsY);
+    ctx.font = '28px -apple-system, sans-serif';
+    ctx.fillStyle = 'rgba(255,255,255,0.6)';
+    ctx.fillText(l.toUpperCase(), xStat, statsY + 36);
+    ctx.font = 'bold 52px -apple-system, sans-serif';
+    xStat += 200;
+  });
+
+  const dataStr = new Date().toLocaleDateString('pt-BR', { day:'2-digit', month:'long', year:'numeric' });
+  ctx.font = '28px -apple-system, sans-serif';
+  ctx.fillStyle = 'rgba(255,255,255,0.5)';
+  ctx.textAlign = 'left';
+  ctx.fillText(dataStr, padding, statsY + 80);
+
+  const username = state.perfil?.nome?.toLowerCase().replace(/\s+/g,'') || 'usuario';
+  ctx.font = 'bold 30px -apple-system, sans-serif';
+  ctx.fillStyle = 'rgba(255,255,255,0.7)';
+  ctx.textAlign = 'right';
+  ctx.fillText('@' + username + ' • EVVO', W - padding, H - 50);
+
+  // Salva como PNG (suporta transparência)
+  const link = document.createElement('a');
+  link.download = 'evvo-marcadagua.png';
+  link.href = canvas.toDataURL('image/png');
+  link.click();
+  showToast("Marca dagua salva!");
+}
+
 // ═══════════════════════════════════════════
 // TOAST
 // ═══════════════════════════════════════════
@@ -6222,6 +6527,7 @@ window.navTo = function(screenId, btn) {
   origNavTo(screenId, btn);
   if (screenId === 'screen-evolucao') { loadFichas(); loadHistorico(); }
   if (screenId === 'screen-medidas') setupMedidasDate();
+  if (screenId === 'screen-share') updateShareTreino();
 };
 
 

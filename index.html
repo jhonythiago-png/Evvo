@@ -3647,11 +3647,29 @@ async function compartilharFoto() {
 async function baixarFoto() {
   const canvas = document.getElementById('foto-canvas');
   if (!canvas.width) { showToast('Escolha uma foto primeiro'); return; }
-  const link = document.createElement('a');
-  link.download = 'evvo-treino.jpg';
-  link.href = canvas.toDataURL('image/jpeg', 0.92);
-  link.click();
-  showToast('Foto salva!');
+
+  canvas.toBlob(async (blob) => {
+    const file = new File([blob], 'evvo-treino.jpg', { type: 'image/jpeg' });
+
+    // Tenta Web Share API com arquivo (salva direto na galeria no mobile)
+    if (navigator.share && navigator.canShare && navigator.canShare({ files: [file] })) {
+      try {
+        await navigator.share({ files: [file], title: 'EVVO Treino' });
+        return;
+      } catch(e) {
+        if (e.name === 'AbortError') return; // usuário cancelou
+      }
+    }
+
+    // Fallback: download direto (desktop)
+    const url  = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.download = 'evvo-treino.jpg';
+    link.href = url;
+    link.click();
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+    showToast('Foto salva!');
+  }, 'image/jpeg', 0.92);
 }
 
 async function baixarMarcaDagua() {
@@ -3739,11 +3757,24 @@ async function baixarMarcaDagua() {
   ctx.fillText('@' + username + ' • EVVO', W - padding, H - 50);
 
   // Salva como PNG (suporta transparência)
-  const link = document.createElement('a');
-  link.download = 'evvo-marcadagua.png';
-  link.href = canvas.toDataURL('image/png');
-  link.click();
-  showToast("Marca dagua salva!");
+  canvas.toBlob(async (blob) => {
+    const file = new File([blob], 'evvo-marcadagua.png', { type: 'image/png' });
+    if (navigator.share && navigator.canShare && navigator.canShare({ files: [file] })) {
+      try {
+        await navigator.share({ files: [file], title: 'EVVO Marca Dagua' });
+        return;
+      } catch(e) {
+        if (e.name === 'AbortError') return;
+      }
+    }
+    const url  = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.download = 'evvo-marcadagua.png';
+    link.href = url;
+    link.click();
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+    showToast("Imagem salva!");
+  }, 'image/png');
 }
 
 // ═══════════════════════════════════════════
@@ -6533,11 +6564,29 @@ async function compartilharFoto() {
 async function baixarFoto() {
   const canvas = document.getElementById('foto-canvas');
   if (!canvas.width) { showToast('Escolha uma foto primeiro'); return; }
-  const link = document.createElement('a');
-  link.download = 'evvo-treino.jpg';
-  link.href = canvas.toDataURL('image/jpeg', 0.92);
-  link.click();
-  showToast('Foto salva!');
+
+  canvas.toBlob(async (blob) => {
+    const file = new File([blob], 'evvo-treino.jpg', { type: 'image/jpeg' });
+
+    // Tenta Web Share API com arquivo (salva direto na galeria no mobile)
+    if (navigator.share && navigator.canShare && navigator.canShare({ files: [file] })) {
+      try {
+        await navigator.share({ files: [file], title: 'EVVO Treino' });
+        return;
+      } catch(e) {
+        if (e.name === 'AbortError') return; // usuário cancelou
+      }
+    }
+
+    // Fallback: download direto (desktop)
+    const url  = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.download = 'evvo-treino.jpg';
+    link.href = url;
+    link.click();
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+    showToast('Foto salva!');
+  }, 'image/jpeg', 0.92);
 }
 
 async function baixarMarcaDagua() {
@@ -6625,11 +6674,24 @@ async function baixarMarcaDagua() {
   ctx.fillText('@' + username + ' • EVVO', W - padding, H - 50);
 
   // Salva como PNG (suporta transparência)
-  const link = document.createElement('a');
-  link.download = 'evvo-marcadagua.png';
-  link.href = canvas.toDataURL('image/png');
-  link.click();
-  showToast("Marca dagua salva!");
+  canvas.toBlob(async (blob) => {
+    const file = new File([blob], 'evvo-marcadagua.png', { type: 'image/png' });
+    if (navigator.share && navigator.canShare && navigator.canShare({ files: [file] })) {
+      try {
+        await navigator.share({ files: [file], title: 'EVVO Marca Dagua' });
+        return;
+      } catch(e) {
+        if (e.name === 'AbortError') return;
+      }
+    }
+    const url  = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.download = 'evvo-marcadagua.png';
+    link.href = url;
+    link.click();
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+    showToast("Imagem salva!");
+  }, 'image/png');
 }
 
 // ═══════════════════════════════════════════

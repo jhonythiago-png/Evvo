@@ -1656,6 +1656,29 @@ select.form-input option{background:#0e0e1a;color:#fff}
               oninput="renderFotoCanvas()" style="width:100%;accent-color:var(--accent)">
           </div>
 
+          <!-- Frase motivacional -->
+          <div style="background:var(--bg2);border-radius:14px;border:1px solid var(--border);padding:14px">
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
+              <div style="font-size:10px;color:var(--text3);font-weight:700;text-transform:uppercase;letter-spacing:.1em">Frase motivacional</div>
+              <label style="display:flex;align-items:center;gap:6px;cursor:pointer">
+                <span style="font-size:11px;color:var(--text3)" id="foto-frase-label">Off</span>
+                <div onclick="toggleFraseFoto()" id="foto-frase-toggle"
+                  style="width:36px;height:20px;border-radius:10px;background:var(--border2);position:relative;cursor:pointer;transition:background .2s">
+                  <div id="foto-frase-knob" style="width:16px;height:16px;border-radius:50%;background:#fff;position:absolute;top:2px;left:2px;transition:left .2s"></div>
+                </div>
+              </label>
+            </div>
+            <div id="foto-frase-wrap" style="display:none">
+              <div style="background:var(--bg3);border-radius:10px;padding:10px 12px;font-size:12px;font-style:italic;color:var(--text3);line-height:1.5" id="foto-frase-txt">
+                Cada série é um passo. Cada treino é uma vitória.
+              </div>
+              <button onclick="trocarFraseFoto()" style="margin-top:8px;width:100%;background:var(--border);border-radius:10px;padding:8px;display:flex;align-items:center;justify-content:center;gap:6px;font-size:11px;font-weight:700;color:var(--text3);cursor:pointer;border:none">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
+                Trocar frase
+              </button>
+            </div>
+          </div>
+
           <!-- Excluir foto -->
           <button id="btn-excluir-foto" onclick="excluirFotoShare()" style="display:none;background:#ee097915;border:1px solid #ee097933;border-radius:14px;padding:13px;display:none;align-items:center;justify-content:center;gap:7px;font-size:12px;font-weight:700;color:#ee0979;cursor:pointer">
             <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg>
@@ -3577,6 +3600,41 @@ async function baixarCard() {
 
 // ── MODO FOTO ──
 let formatoFoto = 'quadrado'; // 'quadrado' | 'story'
+let fraseFotoAtiva = false;
+let fraseFotoIdx = 0;
+
+function toggleFraseFoto() {
+  fraseFotoAtiva = !fraseFotoAtiva;
+  const toggle = document.getElementById('foto-frase-toggle');
+  const knob   = document.getElementById('foto-frase-knob');
+  const label  = document.getElementById('foto-frase-label');
+  const wrap   = document.getElementById('foto-frase-wrap');
+  if (fraseFotoAtiva) {
+    toggle.style.background = 'var(--accent)';
+    knob.style.left = '18px';
+    label.textContent = 'On';
+    wrap.style.display = 'block';
+    // Sincroniza com a frase atual do card
+    const phraseEl = document.getElementById('sc-phrase');
+    if (phraseEl) {
+      document.getElementById('foto-frase-txt').textContent = phraseEl.textContent;
+      fraseFotoIdx = pIdx;
+    }
+  } else {
+    toggle.style.background = 'var(--border2)';
+    knob.style.left = '2px';
+    label.textContent = 'Off';
+    wrap.style.display = 'none';
+  }
+  renderFotoCanvas();
+}
+
+function trocarFraseFoto() {
+  fraseFotoIdx = (fraseFotoIdx + 1) % PHRASES.length;
+  const frase = PHRASES[fraseFotoIdx];
+  document.getElementById('foto-frase-txt').textContent = frase;
+  renderFotoCanvas();
+}
 
 function setFormato(fmt) {
   formatoFoto = fmt;
@@ -3775,12 +3833,44 @@ function _desenharFotoCanvas(img) {
     ctx.fillText('🏆 Novo Recorde!', padding, statsY + 100);
   }
 
+  // Frase motivacional (se ativa)
+  let afterStatsY = statsY + (temRecorde ? 150 : 100);
+  if (fraseFotoAtiva) {
+    const fraseTxt = document.getElementById('foto-frase-txt')?.textContent || PHRASES[fraseFotoIdx];
+    ctx.font = `italic 26px -apple-system, sans-serif`;
+    ctx.fillStyle = 'rgba(255,255,255,0.6)';
+    ctx.textAlign = 'left';
+    // Quebra a frase em linhas
+    const palavras = fraseTxt.split(' ');
+    const maxFraseW = W - padding * 2;
+    let linha = '', linhasFrase = [];
+    palavras.forEach(p => {
+      const teste = linha + p + ' ';
+      if (ctx.measureText(teste).width > maxFraseW && linha) {
+        linhasFrase.push(linha.trim());
+        linha = p + ' ';
+      } else { linha = teste; }
+    });
+    if (linha.trim()) linhasFrase.push(linha.trim());
+    // Linha decorativa antes da frase
+    ctx.strokeStyle = 'rgba(255,255,255,0.2)';
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(padding, afterStatsY - 10);
+    ctx.lineTo(W - padding, afterStatsY - 10);
+    ctx.stroke();
+    linhasFrase.forEach((l, i) => {
+      ctx.fillText(l, padding, afterStatsY + 20 + i * 36);
+    });
+    afterStatsY += 30 + linhasFrase.length * 36 + 10;
+  }
+
   // Data
   const dataStr = new Date().toLocaleDateString('pt-BR', { day:'2-digit', month:'long', year:'numeric' });
   ctx.font = '28px -apple-system, sans-serif';
   ctx.fillStyle = 'rgba(255,255,255,0.5)';
   ctx.textAlign = 'left';
-  ctx.fillText(dataStr, padding, statsY + (temRecorde ? 150 : 100));
+  ctx.fillText(dataStr, padding, afterStatsY + 10);
 
   // @usuario
   const username = (state.perfil?.nome || 'usuario').toLowerCase().replace(/\s+/g, '');
@@ -6656,6 +6746,41 @@ async function baixarCard() {
 
 // ── MODO FOTO ──
 let formatoFoto = 'quadrado'; // 'quadrado' | 'story'
+let fraseFotoAtiva = false;
+let fraseFotoIdx = 0;
+
+function toggleFraseFoto() {
+  fraseFotoAtiva = !fraseFotoAtiva;
+  const toggle = document.getElementById('foto-frase-toggle');
+  const knob   = document.getElementById('foto-frase-knob');
+  const label  = document.getElementById('foto-frase-label');
+  const wrap   = document.getElementById('foto-frase-wrap');
+  if (fraseFotoAtiva) {
+    toggle.style.background = 'var(--accent)';
+    knob.style.left = '18px';
+    label.textContent = 'On';
+    wrap.style.display = 'block';
+    // Sincroniza com a frase atual do card
+    const phraseEl = document.getElementById('sc-phrase');
+    if (phraseEl) {
+      document.getElementById('foto-frase-txt').textContent = phraseEl.textContent;
+      fraseFotoIdx = pIdx;
+    }
+  } else {
+    toggle.style.background = 'var(--border2)';
+    knob.style.left = '2px';
+    label.textContent = 'Off';
+    wrap.style.display = 'none';
+  }
+  renderFotoCanvas();
+}
+
+function trocarFraseFoto() {
+  fraseFotoIdx = (fraseFotoIdx + 1) % PHRASES.length;
+  const frase = PHRASES[fraseFotoIdx];
+  document.getElementById('foto-frase-txt').textContent = frase;
+  renderFotoCanvas();
+}
 
 function setFormato(fmt) {
   formatoFoto = fmt;
@@ -6854,12 +6979,44 @@ function _desenharFotoCanvas(img) {
     ctx.fillText('🏆 Novo Recorde!', padding, statsY + 100);
   }
 
+  // Frase motivacional (se ativa)
+  let afterStatsY = statsY + (temRecorde ? 150 : 100);
+  if (fraseFotoAtiva) {
+    const fraseTxt = document.getElementById('foto-frase-txt')?.textContent || PHRASES[fraseFotoIdx];
+    ctx.font = `italic 26px -apple-system, sans-serif`;
+    ctx.fillStyle = 'rgba(255,255,255,0.6)';
+    ctx.textAlign = 'left';
+    // Quebra a frase em linhas
+    const palavras = fraseTxt.split(' ');
+    const maxFraseW = W - padding * 2;
+    let linha = '', linhasFrase = [];
+    palavras.forEach(p => {
+      const teste = linha + p + ' ';
+      if (ctx.measureText(teste).width > maxFraseW && linha) {
+        linhasFrase.push(linha.trim());
+        linha = p + ' ';
+      } else { linha = teste; }
+    });
+    if (linha.trim()) linhasFrase.push(linha.trim());
+    // Linha decorativa antes da frase
+    ctx.strokeStyle = 'rgba(255,255,255,0.2)';
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(padding, afterStatsY - 10);
+    ctx.lineTo(W - padding, afterStatsY - 10);
+    ctx.stroke();
+    linhasFrase.forEach((l, i) => {
+      ctx.fillText(l, padding, afterStatsY + 20 + i * 36);
+    });
+    afterStatsY += 30 + linhasFrase.length * 36 + 10;
+  }
+
   // Data
   const dataStr = new Date().toLocaleDateString('pt-BR', { day:'2-digit', month:'long', year:'numeric' });
   ctx.font = '28px -apple-system, sans-serif';
   ctx.fillStyle = 'rgba(255,255,255,0.5)';
   ctx.textAlign = 'left';
-  ctx.fillText(dataStr, padding, statsY + (temRecorde ? 150 : 100));
+  ctx.fillText(dataStr, padding, afterStatsY + 10);
 
   // @usuario
   const username = (state.perfil?.nome || 'usuario').toLowerCase().replace(/\s+/g, '');

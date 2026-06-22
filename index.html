@@ -1551,6 +1551,16 @@ select.form-input option{background:#0e0e1a;color:#fff}
           </div>
         </div>
 
+        <!-- Formato do card -->
+        <div style="display:flex;gap:5px;padding:0 18px 10px">
+          <button id="card-fmt-quadrado" onclick="setCardFormato('quadrado')" style="flex:1;padding:7px;border-radius:10px;font-size:10px;font-weight:800;background:var(--grad);color:#fff;border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:4px">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="3" y="3" width="18" height="18" rx="2"/></svg>Feed 1:1
+          </button>
+          <button id="card-fmt-story" onclick="setCardFormato('story')" style="flex:1;padding:7px;border-radius:10px;font-size:10px;font-weight:800;background:var(--border);color:var(--text3);border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:4px">
+            <svg width="8" height="12" viewBox="0 0 14 22" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="1" y="1" width="12" height="20" rx="2"/></svg>Story 9:16
+          </button>
+        </div>
+
         <div class="opts-row2">
           <div class="opt-grp">
             <div class="opt-lbl">Fundo</div>
@@ -3325,6 +3335,7 @@ const BGs = [
 let shareTab = 'card';
 let fotoShareBase64 = null;
 let posicaoOverlay  = 'bottom';
+let cardFormato = 'quadrado';
 
 function switchShareTab(tab) {
   shareTab = tab;
@@ -3341,6 +3352,17 @@ function setBg(i) {
   document.getElementById('sc-bg').style.background = BGs[i];
   for(let j=0;j<4;j++) document.getElementById('sw'+j).classList.remove('sel');
   document.getElementById('sw'+i).classList.add('sel');
+}
+
+function setCardFormato(fmt) {
+  cardFormato = fmt;
+  document.getElementById('card-fmt-quadrado').style.background = fmt === 'quadrado' ? 'var(--grad)' : 'var(--border)';
+  document.getElementById('card-fmt-quadrado').style.color      = fmt === 'quadrado' ? '#fff' : 'var(--text3)';
+  document.getElementById('card-fmt-story').style.background    = fmt === 'story' ? 'var(--grad)' : 'var(--border)';
+  document.getElementById('card-fmt-story').style.color         = fmt === 'story' ? '#fff' : 'var(--text3)';
+  // Muda aspect-ratio do card
+  const card = document.getElementById('share-card-el');
+  if (card) card.style.aspectRatio = fmt === 'story' ? '9/16' : '1/1';
 }
 
 function setEmoji(e, id) {
@@ -3397,6 +3419,7 @@ function setFormato(fmt) {
 
 function excluirFotoShare() {
   fotoShareBase64 = null;
+  fotoShareImgCache = null;
   const canvas = document.getElementById('foto-canvas');
   const ctx = canvas.getContext('2d');
   ctx.clearRect(0, 0, canvas.width, canvas.height);
@@ -3425,8 +3448,8 @@ function carregarFotoShare(event) {
   const reader = new FileReader();
   reader.onload = (e) => {
     fotoShareBase64 = e.target.result;
+    fotoShareImgCache = null; // limpa cache ao trocar foto
     document.getElementById('foto-placeholder').style.display = 'none';
-    // Mostra botão de excluir
     const btnDel = document.getElementById('btn-excluir-foto');
     if (btnDel) { btnDel.style.display = 'flex'; }
     renderFotoCanvas();
@@ -3435,128 +3458,125 @@ function carregarFotoShare(event) {
   event.target.value = '';
 }
 
+// Imagem cacheada para re-renderizar sem recarregar
+let fotoShareImgCache = null;
+
 function renderFotoCanvas() {
   if (!fotoShareBase64) return;
 
-  const canvas  = document.getElementById('foto-canvas');
-  const opacity = parseFloat(document.getElementById('overlay-opacity').value);
-  const dpr     = window.devicePixelRatio || 1;
+  // Se já tem imagem cacheada, renderiza direto
+  if (fotoShareImgCache) {
+    _desenharFotoCanvas(fotoShareImgCache);
+    return;
+  }
 
+  // Carrega imagem e cacheia
   const img = new Image();
   img.onload = () => {
-    // Dimensões conforme formato
-    const W = 1080;
-    const H = formatoFoto === 'story' ? 1920 : 1080; // 9:16 story ou 1:1 feed
-    canvas.width  = W;
-    canvas.height = H;
-    canvas.style.width  = '100%';
-    canvas.style.height = '100%';
-
-    const ctx = canvas.getContext('2d');
-
-    // 1. Desenha foto cobrindo tudo (object-cover)
-    const imgRatio = img.width / img.height;
-    const canRatio = W / H;
-    let sw, sh, sx, sy;
-    if (imgRatio > canRatio) {
-      sh = img.height; sw = sh * canRatio;
-      sx = (img.width - sw) / 2; sy = 0;
-    } else {
-      sw = img.width; sh = sw / canRatio;
-      sx = 0; sy = (img.height - sh) / 2;
-    }
-    ctx.drawImage(img, sx, sy, sw, sh, 0, 0, W, H);
-
-    // 2. Overlay escuro na posição escolhida
-    const overlayH = formatoFoto === 'story' ? 600 : 420;
-    const overlayY = posicaoOverlay === 'top' ? 0 : H - overlayH;
-    const grad = ctx.createLinearGradient(0, overlayY, 0, overlayY + overlayH);
-    if (posicaoOverlay === 'top') {
-      grad.addColorStop(0, `rgba(0,0,0,${opacity})`);
-      grad.addColorStop(1, 'rgba(0,0,0,0)');
-    } else {
-      grad.addColorStop(0, 'rgba(0,0,0,0)');
-      grad.addColorStop(1, `rgba(0,0,0,${opacity})`);
-    }
-    ctx.fillStyle = grad;
-    ctx.fillRect(0, overlayY, W, overlayH);
-
-    // 3. Marca d'água EVVO
-    const textY = posicaoOverlay === 'top' ? 80 : H - overlayH + 60;
-    const padding = 60;
-
-    // Logo EVVO
-    ctx.fillStyle = '#ff6a00';
-    ctx.font = 'bold 36px -apple-system, sans-serif';
-    ctx.textAlign = 'left';
-    ctx.fillText('EVVO', padding, textY);
-
-    // Linha separadora laranja
-    ctx.strokeStyle = '#ff6a00';
-    ctx.lineWidth = 3;
-    ctx.beginPath();
-    ctx.moveTo(padding, textY + 16);
-    ctx.lineTo(W - padding, textY + 16);
-    ctx.stroke();
-
-    // Nome do treino
-    const nomeTreino = document.getElementById('sc-workout').textContent || 'Meu Treino';
-    ctx.fillStyle = '#ffffff';
-    ctx.font = 'bold 72px -apple-system, sans-serif';
-    ctx.textAlign = 'left';
-    // Quebra linha se necessário
-    const palavras = nomeTreino.split(' ');
-    let linha1 = '', linha2 = '';
-    palavras.forEach(p => {
-      if (ctx.measureText(linha1 + p).width < W - padding*2 - 20) linha1 += p + ' ';
-      else linha2 += p + ' ';
-    });
-    ctx.fillText(linha1.trim(), padding, textY + 80);
-    if (linha2.trim()) ctx.fillText(linha2.trim(), padding, textY + 160);
-
-    // Stats: volume + séries
-    const statsY = linha2.trim() ? textY + 220 : textY + 160;
-    const scStats = document.getElementById('sc-stats');
-    const statsItems = scStats ? scStats.querySelectorAll('.sc-stat') : [];
-
-    ctx.font = 'bold 52px -apple-system, sans-serif';
-    let xStat = padding;
-    statsItems.forEach((el, i) => {
-      const v = el.querySelector('.v')?.textContent || '—';
-      const l = el.querySelector('.l')?.textContent || '';
-      ctx.fillStyle = i === 0 ? '#ff6a00' : '#ffffff';
-      ctx.textAlign = 'left';
-      ctx.fillText(v, xStat, statsY);
-      ctx.font = '28px -apple-system, sans-serif';
-      ctx.fillStyle = 'rgba(255,255,255,0.6)';
-      ctx.fillText(l.toUpperCase(), xStat, statsY + 36);
-      ctx.font = 'bold 52px -apple-system, sans-serif';
-      xStat += 200;
-    });
-
-    // Data
-    const dataStr = new Date().toLocaleDateString('pt-BR', { day:'2-digit', month:'long', year:'numeric' });
-    ctx.font = '28px -apple-system, sans-serif';
-    ctx.fillStyle = 'rgba(255,255,255,0.5)';
-    ctx.textAlign = 'left';
-    ctx.fillText(dataStr, padding, statsY + 80);
-
-    // @usuario no canto
-    const username = state.perfil?.nome?.toLowerCase().replace(/\s+/g,'') || 'usuario';
-    ctx.font = 'bold 30px -apple-system, sans-serif';
-    ctx.fillStyle = 'rgba(255,255,255,0.7)';
-    ctx.textAlign = 'right';
-    ctx.fillText('@' + username + ' • EVVO', W - padding, H - 50);
-
-    // Badge recorde se tiver
-    if (document.getElementById('sc-emoji')?.textContent === '🏆') {
-      ctx.font = 'bold 28px -apple-system, sans-serif';
-      ctx.fillStyle = '#f5a623';
-      ctx.textAlign = 'left';
-      ctx.fillText('🏆 Novo Recorde!', padding, statsY + 120);
-    }
+    fotoShareImgCache = img;
+    _desenharFotoCanvas(img);
   };
   img.src = fotoShareBase64;
+}
+
+function _desenharFotoCanvas(img) {
+  const canvas  = document.getElementById('foto-canvas');
+  const opacity = parseFloat(document.getElementById('overlay-opacity').value);
+
+  const W = 1080;
+  const H = formatoFoto === 'story' ? 1920 : 1080;
+  canvas.width  = W;
+  canvas.height = H;
+  canvas.style.width  = '100%';
+  canvas.style.height = '100%';
+
+  const ctx = canvas.getContext('2d');
+
+  // 1. Foto cobrindo tudo
+  const imgRatio = img.width / img.height;
+  const canRatio = W / H;
+  let sw, sh, sx, sy;
+  if (imgRatio > canRatio) {
+    sh = img.height; sw = sh * canRatio;
+    sx = (img.width - sw) / 2; sy = 0;
+  } else {
+    sw = img.width; sh = sw / canRatio;
+    sx = 0; sy = (img.height - sh) / 2;
+  }
+  ctx.drawImage(img, sx, sy, sw, sh, 0, 0, W, H);
+
+  // 2. Overlay gradiente
+  const overlayH = formatoFoto === 'story' ? 600 : 420;
+  const overlayY = posicaoOverlay === 'top' ? 0 : H - overlayH;
+  const grad = ctx.createLinearGradient(0, overlayY, 0, overlayY + overlayH);
+  if (posicaoOverlay === 'top') {
+    grad.addColorStop(0, `rgba(0,0,0,${opacity})`);
+    grad.addColorStop(1, 'rgba(0,0,0,0)');
+  } else {
+    grad.addColorStop(0, 'rgba(0,0,0,0)');
+    grad.addColorStop(1, `rgba(0,0,0,${opacity})`);
+  }
+  ctx.fillStyle = grad;
+  ctx.fillRect(0, overlayY, W, overlayH);
+
+  // 3. Textos da marca d'água
+  const textY  = posicaoOverlay === 'top' ? 80 : H - overlayH + 60;
+  const padding = 60;
+
+  // Logo EVVO
+  ctx.fillStyle = '#ff6a00';
+  ctx.font = 'bold 36px -apple-system, sans-serif';
+  ctx.textAlign = 'left';
+  ctx.fillText('EVVO', padding, textY);
+
+  // Linha laranja
+  ctx.strokeStyle = '#ff6a00';
+  ctx.lineWidth = 3;
+  ctx.beginPath();
+  ctx.moveTo(padding, textY + 16);
+  ctx.lineTo(W - padding, textY + 16);
+  ctx.stroke();
+
+  // Stats: volume + séries (sem nome do treino)
+  const statsY = textY + 60;
+  const scStats = document.getElementById('sc-stats');
+  const statsItems = scStats ? scStats.querySelectorAll('.sc-stat') : [];
+  ctx.font = 'bold 64px -apple-system, sans-serif';
+  let xStat = padding;
+  statsItems.forEach((el, i) => {
+    const v = el.querySelector('.v')?.textContent || '—';
+    const l = el.querySelector('.l')?.textContent || '';
+    ctx.fillStyle = i === 0 ? '#ff6a00' : '#ffffff';
+    ctx.textAlign = 'left';
+    ctx.fillText(v, xStat, statsY);
+    ctx.font = '30px -apple-system, sans-serif';
+    ctx.fillStyle = 'rgba(255,255,255,0.6)';
+    ctx.fillText(l.toUpperCase(), xStat, statsY + 40);
+    ctx.font = 'bold 64px -apple-system, sans-serif';
+    xStat += 220;
+  });
+
+  // Badge recorde
+  if (document.getElementById('sc-emoji')?.textContent === '🏆') {
+    ctx.font = 'bold 32px -apple-system, sans-serif';
+    ctx.fillStyle = '#f5a623';
+    ctx.textAlign = 'left';
+    ctx.fillText('🏆 Novo Recorde!', padding, statsY + 90);
+  }
+
+  // Data
+  const dataStr = new Date().toLocaleDateString('pt-BR', { day:'2-digit', month:'long', year:'numeric' });
+  ctx.font = '30px -apple-system, sans-serif';
+  ctx.fillStyle = 'rgba(255,255,255,0.5)';
+  ctx.textAlign = 'left';
+  ctx.fillText(dataStr, padding, statsY + 140);
+
+  // @usuario
+  const username = state.perfil?.nome?.toLowerCase().replace(/\s+/g,'') || 'usuario';
+  ctx.font = 'bold 30px -apple-system, sans-serif';
+  ctx.fillStyle = 'rgba(255,255,255,0.7)';
+  ctx.textAlign = 'right';
+  ctx.fillText('@' + username + ' • EVVO', W - padding, H - 50);
 }
 
 async function compartilharFoto() {
@@ -6156,6 +6176,7 @@ const BGs = [
 let shareTab = 'card';
 let fotoShareBase64 = null;
 let posicaoOverlay  = 'bottom';
+let cardFormato = 'quadrado';
 
 function switchShareTab(tab) {
   shareTab = tab;
@@ -6172,6 +6193,17 @@ function setBg(i) {
   document.getElementById('sc-bg').style.background = BGs[i];
   for(let j=0;j<4;j++) document.getElementById('sw'+j).classList.remove('sel');
   document.getElementById('sw'+i).classList.add('sel');
+}
+
+function setCardFormato(fmt) {
+  cardFormato = fmt;
+  document.getElementById('card-fmt-quadrado').style.background = fmt === 'quadrado' ? 'var(--grad)' : 'var(--border)';
+  document.getElementById('card-fmt-quadrado').style.color      = fmt === 'quadrado' ? '#fff' : 'var(--text3)';
+  document.getElementById('card-fmt-story').style.background    = fmt === 'story' ? 'var(--grad)' : 'var(--border)';
+  document.getElementById('card-fmt-story').style.color         = fmt === 'story' ? '#fff' : 'var(--text3)';
+  // Muda aspect-ratio do card
+  const card = document.getElementById('share-card-el');
+  if (card) card.style.aspectRatio = fmt === 'story' ? '9/16' : '1/1';
 }
 
 function setEmoji(e, id) {
@@ -6228,6 +6260,7 @@ function setFormato(fmt) {
 
 function excluirFotoShare() {
   fotoShareBase64 = null;
+  fotoShareImgCache = null;
   const canvas = document.getElementById('foto-canvas');
   const ctx = canvas.getContext('2d');
   ctx.clearRect(0, 0, canvas.width, canvas.height);
@@ -6256,8 +6289,8 @@ function carregarFotoShare(event) {
   const reader = new FileReader();
   reader.onload = (e) => {
     fotoShareBase64 = e.target.result;
+    fotoShareImgCache = null; // limpa cache ao trocar foto
     document.getElementById('foto-placeholder').style.display = 'none';
-    // Mostra botão de excluir
     const btnDel = document.getElementById('btn-excluir-foto');
     if (btnDel) { btnDel.style.display = 'flex'; }
     renderFotoCanvas();
@@ -6266,128 +6299,125 @@ function carregarFotoShare(event) {
   event.target.value = '';
 }
 
+// Imagem cacheada para re-renderizar sem recarregar
+let fotoShareImgCache = null;
+
 function renderFotoCanvas() {
   if (!fotoShareBase64) return;
 
-  const canvas  = document.getElementById('foto-canvas');
-  const opacity = parseFloat(document.getElementById('overlay-opacity').value);
-  const dpr     = window.devicePixelRatio || 1;
+  // Se já tem imagem cacheada, renderiza direto
+  if (fotoShareImgCache) {
+    _desenharFotoCanvas(fotoShareImgCache);
+    return;
+  }
 
+  // Carrega imagem e cacheia
   const img = new Image();
   img.onload = () => {
-    // Dimensões conforme formato
-    const W = 1080;
-    const H = formatoFoto === 'story' ? 1920 : 1080; // 9:16 story ou 1:1 feed
-    canvas.width  = W;
-    canvas.height = H;
-    canvas.style.width  = '100%';
-    canvas.style.height = '100%';
-
-    const ctx = canvas.getContext('2d');
-
-    // 1. Desenha foto cobrindo tudo (object-cover)
-    const imgRatio = img.width / img.height;
-    const canRatio = W / H;
-    let sw, sh, sx, sy;
-    if (imgRatio > canRatio) {
-      sh = img.height; sw = sh * canRatio;
-      sx = (img.width - sw) / 2; sy = 0;
-    } else {
-      sw = img.width; sh = sw / canRatio;
-      sx = 0; sy = (img.height - sh) / 2;
-    }
-    ctx.drawImage(img, sx, sy, sw, sh, 0, 0, W, H);
-
-    // 2. Overlay escuro na posição escolhida
-    const overlayH = formatoFoto === 'story' ? 600 : 420;
-    const overlayY = posicaoOverlay === 'top' ? 0 : H - overlayH;
-    const grad = ctx.createLinearGradient(0, overlayY, 0, overlayY + overlayH);
-    if (posicaoOverlay === 'top') {
-      grad.addColorStop(0, `rgba(0,0,0,${opacity})`);
-      grad.addColorStop(1, 'rgba(0,0,0,0)');
-    } else {
-      grad.addColorStop(0, 'rgba(0,0,0,0)');
-      grad.addColorStop(1, `rgba(0,0,0,${opacity})`);
-    }
-    ctx.fillStyle = grad;
-    ctx.fillRect(0, overlayY, W, overlayH);
-
-    // 3. Marca d'água EVVO
-    const textY = posicaoOverlay === 'top' ? 80 : H - overlayH + 60;
-    const padding = 60;
-
-    // Logo EVVO
-    ctx.fillStyle = '#ff6a00';
-    ctx.font = 'bold 36px -apple-system, sans-serif';
-    ctx.textAlign = 'left';
-    ctx.fillText('EVVO', padding, textY);
-
-    // Linha separadora laranja
-    ctx.strokeStyle = '#ff6a00';
-    ctx.lineWidth = 3;
-    ctx.beginPath();
-    ctx.moveTo(padding, textY + 16);
-    ctx.lineTo(W - padding, textY + 16);
-    ctx.stroke();
-
-    // Nome do treino
-    const nomeTreino = document.getElementById('sc-workout').textContent || 'Meu Treino';
-    ctx.fillStyle = '#ffffff';
-    ctx.font = 'bold 72px -apple-system, sans-serif';
-    ctx.textAlign = 'left';
-    // Quebra linha se necessário
-    const palavras = nomeTreino.split(' ');
-    let linha1 = '', linha2 = '';
-    palavras.forEach(p => {
-      if (ctx.measureText(linha1 + p).width < W - padding*2 - 20) linha1 += p + ' ';
-      else linha2 += p + ' ';
-    });
-    ctx.fillText(linha1.trim(), padding, textY + 80);
-    if (linha2.trim()) ctx.fillText(linha2.trim(), padding, textY + 160);
-
-    // Stats: volume + séries
-    const statsY = linha2.trim() ? textY + 220 : textY + 160;
-    const scStats = document.getElementById('sc-stats');
-    const statsItems = scStats ? scStats.querySelectorAll('.sc-stat') : [];
-
-    ctx.font = 'bold 52px -apple-system, sans-serif';
-    let xStat = padding;
-    statsItems.forEach((el, i) => {
-      const v = el.querySelector('.v')?.textContent || '—';
-      const l = el.querySelector('.l')?.textContent || '';
-      ctx.fillStyle = i === 0 ? '#ff6a00' : '#ffffff';
-      ctx.textAlign = 'left';
-      ctx.fillText(v, xStat, statsY);
-      ctx.font = '28px -apple-system, sans-serif';
-      ctx.fillStyle = 'rgba(255,255,255,0.6)';
-      ctx.fillText(l.toUpperCase(), xStat, statsY + 36);
-      ctx.font = 'bold 52px -apple-system, sans-serif';
-      xStat += 200;
-    });
-
-    // Data
-    const dataStr = new Date().toLocaleDateString('pt-BR', { day:'2-digit', month:'long', year:'numeric' });
-    ctx.font = '28px -apple-system, sans-serif';
-    ctx.fillStyle = 'rgba(255,255,255,0.5)';
-    ctx.textAlign = 'left';
-    ctx.fillText(dataStr, padding, statsY + 80);
-
-    // @usuario no canto
-    const username = state.perfil?.nome?.toLowerCase().replace(/\s+/g,'') || 'usuario';
-    ctx.font = 'bold 30px -apple-system, sans-serif';
-    ctx.fillStyle = 'rgba(255,255,255,0.7)';
-    ctx.textAlign = 'right';
-    ctx.fillText('@' + username + ' • EVVO', W - padding, H - 50);
-
-    // Badge recorde se tiver
-    if (document.getElementById('sc-emoji')?.textContent === '🏆') {
-      ctx.font = 'bold 28px -apple-system, sans-serif';
-      ctx.fillStyle = '#f5a623';
-      ctx.textAlign = 'left';
-      ctx.fillText('🏆 Novo Recorde!', padding, statsY + 120);
-    }
+    fotoShareImgCache = img;
+    _desenharFotoCanvas(img);
   };
   img.src = fotoShareBase64;
+}
+
+function _desenharFotoCanvas(img) {
+  const canvas  = document.getElementById('foto-canvas');
+  const opacity = parseFloat(document.getElementById('overlay-opacity').value);
+
+  const W = 1080;
+  const H = formatoFoto === 'story' ? 1920 : 1080;
+  canvas.width  = W;
+  canvas.height = H;
+  canvas.style.width  = '100%';
+  canvas.style.height = '100%';
+
+  const ctx = canvas.getContext('2d');
+
+  // 1. Foto cobrindo tudo
+  const imgRatio = img.width / img.height;
+  const canRatio = W / H;
+  let sw, sh, sx, sy;
+  if (imgRatio > canRatio) {
+    sh = img.height; sw = sh * canRatio;
+    sx = (img.width - sw) / 2; sy = 0;
+  } else {
+    sw = img.width; sh = sw / canRatio;
+    sx = 0; sy = (img.height - sh) / 2;
+  }
+  ctx.drawImage(img, sx, sy, sw, sh, 0, 0, W, H);
+
+  // 2. Overlay gradiente
+  const overlayH = formatoFoto === 'story' ? 600 : 420;
+  const overlayY = posicaoOverlay === 'top' ? 0 : H - overlayH;
+  const grad = ctx.createLinearGradient(0, overlayY, 0, overlayY + overlayH);
+  if (posicaoOverlay === 'top') {
+    grad.addColorStop(0, `rgba(0,0,0,${opacity})`);
+    grad.addColorStop(1, 'rgba(0,0,0,0)');
+  } else {
+    grad.addColorStop(0, 'rgba(0,0,0,0)');
+    grad.addColorStop(1, `rgba(0,0,0,${opacity})`);
+  }
+  ctx.fillStyle = grad;
+  ctx.fillRect(0, overlayY, W, overlayH);
+
+  // 3. Textos da marca d'água
+  const textY  = posicaoOverlay === 'top' ? 80 : H - overlayH + 60;
+  const padding = 60;
+
+  // Logo EVVO
+  ctx.fillStyle = '#ff6a00';
+  ctx.font = 'bold 36px -apple-system, sans-serif';
+  ctx.textAlign = 'left';
+  ctx.fillText('EVVO', padding, textY);
+
+  // Linha laranja
+  ctx.strokeStyle = '#ff6a00';
+  ctx.lineWidth = 3;
+  ctx.beginPath();
+  ctx.moveTo(padding, textY + 16);
+  ctx.lineTo(W - padding, textY + 16);
+  ctx.stroke();
+
+  // Stats: volume + séries (sem nome do treino)
+  const statsY = textY + 60;
+  const scStats = document.getElementById('sc-stats');
+  const statsItems = scStats ? scStats.querySelectorAll('.sc-stat') : [];
+  ctx.font = 'bold 64px -apple-system, sans-serif';
+  let xStat = padding;
+  statsItems.forEach((el, i) => {
+    const v = el.querySelector('.v')?.textContent || '—';
+    const l = el.querySelector('.l')?.textContent || '';
+    ctx.fillStyle = i === 0 ? '#ff6a00' : '#ffffff';
+    ctx.textAlign = 'left';
+    ctx.fillText(v, xStat, statsY);
+    ctx.font = '30px -apple-system, sans-serif';
+    ctx.fillStyle = 'rgba(255,255,255,0.6)';
+    ctx.fillText(l.toUpperCase(), xStat, statsY + 40);
+    ctx.font = 'bold 64px -apple-system, sans-serif';
+    xStat += 220;
+  });
+
+  // Badge recorde
+  if (document.getElementById('sc-emoji')?.textContent === '🏆') {
+    ctx.font = 'bold 32px -apple-system, sans-serif';
+    ctx.fillStyle = '#f5a623';
+    ctx.textAlign = 'left';
+    ctx.fillText('🏆 Novo Recorde!', padding, statsY + 90);
+  }
+
+  // Data
+  const dataStr = new Date().toLocaleDateString('pt-BR', { day:'2-digit', month:'long', year:'numeric' });
+  ctx.font = '30px -apple-system, sans-serif';
+  ctx.fillStyle = 'rgba(255,255,255,0.5)';
+  ctx.textAlign = 'left';
+  ctx.fillText(dataStr, padding, statsY + 140);
+
+  // @usuario
+  const username = state.perfil?.nome?.toLowerCase().replace(/\s+/g,'') || 'usuario';
+  ctx.font = 'bold 30px -apple-system, sans-serif';
+  ctx.fillStyle = 'rgba(255,255,255,0.7)';
+  ctx.textAlign = 'right';
+  ctx.fillText('@' + username + ' • EVVO', W - padding, H - 50);
 }
 
 async function compartilharFoto() {

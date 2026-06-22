@@ -1834,6 +1834,58 @@ select.form-input option{background:#0e0e1a;color:#fff}
     </div>
   </div>
 
+  <!-- ══════════ MODAL EDITAR EXERCICIO ══════════ -->
+  <div class="modal-overlay" id="modal-edit-ex">
+    <div class="modal">
+      <div class="modal-handle"></div>
+      <h3>Editar exercício</h3>
+      <input type="hidden" id="edit-ex-id">
+      <div class="form-group">
+        <label class="form-label">Nome</label>
+        <input class="form-input" type="text" id="edit-ex-nome" placeholder="Nome do exercício">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Tipo</label>
+        <select class="form-input" id="edit-ex-tipo" style="color:var(--text)" onchange="toggleEditExFields()">
+          <option value="forca">Força / Musculação</option>
+          <option value="isometrico">Isométrico (tempo)</option>
+          <option value="cardio">Cardio</option>
+        </select>
+      </div>
+      <div id="edit-campos-forca">
+        <div class="form-group">
+          <label class="form-label">Grupo muscular</label>
+          <select class="form-input" id="edit-ex-grupo" style="color:var(--text)">
+            <option value="Peitoral">Peitoral</option>
+            <option value="Costas">Costas</option>
+            <option value="Ombros">Ombros</option>
+            <option value="Biceps">Bíceps</option>
+            <option value="Triceps">Tríceps</option>
+            <option value="Pernas">Pernas</option>
+            <option value="Gluteos">Glúteos</option>
+            <option value="Abdomen">Abdômen</option>
+            <option value="Panturrilha">Panturrilha</option>
+            <option value="Antebraco">Antebraço</option>
+            <option value="Corpo todo">Corpo todo</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Equipamento</label>
+          <select class="form-input" id="edit-ex-equip" style="color:var(--text)">
+            <option value="Barra">Barra livre</option>
+            <option value="Halter">Halter</option>
+            <option value="Maquina">Máquina</option>
+            <option value="Polia">Polia / Cabo</option>
+            <option value="Peso corporal">Peso corporal</option>
+            <option value="Kettlebell">Kettlebell</option>
+            <option value="Elastico">Elástico</option>
+          </select>
+        </div>
+      </div>
+      <button class="btn-primary" onclick="salvarEdicaoEx()">Salvar</button>
+    </div>
+  </div>
+
   <!-- ══════════ MODAL NOVO EXERCICIO ══════════ -->
   <div class="modal-overlay" id="modal-ex">
     <div class="modal">
@@ -3513,7 +3565,7 @@ function closeModal(id) {
 }
 
 // Fecha modal ao clicar fora
-['modal-dia','modal-ex','modal-ficha'].forEach(id => {
+['modal-dia','modal-ex','modal-ficha','modal-edit-ex'].forEach(id => {
   const el = document.getElementById(id);
   if(el) el.addEventListener('click', function(e){ if(e.target===this) closeModal(id); });
 });
@@ -3928,13 +3980,53 @@ async function editarNomeFicha(id, nomeAtual) {
 // ═══════════════════════════════════════════
 // EDITAR NOME / GRUPO / EQUIPAMENTO DO EXERCICIO
 // ═══════════════════════════════════════════
+function toggleEditExFields() {
+  const tipo = document.getElementById('edit-ex-tipo').value;
+  document.getElementById('edit-campos-forca').style.display = tipo === 'forca' ? 'block' : 'none';
+}
+
 async function editarNomeEx(id, nomeAtual, grupoAtual, equipAtual) {
-  const novo = prompt('Novo nome do exercicio:', nomeAtual);
-  if (!novo || novo.trim() === nomeAtual) return;
-  const { error } = await sb.from('exercicios').update({ nome: novo.trim() }).eq('id', id);
+  // Busca dados completos do exercício
+  const { data } = await sb.from('exercicios').select('*').eq('id', id).single();
+  if (!data) return;
+
+  document.getElementById('edit-ex-id').value    = id;
+  document.getElementById('edit-ex-nome').value  = data.nome || '';
+  document.getElementById('edit-ex-tipo').value  = data.tipo || 'forca';
+  document.getElementById('edit-ex-grupo').value = data.grupo_muscular || 'Peitoral';
+  document.getElementById('edit-ex-equip').value = data.equipamento || 'Maquina';
+  toggleEditExFields();
+  openModal('modal-edit-ex');
+}
+
+async function salvarEdicaoEx() {
+  const id    = document.getElementById('edit-ex-id').value;
+  const nome  = document.getElementById('edit-ex-nome').value.trim();
+  const tipo  = document.getElementById('edit-ex-tipo').value;
+  const grupo = tipo === 'forca' || tipo === 'isometrico'
+    ? document.getElementById('edit-ex-grupo').value
+    : 'Cardio';
+  const equip = tipo === 'forca' || tipo === 'isometrico'
+    ? document.getElementById('edit-ex-equip').value
+    : '';
+
+  if (!nome) { showToast('Digite o nome'); return; }
+
+  const { error } = await sb.from('exercicios').update({
+    nome, tipo,
+    grupo_muscular: grupo,
+    equipamento: equip,
+  }).eq('id', id);
+
   if (!error) {
-    showToast('Exercicio renomeado!');
-    renderExEditList();
+    closeModal('modal-edit-ex');
+    showToast('Exercício atualizado!');
+    // Recarrega o editor de séries com novo tipo
+    await renderExEditList();
+    // Abre editor de séries para reconfigurar se tipo mudou
+    abrirEditarEx(id, nome, grupo, equip);
+  } else {
+    showToast('Erro ao salvar');
   }
 }
 
@@ -6155,7 +6247,7 @@ function closeModal(id) {
 }
 
 // Fecha modal ao clicar fora
-['modal-dia','modal-ex','modal-ficha'].forEach(id => {
+['modal-dia','modal-ex','modal-ficha','modal-edit-ex'].forEach(id => {
   const el = document.getElementById(id);
   if(el) el.addEventListener('click', function(e){ if(e.target===this) closeModal(id); });
 });
@@ -6358,13 +6450,53 @@ async function editarNomeFicha(id, nomeAtual) {
 // ═══════════════════════════════════════════
 // EDITAR NOME / GRUPO / EQUIPAMENTO DO EXERCICIO
 // ═══════════════════════════════════════════
+function toggleEditExFields() {
+  const tipo = document.getElementById('edit-ex-tipo').value;
+  document.getElementById('edit-campos-forca').style.display = tipo === 'forca' ? 'block' : 'none';
+}
+
 async function editarNomeEx(id, nomeAtual, grupoAtual, equipAtual) {
-  const novo = prompt('Novo nome do exercicio:', nomeAtual);
-  if (!novo || novo.trim() === nomeAtual) return;
-  const { error } = await sb.from('exercicios').update({ nome: novo.trim() }).eq('id', id);
+  // Busca dados completos do exercício
+  const { data } = await sb.from('exercicios').select('*').eq('id', id).single();
+  if (!data) return;
+
+  document.getElementById('edit-ex-id').value    = id;
+  document.getElementById('edit-ex-nome').value  = data.nome || '';
+  document.getElementById('edit-ex-tipo').value  = data.tipo || 'forca';
+  document.getElementById('edit-ex-grupo').value = data.grupo_muscular || 'Peitoral';
+  document.getElementById('edit-ex-equip').value = data.equipamento || 'Maquina';
+  toggleEditExFields();
+  openModal('modal-edit-ex');
+}
+
+async function salvarEdicaoEx() {
+  const id    = document.getElementById('edit-ex-id').value;
+  const nome  = document.getElementById('edit-ex-nome').value.trim();
+  const tipo  = document.getElementById('edit-ex-tipo').value;
+  const grupo = tipo === 'forca' || tipo === 'isometrico'
+    ? document.getElementById('edit-ex-grupo').value
+    : 'Cardio';
+  const equip = tipo === 'forca' || tipo === 'isometrico'
+    ? document.getElementById('edit-ex-equip').value
+    : '';
+
+  if (!nome) { showToast('Digite o nome'); return; }
+
+  const { error } = await sb.from('exercicios').update({
+    nome, tipo,
+    grupo_muscular: grupo,
+    equipamento: equip,
+  }).eq('id', id);
+
   if (!error) {
-    showToast('Exercicio renomeado!');
-    renderExEditList();
+    closeModal('modal-edit-ex');
+    showToast('Exercício atualizado!');
+    // Recarrega o editor de séries com novo tipo
+    await renderExEditList();
+    // Abre editor de séries para reconfigurar se tipo mudou
+    abrirEditarEx(id, nome, grupo, equip);
+  } else {
+    showToast('Erro ao salvar');
   }
 }
 

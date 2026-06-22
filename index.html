@@ -3140,6 +3140,16 @@ async function criarFicha() {
   const nome = document.getElementById('ficha-nome').value.trim();
   if (!nome) { showToast('Digite um nome para a ficha'); return; }
 
+  // Free: só 1 ficha — bloqueia se já tiver uma
+  if (!isPro()) {
+    const { data: fichasAtivas } = await sb.from('fichas')
+      .select('id').eq('user_id', state.user.id).eq('status','ativa');
+    if (fichasAtivas && fichasAtivas.length >= 1) {
+      bloqueadoFree('Free só permite 1 ficha ativa. Faça upgrade para Pro!');
+      return;
+    }
+  }
+
   // arquiva fichas anteriores
   await sb.from('fichas').update({ status:'arquivada', archived_at: new Date() })
     .eq('user_id', state.user.id).eq('status','ativa');
@@ -3453,6 +3463,10 @@ let posicaoOverlay  = 'bottom';
 let cardFormato = 'quadrado';
 
 function switchShareTab(tab) {
+  if (tab === 'foto' && !isPro()) {
+    bloqueadoFree('Compartilhar com foto é exclusivo do Pro!');
+    return;
+  }
   shareTab = tab;
   const isCard = tab === 'card';
   document.getElementById('share-content-card').style.display = isCard ? 'block' : 'none';
@@ -3825,6 +3839,10 @@ function setPosicao(pos) {
 }
 
 function escolherFotoShare() {
+  if (!isPro()) {
+    bloqueadoFree('Compartilhar com foto é exclusivo do Pro!');
+    return;
+  }
   document.getElementById('foto-share-input').click();
 }
 
@@ -4430,6 +4448,15 @@ function solicitarUpgrade() {
   window.open(url, '_blank');
 }
 
+function isPro() {
+  return state.perfil?.plano === 'pro';
+}
+
+function bloqueadoFree(msg) {
+  showToast('🔒 ' + msg);
+  setTimeout(() => abrirUpgrade(), 1000);
+}
+
 function showToast(msg) {
   const t = document.getElementById('toast');
   t.textContent = msg;
@@ -4611,6 +4638,12 @@ async function criarExercicio() {
   const { data: exsAtuais } = await sb.from('exercicios')
     .select('id').eq('dia_id', editState.diaEditando.id);
   const ordem = exsAtuais ? exsAtuais.length : 0;
+
+  // Free: até 5 exercícios por dia
+  if (!isPro() && exsAtuais && exsAtuais.length >= 5) {
+    bloqueadoFree('Free permite até 5 exercícios por dia. Faça upgrade para Pro!');
+    return;
+  }
 
   const { data, error } = await sb.from('exercicios').insert({
     dia_id: editState.diaEditando.id,
@@ -5106,17 +5139,20 @@ async function encerrarSessao() {
 async function loadHistorico() {
   if (!state.user) return;
 
-  const { data } = await sb.from('sessoes')
-    .select(`
-      *,
-      dias_treino ( nome, dia_semana ),
-      fichas ( nome ),
-      series_executadas ( is_pr )
-    `)
+  // Free: histórico dos últimos 15 dias
+  let histQuery = sb.from('sessoes')
+    .select(`*, dias_treino ( nome, dia_semana ), fichas ( nome ), series_executadas ( is_pr )`)
     .eq('user_id', state.user.id)
     .not('finalizado_em', 'is', null)
-    .order('iniciado_em', { ascending: false })
-    .limit(30);
+    .order('iniciado_em', { ascending: false });
+
+  if (!isPro()) {
+    const limite = new Date();
+    limite.setDate(limite.getDate() - 15);
+    histQuery = histQuery.gte('iniciado_em', limite.toISOString());
+  }
+
+  const { data } = await histQuery.limit(100);
 
   const list = document.getElementById('hist-list');
   if (!data || !data.length) {
@@ -5817,6 +5853,10 @@ function atualizarAvatarPerfil() {
 // GRÁFICO DE EVOLUÇÃO POR EXERCÍCIO
 // ═══════════════════════════════════════════
 async function abrirGraficoExercicio(exId, nome, grupo) {
+  if (!isPro()) {
+    bloqueadoFree('Gráficos de evolução são exclusivos do Pro!');
+    return;
+  }
   document.getElementById('grafico-ex-nome').textContent = nome;
   document.getElementById('grafico-ex-sub').textContent  = grupo || '—';
 

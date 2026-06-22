@@ -2712,6 +2712,7 @@ async function openDia(diaId) {
   cardioState.iniciado  = false;
   cardioState.inicio    = null;
   cardioState.concluido = false;
+  cardioState.serieIso  = 0;
   state.cardiosConcluidos = new Set();
 
   // atualiza tela
@@ -2825,13 +2826,17 @@ function renderExec() {
 
   // ── CARDIO / ISOMÉTRICO: timer + dados ──
   if (isCardio || isIso) {
-    const serie = (ex.series_template || [])[0] || {};
-    const durMin = serie.duracao_min || (isIso ? 1 : 30); // isometrico em segundos se < 10
+    // Inicializa controle de série do isométrico
+    if (isIso && cardioState.serieIso === undefined) cardioState.serieIso = 0;
+    const serieIdx = isIso ? (cardioState.serieIso || 0) : 0;
+    const serie = (ex.series_template || [])[serieIdx] || {};
+    // Para isométrico duracao_min é em SEGUNDOS; para cardio é em MINUTOS
+    const durMin = serie.duracao_min || (isIso ? 60 : 30);
     const vel    = isIso ? null : (serie.velocidade || null);
     const incl   = isIso ? null : (serie.inclinacao || null);
 
-    // Atualiza dados previstos sempre
-    cardioState.duracaoPrevista = durMin * 60;
+    // Duração prevista em segundos
+    cardioState.duracaoPrevista = isIso ? durMin : durMin * 60;
     cardioState.velocidade = vel;
     cardioState.inclinacao = incl;
     document.getElementById('cardio-previsto').textContent = formatarTempo(durMin * 60);
@@ -2863,7 +2868,8 @@ function renderExec() {
     if (isIso) {
       // Isométrico — mostra série atual e tempo previsto
       const serieAtual = (ex.series_template || [])[cardioState.serieIso || 0] || {};
-      const durSeg = serieAtual.duracao_min ? Math.round(serieAtual.duracao_min * 60) : 60;
+      // duracao_min para isométrico está em SEGUNDOS
+      const durSeg = serieAtual.duracao_min ? Math.round(serieAtual.duracao_min) : 60;
       const totalSeries = ex.series_template?.length || 1;
       const serieNum = (cardioState.serieIso || 0) + 1;
       cont.innerHTML = `<div style="display:flex;gap:8px;justify-content:center;padding:10px 8px;align-items:center">
@@ -5647,30 +5653,57 @@ async function finalizarCardio() {
 
   // Salva no banco: carga_kg = velocidade, repeticoes = tempo feito
   if (state.sessaoAtiva) {
+    const serieNum = isIsoEx ? ((cardioState.serieIso || 0) + 1) : 1;
     const { error } = await sb.from('series_executadas').insert({
       sessao_id:    state.sessaoAtiva.id,
       exercicio_id: ex.id,
-      numero_serie: 1,
-      carga_kg:     vel,              // velocidade km/h salva aqui
-      repeticoes:   String(minReal),  // minutos feitos
+      numero_serie: serieNum,
+      carga_kg:     vel,
+      repeticoes:   isIsoEx ? String(tempoFinalSeg) + 's' : String(minReal),
       concluida:    true,
       executado_em: new Date().toISOString(),
     });
-    if (error) console.error('Erro ao salvar cardio:', error);
+    if (error) console.error('Erro ao salvar:', error);
   }
 
-  // Guarda local
-  const key = `${state.execIdx}_cardio`;
-  seriesExecutadas[key] = { carga: vel || 0, reps: minReal };
+  const key = `${state.execIdx}_${isIsoEx ? (cardioState.serieIso || 0) : 'cardio'}`;
+  seriesExecutadas[key] = { carga: vel || 0, reps: isIsoEx ? tempoFinalSeg : minReal };
 
-  // Marca concluído no estado persistente
+  if (isIsoEx) {
+    // Isométrico: avança para próxima série ou conclui
+    const totalSeries = ex.series_template?.length || 1;
+    const proxSerie = (cardioState.serieIso || 0) + 1;
+
+    if (proxSerie < totalSeries) {
+      // Tem mais séries — reseta timer e avança
+      cardioState.serieIso = proxSerie;
+      cardioState.iniciado = false;
+      cardioState.inicio   = null;
+      clearInterval(cardioState.interval);
+      cardioState.interval = null;
+
+      const proxSerieData = (ex.series_template || [])[proxSerie] || {};
+      const proxDurSeg = proxSerieData.duracao_min ? Math.round(proxSerieData.duracao_min) : 60;
+      cardioState.duracaoPrevista = proxDurSeg;
+
+      showToast(`Série ${proxSerie} concluída! Prepare-se para a próxima 💪`);
+      renderExec(); // re-renderiza mostrando nova série
+      return;
+    } else {
+      // Todas as séries concluídas
+      cardioState.serieIso = 0;
+    }
+  }
+
+  // Marca exercício concluído
   ex._cardio_concluido = true;
   ex._cardio_tempo_real = tempoFinalSeg;
   state.exsConcluidos.add(state.execIdx);
   if (!state.cardiosConcluidos) state.cardiosConcluidos = new Set();
   state.cardiosConcluidos.add(state.execIdx);
 
-  showToast(`Cardio concluído — ${tempoStr}! 🔥`);
+  const msg = isIsoEx ? `Prancha concluída! ${tempoFinalSeg}s 🏆` : `Cardio concluído — ${tempoStr}! 🔥`;
+  showToast(msg);
   setTimeout(() => nextEx(), 800);
 }
 

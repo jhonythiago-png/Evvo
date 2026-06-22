@@ -3492,7 +3492,7 @@ function _desenharFotoCanvas(img) {
 
   const ctx = canvas.getContext('2d');
 
-  // 1. Foto cobrindo tudo
+  // 1. Foto cobrindo tudo (object-cover)
   const imgRatio = img.width / img.height;
   const canRatio = W / H;
   let sw, sh, sx, sy;
@@ -3505,78 +3505,95 @@ function _desenharFotoCanvas(img) {
   }
   ctx.drawImage(img, sx, sy, sw, sh, 0, 0, W, H);
 
-  // 2. Overlay gradiente
-  const overlayH = formatoFoto === 'story' ? 600 : 420;
+  // 2. Overlay gradiente (ocupa 40% da altura)
+  const overlayH = Math.round(H * 0.40);
   const overlayY = posicaoOverlay === 'top' ? 0 : H - overlayH;
   const grad = ctx.createLinearGradient(0, overlayY, 0, overlayY + overlayH);
   if (posicaoOverlay === 'top') {
-    grad.addColorStop(0, `rgba(0,0,0,${opacity})`);
-    grad.addColorStop(1, 'rgba(0,0,0,0)');
+    grad.addColorStop(0,   `rgba(0,0,0,${opacity})`);
+    grad.addColorStop(0.7, `rgba(0,0,0,${opacity * 0.6})`);
+    grad.addColorStop(1,   'rgba(0,0,0,0)');
   } else {
-    grad.addColorStop(0, 'rgba(0,0,0,0)');
-    grad.addColorStop(1, `rgba(0,0,0,${opacity})`);
+    grad.addColorStop(0,   'rgba(0,0,0,0)');
+    grad.addColorStop(0.3, `rgba(0,0,0,${opacity * 0.6})`);
+    grad.addColorStop(1,   `rgba(0,0,0,${opacity})`);
   }
   ctx.fillStyle = grad;
   ctx.fillRect(0, overlayY, W, overlayH);
 
-  // 3. Textos da marca d'água
-  const textY  = posicaoOverlay === 'top' ? 80 : H - overlayH + 60;
-  const padding = 60;
+  // 3. Posição base do texto — dentro do overlay com margem
+  const pad = 70;
+  const isTop = posicaoOverlay === 'top';
 
-  // Logo EVVO
+  // Linha de base: começa 15% do início do overlay, termina 15% antes do fim
+  const areaTop = overlayY + overlayH * 0.10;
+  const areaBot = overlayY + overlayH * 0.92;
+
+  // — Logo EVVO (topo da área)
   ctx.fillStyle = '#ff6a00';
-  ctx.font = 'bold 36px -apple-system, sans-serif';
+  ctx.font = `bold ${Math.round(W * 0.038)}px -apple-system, sans-serif`;
   ctx.textAlign = 'left';
-  ctx.fillText('EVVO', padding, textY);
+  ctx.fillText('EVVO', pad, areaTop + Math.round(W * 0.038));
 
-  // Linha laranja
+  // — Linha separadora
+  const linhaY = areaTop + Math.round(W * 0.038) + 14;
   ctx.strokeStyle = '#ff6a00';
   ctx.lineWidth = 3;
   ctx.beginPath();
-  ctx.moveTo(padding, textY + 16);
-  ctx.lineTo(W - padding, textY + 16);
+  ctx.moveTo(pad, linhaY);
+  ctx.lineTo(W - pad, linhaY);
   ctx.stroke();
 
-  // Stats: volume + séries (sem nome do treino)
-  const statsY = textY + 60;
+  // — Stats (volume e séries) — centralizados verticalmente na área
+  const statFontSize = Math.round(W * 0.065);
+  const labelFontSize = Math.round(W * 0.028);
+  const statY = linhaY + Math.round((areaBot - linhaY) * 0.35);
+
   const scStats = document.getElementById('sc-stats');
   const statsItems = scStats ? scStats.querySelectorAll('.sc-stat') : [];
-  ctx.font = 'bold 64px -apple-system, sans-serif';
-  let xStat = padding;
+  let xStat = pad;
+  const statStep = Math.round((W - pad * 2) / Math.max(statsItems.length, 1));
+
   statsItems.forEach((el, i) => {
     const v = el.querySelector('.v')?.textContent || '—';
     const l = el.querySelector('.l')?.textContent || '';
+    ctx.font = `bold ${statFontSize}px -apple-system, sans-serif`;
     ctx.fillStyle = i === 0 ? '#ff6a00' : '#ffffff';
     ctx.textAlign = 'left';
-    ctx.fillText(v, xStat, statsY);
-    ctx.font = '30px -apple-system, sans-serif';
-    ctx.fillStyle = 'rgba(255,255,255,0.6)';
-    ctx.fillText(l.toUpperCase(), xStat, statsY + 40);
-    ctx.font = 'bold 64px -apple-system, sans-serif';
-    xStat += 220;
+    ctx.fillText(v, xStat, statY);
+    ctx.font = `${labelFontSize}px -apple-system, sans-serif`;
+    ctx.fillStyle = 'rgba(255,255,255,0.55)';
+    ctx.fillText(l.toUpperCase(), xStat, statY + labelFontSize + 6);
+    xStat += statStep;
   });
 
-  // Badge recorde
-  if (document.getElementById('sc-emoji')?.textContent === '🏆') {
-    ctx.font = 'bold 32px -apple-system, sans-serif';
+  // — Badge recorde (se tiver)
+  const temRecorde = document.getElementById('sc-emoji')?.textContent === '🏆';
+  const badgeFontSize = Math.round(W * 0.030);
+  const badgeY = statY + statFontSize + labelFontSize + 20;
+  if (temRecorde) {
+    ctx.font = `bold ${badgeFontSize}px -apple-system, sans-serif`;
     ctx.fillStyle = '#f5a623';
     ctx.textAlign = 'left';
-    ctx.fillText('🏆 Novo Recorde!', padding, statsY + 90);
+    ctx.fillText('🏆 Novo Recorde!', pad, badgeY);
   }
 
-  // Data
+  // — Data
   const dataStr = new Date().toLocaleDateString('pt-BR', { day:'2-digit', month:'long', year:'numeric' });
-  ctx.font = '30px -apple-system, sans-serif';
-  ctx.fillStyle = 'rgba(255,255,255,0.5)';
+  const dataFontSize = Math.round(W * 0.026);
+  const dataY = temRecorde ? badgeY + dataFontSize + 10 : statY + statFontSize + labelFontSize + 20;
+  ctx.font = `${dataFontSize}px -apple-system, sans-serif`;
+  ctx.fillStyle = 'rgba(255,255,255,0.45)';
   ctx.textAlign = 'left';
-  ctx.fillText(dataStr, padding, statsY + 140);
+  ctx.fillText(dataStr, pad, dataY);
 
-  // @usuario
-  const username = state.perfil?.nome?.toLowerCase().replace(/\s+/g,'') || 'usuario';
-  ctx.font = 'bold 30px -apple-system, sans-serif';
-  ctx.fillStyle = 'rgba(255,255,255,0.7)';
+  // — @usuario fixo na borda inferior do canvas
+  const userFontSize = Math.round(W * 0.026);
+  ctx.font = `bold ${userFontSize}px -apple-system, sans-serif`;
+  ctx.fillStyle = 'rgba(255,255,255,0.65)';
   ctx.textAlign = 'right';
-  ctx.fillText('@' + username + ' • EVVO', W - padding, H - 50);
+  const username = (state.perfil?.nome || 'usuario').toLowerCase().replace(/\s+/g, '');
+  ctx.fillText('@' + username + '  •  EVVO', W - pad, H - Math.round(H * 0.025));
 }
 
 async function compartilharFoto() {
@@ -6333,7 +6350,7 @@ function _desenharFotoCanvas(img) {
 
   const ctx = canvas.getContext('2d');
 
-  // 1. Foto cobrindo tudo
+  // 1. Foto cobrindo tudo (object-cover)
   const imgRatio = img.width / img.height;
   const canRatio = W / H;
   let sw, sh, sx, sy;
@@ -6346,78 +6363,95 @@ function _desenharFotoCanvas(img) {
   }
   ctx.drawImage(img, sx, sy, sw, sh, 0, 0, W, H);
 
-  // 2. Overlay gradiente
-  const overlayH = formatoFoto === 'story' ? 600 : 420;
+  // 2. Overlay gradiente (ocupa 40% da altura)
+  const overlayH = Math.round(H * 0.40);
   const overlayY = posicaoOverlay === 'top' ? 0 : H - overlayH;
   const grad = ctx.createLinearGradient(0, overlayY, 0, overlayY + overlayH);
   if (posicaoOverlay === 'top') {
-    grad.addColorStop(0, `rgba(0,0,0,${opacity})`);
-    grad.addColorStop(1, 'rgba(0,0,0,0)');
+    grad.addColorStop(0,   `rgba(0,0,0,${opacity})`);
+    grad.addColorStop(0.7, `rgba(0,0,0,${opacity * 0.6})`);
+    grad.addColorStop(1,   'rgba(0,0,0,0)');
   } else {
-    grad.addColorStop(0, 'rgba(0,0,0,0)');
-    grad.addColorStop(1, `rgba(0,0,0,${opacity})`);
+    grad.addColorStop(0,   'rgba(0,0,0,0)');
+    grad.addColorStop(0.3, `rgba(0,0,0,${opacity * 0.6})`);
+    grad.addColorStop(1,   `rgba(0,0,0,${opacity})`);
   }
   ctx.fillStyle = grad;
   ctx.fillRect(0, overlayY, W, overlayH);
 
-  // 3. Textos da marca d'água
-  const textY  = posicaoOverlay === 'top' ? 80 : H - overlayH + 60;
-  const padding = 60;
+  // 3. Posição base do texto — dentro do overlay com margem
+  const pad = 70;
+  const isTop = posicaoOverlay === 'top';
 
-  // Logo EVVO
+  // Linha de base: começa 15% do início do overlay, termina 15% antes do fim
+  const areaTop = overlayY + overlayH * 0.10;
+  const areaBot = overlayY + overlayH * 0.92;
+
+  // — Logo EVVO (topo da área)
   ctx.fillStyle = '#ff6a00';
-  ctx.font = 'bold 36px -apple-system, sans-serif';
+  ctx.font = `bold ${Math.round(W * 0.038)}px -apple-system, sans-serif`;
   ctx.textAlign = 'left';
-  ctx.fillText('EVVO', padding, textY);
+  ctx.fillText('EVVO', pad, areaTop + Math.round(W * 0.038));
 
-  // Linha laranja
+  // — Linha separadora
+  const linhaY = areaTop + Math.round(W * 0.038) + 14;
   ctx.strokeStyle = '#ff6a00';
   ctx.lineWidth = 3;
   ctx.beginPath();
-  ctx.moveTo(padding, textY + 16);
-  ctx.lineTo(W - padding, textY + 16);
+  ctx.moveTo(pad, linhaY);
+  ctx.lineTo(W - pad, linhaY);
   ctx.stroke();
 
-  // Stats: volume + séries (sem nome do treino)
-  const statsY = textY + 60;
+  // — Stats (volume e séries) — centralizados verticalmente na área
+  const statFontSize = Math.round(W * 0.065);
+  const labelFontSize = Math.round(W * 0.028);
+  const statY = linhaY + Math.round((areaBot - linhaY) * 0.35);
+
   const scStats = document.getElementById('sc-stats');
   const statsItems = scStats ? scStats.querySelectorAll('.sc-stat') : [];
-  ctx.font = 'bold 64px -apple-system, sans-serif';
-  let xStat = padding;
+  let xStat = pad;
+  const statStep = Math.round((W - pad * 2) / Math.max(statsItems.length, 1));
+
   statsItems.forEach((el, i) => {
     const v = el.querySelector('.v')?.textContent || '—';
     const l = el.querySelector('.l')?.textContent || '';
+    ctx.font = `bold ${statFontSize}px -apple-system, sans-serif`;
     ctx.fillStyle = i === 0 ? '#ff6a00' : '#ffffff';
     ctx.textAlign = 'left';
-    ctx.fillText(v, xStat, statsY);
-    ctx.font = '30px -apple-system, sans-serif';
-    ctx.fillStyle = 'rgba(255,255,255,0.6)';
-    ctx.fillText(l.toUpperCase(), xStat, statsY + 40);
-    ctx.font = 'bold 64px -apple-system, sans-serif';
-    xStat += 220;
+    ctx.fillText(v, xStat, statY);
+    ctx.font = `${labelFontSize}px -apple-system, sans-serif`;
+    ctx.fillStyle = 'rgba(255,255,255,0.55)';
+    ctx.fillText(l.toUpperCase(), xStat, statY + labelFontSize + 6);
+    xStat += statStep;
   });
 
-  // Badge recorde
-  if (document.getElementById('sc-emoji')?.textContent === '🏆') {
-    ctx.font = 'bold 32px -apple-system, sans-serif';
+  // — Badge recorde (se tiver)
+  const temRecorde = document.getElementById('sc-emoji')?.textContent === '🏆';
+  const badgeFontSize = Math.round(W * 0.030);
+  const badgeY = statY + statFontSize + labelFontSize + 20;
+  if (temRecorde) {
+    ctx.font = `bold ${badgeFontSize}px -apple-system, sans-serif`;
     ctx.fillStyle = '#f5a623';
     ctx.textAlign = 'left';
-    ctx.fillText('🏆 Novo Recorde!', padding, statsY + 90);
+    ctx.fillText('🏆 Novo Recorde!', pad, badgeY);
   }
 
-  // Data
+  // — Data
   const dataStr = new Date().toLocaleDateString('pt-BR', { day:'2-digit', month:'long', year:'numeric' });
-  ctx.font = '30px -apple-system, sans-serif';
-  ctx.fillStyle = 'rgba(255,255,255,0.5)';
+  const dataFontSize = Math.round(W * 0.026);
+  const dataY = temRecorde ? badgeY + dataFontSize + 10 : statY + statFontSize + labelFontSize + 20;
+  ctx.font = `${dataFontSize}px -apple-system, sans-serif`;
+  ctx.fillStyle = 'rgba(255,255,255,0.45)';
   ctx.textAlign = 'left';
-  ctx.fillText(dataStr, padding, statsY + 140);
+  ctx.fillText(dataStr, pad, dataY);
 
-  // @usuario
-  const username = state.perfil?.nome?.toLowerCase().replace(/\s+/g,'') || 'usuario';
-  ctx.font = 'bold 30px -apple-system, sans-serif';
-  ctx.fillStyle = 'rgba(255,255,255,0.7)';
+  // — @usuario fixo na borda inferior do canvas
+  const userFontSize = Math.round(W * 0.026);
+  ctx.font = `bold ${userFontSize}px -apple-system, sans-serif`;
+  ctx.fillStyle = 'rgba(255,255,255,0.65)';
   ctx.textAlign = 'right';
-  ctx.fillText('@' + username + ' • EVVO', W - padding, H - 50);
+  const username = (state.perfil?.nome || 'usuario').toLowerCase().replace(/\s+/g, '');
+  ctx.fillText('@' + username + '  •  EVVO', W - pad, H - Math.round(H * 0.025));
 }
 
 async function compartilharFoto() {

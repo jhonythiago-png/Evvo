@@ -1846,7 +1846,8 @@ select.form-input option{background:#0e0e1a;color:#fff}
       <div class="form-group">
         <label class="form-label">Tipo</label>
         <select class="form-input" id="ex-tipo-input" style="color:var(--text)" onchange="toggleCardioFields()">
-          <option value="forca">Forca / Musculacao</option>
+          <option value="forca">Forca / Musculação</option>
+          <option value="isometrico">Isométrico (tempo)</option>
           <option value="cardio">Cardio</option>
         </select>
       </div>
@@ -2532,19 +2533,20 @@ function renderExec() {
 
   const cont = document.getElementById('exec-series');
   const isCardio = ex.tipo === 'cardio';
+  const isIso    = ex.tipo === 'isometrico';
 
   // mostrar/esconder blocos
   const todasWrap = document.getElementById('btn-todas-wrap');
   const cardioWrap = document.getElementById('cardio-wrap');
-  if (todasWrap) todasWrap.style.display = isCardio ? 'none' : 'block';
-  if (cardioWrap) cardioWrap.style.display = isCardio ? 'block' : 'none';
+  if (todasWrap) todasWrap.style.display = (isCardio || isIso) ? 'none' : 'block';
+  if (cardioWrap) cardioWrap.style.display = (isCardio || isIso) ? 'block' : 'none';
 
-  // ── CARDIO: timer + dados ──
-  if (isCardio) {
+  // ── CARDIO / ISOMÉTRICO: timer + dados ──
+  if (isCardio || isIso) {
     const serie = (ex.series_template || [])[0] || {};
-    const durMin = serie.duracao_min || 30;
-    const vel    = serie.velocidade  || null;
-    const incl   = serie.inclinacao  || null;
+    const durMin = serie.duracao_min || (isIso ? 1 : 30); // isometrico em segundos se < 10
+    const vel    = isIso ? null : (serie.velocidade || null);
+    const incl   = isIso ? null : (serie.inclinacao || null);
 
     // Atualiza dados previstos sempre
     cardioState.duracaoPrevista = durMin * 60;
@@ -2575,12 +2577,30 @@ function renderExec() {
       }
     }
 
-    // dados do cardio
-    cont.innerHTML = `<div style="display:flex;gap:8px;justify-content:center;padding:10px 8px">
-      ${vel  ? `<div style="background:var(--border);border-radius:10px;padding:10px 16px;text-align:center"><div style="font-size:20px;font-weight:900;color:var(--text)">${vel}</div><div style="font-size:9px;color:var(--text3);text-transform:uppercase;margin-top:3px">km/h</div></div>` : ''}
-      ${incl ? `<div style="background:var(--border);border-radius:10px;padding:10px 16px;text-align:center"><div style="font-size:20px;font-weight:900;color:var(--text)">${incl}%</div><div style="font-size:9px;color:var(--text3);text-transform:uppercase;margin-top:3px">Inclin.</div></div>` : ''}
-      ${!vel && !incl ? '<div style="padding:12px;color:var(--text4);font-size:12px">Sem dados adicionais</div>' : ''}
-    </div>`;
+    // dados do cardio / isometrico
+    if (isIso) {
+      // Isométrico — mostra série atual e tempo previsto
+      const serieAtual = (ex.series_template || [])[cardioState.serieIso || 0] || {};
+      const durSeg = serieAtual.duracao_min ? Math.round(serieAtual.duracao_min * 60) : 60;
+      const totalSeries = ex.series_template?.length || 1;
+      const serieNum = (cardioState.serieIso || 0) + 1;
+      cont.innerHTML = `<div style="display:flex;gap:8px;justify-content:center;padding:10px 8px;align-items:center">
+        <div style="background:var(--border);border-radius:10px;padding:10px 16px;text-align:center">
+          <div style="font-size:20px;font-weight:900;color:var(--text)">${serieNum}/${totalSeries}</div>
+          <div style="font-size:9px;color:var(--text3);text-transform:uppercase;margin-top:3px">Série</div>
+        </div>
+        <div style="background:var(--border);border-radius:10px;padding:10px 16px;text-align:center">
+          <div style="font-size:20px;font-weight:900;color:var(--accent)">${formatarTempo(durSeg)}</div>
+          <div style="font-size:9px;color:var(--text3);text-transform:uppercase;margin-top:3px">Previsto</div>
+        </div>
+      </div>`;
+    } else {
+      cont.innerHTML = `<div style="display:flex;gap:8px;justify-content:center;padding:10px 8px">
+        ${vel  ? `<div style="background:var(--border);border-radius:10px;padding:10px 16px;text-align:center"><div style="font-size:20px;font-weight:900;color:var(--text)">${vel}</div><div style="font-size:9px;color:var(--text3);text-transform:uppercase;margin-top:3px">km/h</div></div>` : ''}
+        ${incl ? `<div style="background:var(--border);border-radius:10px;padding:10px 16px;text-align:center"><div style="font-size:20px;font-weight:900;color:var(--text)">${incl}%</div><div style="font-size:9px;color:var(--text3);text-transform:uppercase;margin-top:3px">Inclin.</div></div>` : ''}
+        ${!vel && !incl ? '<div style="padding:12px;color:var(--text4);font-size:12px">Sem dados adicionais</div>' : ''}
+      </div>`;
+    }
     return;
   }
 
@@ -3688,6 +3708,21 @@ async function abrirEditarEx(exId, nome, grupo, equip) {
     if (!editState.seriesEditor.length) {
       editState.seriesEditor = [{id:null,numero:1,duracao:'',velocidade:'',inclinacao:''}];
     }
+  } else if (editState.tipoExEditando === 'isometrico') {
+    // Para isométrico: apenas tempo por série
+    editState.seriesEditor = series ? series.map(s => ({
+      id: s.id,
+      numero: s.numero_serie,
+      duracao: s.duracao_min || '',
+      obs: s.observacao || ''
+    })) : [];
+    if (!editState.seriesEditor.length) {
+      editState.seriesEditor = [
+        {id:null,numero:1,duracao:'',obs:''},
+        {id:null,numero:2,duracao:'',obs:''},
+        {id:null,numero:3,duracao:'',obs:''},
+      ];
+    }
   } else {
     editState.seriesEditor = series ? series.map(s => ({
       id: s.id,
@@ -3737,6 +3772,22 @@ function renderSeriesEditor() {
         <input class="se-obs" type="number" placeholder="0" value="${s.inclinacao||''}"
           onchange="editState.seriesEditor[${i}].inclinacao=this.value"
           oninput="editState.seriesEditor[${i}].inclinacao=this.value" step="0.5" min="0">
+        <button class="btn-del-serie" onclick="removerSerie(${i})">
+          <svg viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        </button>
+      </div>
+    `).join('');
+  } else if (editState.tipoExEditando === 'isometrico') {
+    list.innerHTML = editState.seriesEditor.map((s, i) => `
+      <div class="serie-editor-row">
+        <div class="se-num">${i+1}</div>
+        <input class="se-input" type="number" placeholder="seg" value="${s.duracao||''}"
+          onchange="editState.seriesEditor[${i}].duracao=this.value"
+          oninput="editState.seriesEditor[${i}].duracao=this.value" step="5" min="1">
+        <input class="se-input" type="text" placeholder="obs" value="${s.obs||''}"
+          onchange="editState.seriesEditor[${i}].obs=this.value"
+          oninput="editState.seriesEditor[${i}].obs=this.value" maxlength="20">
+        <span style="font-size:9px;color:var(--text4)">seg</span>
         <button class="btn-del-serie" onclick="removerSerie(${i})">
           <svg viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
         </button>
@@ -3803,6 +3854,7 @@ async function salvarSeries() {
   await sb.from('series_template').delete().eq('exercicio_id', editState.exEditando);
 
   const isCardio = editState.tipoExEditando === 'cardio';
+  const isIso   = editState.tipoExEditando === 'isometrico';
   const inserts = series.map((s, i) => {
     if (isCardio) {
       return {
@@ -3813,6 +3865,15 @@ async function salvarSeries() {
         inclinacao:   s.inclinacao !== '' ? parseFloat(s.inclinacao) : null,
         carga_kg:     null,
         repeticoes:   null,
+      };
+    } else if (isIso) {
+      return {
+        exercicio_id: editState.exEditando,
+        numero_serie: i + 1,
+        duracao_min:  s.duracao !== '' ? parseFloat(s.duracao) : null,
+        carga_kg:     null,
+        repeticoes:   null,
+        observacao:   s.obs || null,
       };
     } else {
       const repsNum = parseInt(s.reps);
@@ -4507,9 +4568,11 @@ async function finalizarCardio() {
   const ex = state.exerciciosAtual[state.execIdx];
   if (!ex) return;
 
+  const isIsoEx = ex.tipo === 'isometrico';
+
   // Pega velocidade/inclinação do estado (carregado no renderExec)
-  const vel  = cardioState.velocidade || null;
-  const incl = cardioState.inclinacao || null;
+  const vel  = isIsoEx ? null : (cardioState.velocidade || null);
+  const incl = isIsoEx ? null : (cardioState.inclinacao || null);
 
   // Formata tempo para exibição
   const minReal = Math.round(tempoFinalSeg / 60);
@@ -6935,9 +6998,11 @@ async function finalizarCardio() {
   const ex = state.exerciciosAtual[state.execIdx];
   if (!ex) return;
 
+  const isIsoEx = ex.tipo === 'isometrico';
+
   // Pega velocidade/inclinação do estado (carregado no renderExec)
-  const vel  = cardioState.velocidade || null;
-  const incl = cardioState.inclinacao || null;
+  const vel  = isIsoEx ? null : (cardioState.velocidade || null);
+  const incl = isIsoEx ? null : (cardioState.inclinacao || null);
 
   // Formata tempo para exibição
   const minReal = Math.round(tempoFinalSeg / 60);

@@ -222,7 +222,6 @@ button{cursor:pointer;background:none}
 .hero{
   padding:calc(var(--safe-top) + 20px) 20px 16px;
   position:relative;
-  overflow:hidden;
 }
 .hero-glow{
   position:absolute;
@@ -1611,12 +1610,10 @@ select.form-input option{background:#0e0e1a;color:#fff}
         </div>
         <!-- Botão baixar só marca d'água (fundo transparente) -->
         <div style="padding:6px 16px 0">
-          <button onclick="baixarMarcaDagua()" style="width:100%;background:var(--bg2);border:1px solid var(--border2);border-radius:14px;padding:12px;display:flex;align-items:center;justify-content:center;gap:7px;font-size:11px;font-weight:700;color:var(--text3);cursor:pointer">
+          <button onclick="baixarMarcaDaguaCard()" style="width:100%;background:var(--bg2);border:1px solid var(--border2);border-radius:14px;padding:12px;display:flex;align-items:center;justify-content:center;gap:7px;font-size:11px;font-weight:700;color:var(--text3);cursor:pointer">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
             Baixar só a marca d'água (PNG transparente)
           </button>
-        </div>
-        <div style="display:none">
         </div>
       </div>
 
@@ -3565,6 +3562,50 @@ async function shareCard() {
     }, 'image/jpeg', 0.95);
   } catch(e) {
     showToast('Erro ao gerar imagem');
+  }
+}
+
+async function baixarMarcaDaguaCard() {
+  showToast('Gerando marca dágua...');
+
+  if (typeof html2canvas === 'undefined') { showToast('Aguarde...'); return; }
+
+  const cardEl = document.getElementById('share-card-el');
+  if (!cardEl) return;
+
+  try {
+    // Captura o card com html2canvas
+    const canvas = await html2canvas(cardEl, {
+      scale: 2,
+      useCORS: true,
+      allowTaint: true,
+      backgroundColor: null, // transparente
+      logging: false,
+      removeContainer: true,
+    });
+
+    canvas.toBlob(async (blob) => {
+      const file = new File([blob], 'evvo-marcadagua.png', { type: 'image/png' });
+      if (navigator.share && navigator.canShare && navigator.canShare({ files: [file] })) {
+        try {
+          await navigator.share({ files: [file], title: 'EVVO Marca Dagua' });
+          return;
+        } catch(e) {
+          if (e.name === 'AbortError') return;
+        }
+      }
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'evvo-marcadagua.png';
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      setTimeout(() => URL.revokeObjectURL(url), 2000);
+      showToast('Imagem salva!');
+    }, 'image/png');
+  } catch(e) {
+    showToast('Erro: ' + e.message);
   }
 }
 

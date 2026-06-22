@@ -4103,23 +4103,23 @@ async function salvarSerieExecutada(si) {
   const cargaEl = document.querySelectorAll(`#sr-${si} .sf`)[0]?.querySelector('.v');
   const repsEl  = document.querySelectorAll(`#sr-${si} .sf`)[1]?.querySelector('.v');
 
-  // Carga: data-carga > editado local > tela > template
+  // Carga: editado local > data-carga > tela > template
   let cargaVal = null;
-  if (cargaEl?.getAttribute('data-carga')) {
-    cargaVal = parseFloat(cargaEl.getAttribute('data-carga'));
-  } else if (editado?.carga != null) {
+  if (editado?.carga != null && editado.carga !== '') {
     cargaVal = parseFloat(editado.carga) || null;
-  } else if (cargaEl) {
+  } else if (cargaEl?.getAttribute('data-carga')) {
+    cargaVal = parseFloat(cargaEl.getAttribute('data-carga'));
+  } else if (cargaEl && cargaEl.textContent && cargaEl.textContent !== '—') {
     cargaVal = parseFloat(cargaEl.textContent) || null;
   } else {
-    cargaVal = serie.carga_kg || null;
+    cargaVal = serie.carga_kg ? parseFloat(serie.carga_kg) : null;
   }
 
   // Reps: editado local > tela > template
   let repsVal = null;
-  if (editado?.reps != null) {
+  if (editado?.reps != null && editado.reps !== '') {
     repsVal = String(editado.reps);
-  } else if (repsEl) {
+  } else if (repsEl && repsEl.textContent && repsEl.textContent !== '—') {
     repsVal = repsEl.textContent;
   } else {
     repsVal = serie.repeticoes || null;
@@ -4565,7 +4565,28 @@ async function todasFeitas() {
   // Salva cada série sequencialmente (await) para garantir detecção correta de PRs
   for (let si = 0; si < total; si++) {
     const jaFeita = !!(seriesExecutadas[`${state.execIdx}_${si}`]);
-    if (!jaFeita) await salvarSerieExecutada(si);
+    if (jaFeita) continue;
+
+    // Garante que carga e reps estão no seriesExecutadas antes de salvar
+    const s = series[si];
+    const key = `${state.execIdx}_${si}`;
+    if (!seriesExecutadas[key]) seriesExecutadas[key] = {};
+
+    // Pega carga: data-carga > editado > tela > template
+    const cargaEl = document.querySelectorAll(`#sr-${si} .sf`)[0]?.querySelector('.v');
+    if (!seriesExecutadas[key].carga) {
+      seriesExecutadas[key].carga = cargaEl?.getAttribute('data-carga')
+        ? parseFloat(cargaEl.getAttribute('data-carga'))
+        : parseFloat(cargaEl?.textContent) || parseFloat(s.carga_kg) || null;
+    }
+
+    // Pega reps: editado > tela > template
+    const repsEl = document.querySelectorAll(`#sr-${si} .sf`)[1]?.querySelector('.v');
+    if (!seriesExecutadas[key].reps) {
+      seriesExecutadas[key].reps = repsEl?.textContent || s.repeticoes || null;
+    }
+
+    await salvarSerieExecutada(si);
   }
 
   showToast(`${total} séries concluídas! 💪`);
@@ -6506,23 +6527,23 @@ async function salvarSerieExecutada(si) {
   const cargaEl = document.querySelectorAll(`#sr-${si} .sf`)[0]?.querySelector('.v');
   const repsEl  = document.querySelectorAll(`#sr-${si} .sf`)[1]?.querySelector('.v');
 
-  // Carga: data-carga > editado local > tela > template
+  // Carga: editado local > data-carga > tela > template
   let cargaVal = null;
-  if (cargaEl?.getAttribute('data-carga')) {
-    cargaVal = parseFloat(cargaEl.getAttribute('data-carga'));
-  } else if (editado?.carga != null) {
+  if (editado?.carga != null && editado.carga !== '') {
     cargaVal = parseFloat(editado.carga) || null;
-  } else if (cargaEl) {
+  } else if (cargaEl?.getAttribute('data-carga')) {
+    cargaVal = parseFloat(cargaEl.getAttribute('data-carga'));
+  } else if (cargaEl && cargaEl.textContent && cargaEl.textContent !== '—') {
     cargaVal = parseFloat(cargaEl.textContent) || null;
   } else {
-    cargaVal = serie.carga_kg || null;
+    cargaVal = serie.carga_kg ? parseFloat(serie.carga_kg) : null;
   }
 
   // Reps: editado local > tela > template
   let repsVal = null;
-  if (editado?.reps != null) {
+  if (editado?.reps != null && editado.reps !== '') {
     repsVal = String(editado.reps);
-  } else if (repsEl) {
+  } else if (repsEl && repsEl.textContent && repsEl.textContent !== '—') {
     repsVal = repsEl.textContent;
   } else {
     repsVal = serie.repeticoes || null;
@@ -6968,7 +6989,28 @@ async function todasFeitas() {
   // Salva cada série sequencialmente (await) para garantir detecção correta de PRs
   for (let si = 0; si < total; si++) {
     const jaFeita = !!(seriesExecutadas[`${state.execIdx}_${si}`]);
-    if (!jaFeita) await salvarSerieExecutada(si);
+    if (jaFeita) continue;
+
+    // Garante que carga e reps estão no seriesExecutadas antes de salvar
+    const s = series[si];
+    const key = `${state.execIdx}_${si}`;
+    if (!seriesExecutadas[key]) seriesExecutadas[key] = {};
+
+    // Pega carga: data-carga > editado > tela > template
+    const cargaEl = document.querySelectorAll(`#sr-${si} .sf`)[0]?.querySelector('.v');
+    if (!seriesExecutadas[key].carga) {
+      seriesExecutadas[key].carga = cargaEl?.getAttribute('data-carga')
+        ? parseFloat(cargaEl.getAttribute('data-carga'))
+        : parseFloat(cargaEl?.textContent) || parseFloat(s.carga_kg) || null;
+    }
+
+    // Pega reps: editado > tela > template
+    const repsEl = document.querySelectorAll(`#sr-${si} .sf`)[1]?.querySelector('.v');
+    if (!seriesExecutadas[key].reps) {
+      seriesExecutadas[key].reps = repsEl?.textContent || s.repeticoes || null;
+    }
+
+    await salvarSerieExecutada(si);
   }
 
   showToast(`${total} séries concluídas! 💪`);

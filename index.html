@@ -1931,47 +1931,89 @@ select.form-input option{background:#0e0e1a;color:#fff}
         </button>
         <span class="back-label">Upgrade para Pro</span>
       </div>
-      <div style="padding:24px 20px;display:flex;flex-direction:column;gap:16px">
-        <!-- Hero -->
-        <div style="background:linear-gradient(135deg,#1a0a00,#3a1800);border-radius:20px;border:1px solid #f5a62340;padding:28px 20px;text-align:center">
-          <div style="font-size:48px;margin-bottom:12px">⭐</div>
-          <div style="font-size:22px;font-weight:900;color:#f5a623;letter-spacing:-.5px">EVVO Pro</div>
-          <div style="font-size:13px;color:rgba(255,255,255,0.6);margin-top:6px">Desbloqueie o potencial completo</div>
-        </div>
 
-        <!-- Benefícios -->
-        <div style="background:var(--bg2);border-radius:18px;border:1px solid var(--border);overflow:hidden">
-          ${['Fichas ilimitadas de treino','Histórico completo sem limite','Gráficos avançados de evolução','Compartilhamento com marca premium','Suporte prioritário'].map((b,i,a) => `
-          <div style="padding:14px 16px;display:flex;align-items:center;gap:12px${i<a.length-1?';border-bottom:1px solid var(--border)':''}">
-            <div style="width:28px;height:28px;border-radius:8px;background:#f5a62320;display:flex;align-items:center;justify-content:center;flex-shrink:0">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#f5a623" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
-            </div>
-            <span style="font-size:13px;font-weight:700;color:var(--text)">${b}</span>
-          </div>`).join('')}
-        </div>
+      <!-- Hero -->
+      <div style="margin:0 16px 16px;background:linear-gradient(135deg,#1a0800 0%,#2a1200 60%,#3d1a00 100%);border-radius:20px;border:1px solid #f5a62330;padding:32px 20px;text-align:center">
+        <div style="font-size:52px;line-height:1;margin-bottom:14px">⭐</div>
+        <div style="font-size:24px;font-weight:900;color:#f5a623;letter-spacing:-.5px">EVVO Pro</div>
+        <div style="font-size:12px;color:rgba(255,255,255,0.5);margin-top:6px;letter-spacing:.05em;text-transform:uppercase">Desbloqueie o potencial completo</div>
+      </div>
 
-        <!-- Plano atual -->
-        <div id="upgrade-plano-atual" style="background:var(--bg2);border-radius:14px;border:1px solid var(--border);padding:16px;text-align:center">
-          <div style="font-size:11px;color:var(--text3);text-transform:uppercase;letter-spacing:.1em;margin-bottom:4px">Seu plano atual</div>
-          <div style="font-size:18px;font-weight:900;color:var(--text)" id="upgrade-plano-txt">Free</div>
-        </div>
-
-        <!-- CTA -->
-        <div id="upgrade-cta" style="display:flex;flex-direction:column;gap:10px">
-          <div style="background:#f5a62315;border:1px solid #f5a62330;border-radius:14px;padding:14px 16px;text-align:center;font-size:12px;color:rgba(255,255,255,0.6);line-height:1.5">
-            Para fazer upgrade, entre em contato com o administrador ou aguarde a ativação automática após o pagamento.
+      <!-- Benefícios -->
+      <div class="sec-lbl">O que você ganha</div>
+      <div style="margin:0 16px;background:var(--bg2);border-radius:16px;border:1px solid var(--border);overflow:hidden">
+        <div style="padding:14px 16px;display:flex;align-items:center;gap:12px;border-bottom:1px solid var(--border)">
+          <div style="width:32px;height:32px;border-radius:9px;background:#f5a62318;display:flex;align-items:center;justify-content:center;flex-shrink:0">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#f5a623" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
           </div>
-          <button onclick="solicitarUpgrade()" style="width:100%;background:linear-gradient(135deg,#f5a623,#ff6a00);border:none;border-radius:14px;padding:16px;font-size:14px;font-weight:900;color:#fff;cursor:pointer;letter-spacing:.05em;text-transform:uppercase">
-            ⭐ Quero ser Pro
-          </button>
+          <div>
+            <div style="font-size:13px;font-weight:800;color:var(--text)">Fichas ilimitadas de treino</div>
+            <div style="font-size:11px;color:var(--text3);margin-top:2px">Free: 1 ficha ativa</div>
+          </div>
         </div>
-
-        <div id="upgrade-pro-msg" style="display:none;background:#39d35320;border:1px solid #39d35340;border-radius:14px;padding:16px;text-align:center">
-          <div style="font-size:20px;margin-bottom:6px">🎉</div>
-          <div style="font-size:14px;font-weight:800;color:#39d353">Você já é Pro!</div>
-          <div style="font-size:12px;color:rgba(255,255,255,0.5);margin-top:4px">Aproveite todos os benefícios</div>
+        <div style="padding:14px 16px;display:flex;align-items:center;gap:12px;border-bottom:1px solid var(--border)">
+          <div style="width:32px;height:32px;border-radius:9px;background:#f5a62318;display:flex;align-items:center;justify-content:center;flex-shrink:0">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#f5a623" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+          </div>
+          <div>
+            <div style="font-size:13px;font-weight:800;color:var(--text)">Exercícios ilimitados por dia</div>
+            <div style="font-size:11px;color:var(--text3);margin-top:2px">Free: até 5 por dia</div>
+          </div>
+        </div>
+        <div style="padding:14px 16px;display:flex;align-items:center;gap:12px;border-bottom:1px solid var(--border)">
+          <div style="width:32px;height:32px;border-radius:9px;background:#f5a62318;display:flex;align-items:center;justify-content:center;flex-shrink:0">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#f5a623" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+          </div>
+          <div>
+            <div style="font-size:13px;font-weight:800;color:var(--text)">Histórico completo sem limite</div>
+            <div style="font-size:11px;color:var(--text3);margin-top:2px">Free: últimos 15 dias</div>
+          </div>
+        </div>
+        <div style="padding:14px 16px;display:flex;align-items:center;gap:12px;border-bottom:1px solid var(--border)">
+          <div style="width:32px;height:32px;border-radius:9px;background:#f5a62318;display:flex;align-items:center;justify-content:center;flex-shrink:0">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#f5a623" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+          </div>
+          <div>
+            <div style="font-size:13px;font-weight:800;color:var(--text)">Gráficos de evolução por exercício</div>
+            <div style="font-size:11px;color:var(--text3);margin-top:2px">Free: bloqueado</div>
+          </div>
+        </div>
+        <div style="padding:14px 16px;display:flex;align-items:center;gap:12px">
+          <div style="width:32px;height:32px;border-radius:9px;background:#f5a62318;display:flex;align-items:center;justify-content:center;flex-shrink:0">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#f5a623" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+          </div>
+          <div>
+            <div style="font-size:13px;font-weight:800;color:var(--text)">Compartilhar com minha foto</div>
+            <div style="font-size:11px;color:var(--text3);margin-top:2px">Free: apenas card</div>
+          </div>
         </div>
       </div>
+
+      <!-- Plano atual -->
+      <div class="sec-lbl">Seu plano</div>
+      <div style="margin:0 16px;background:var(--bg2);border-radius:14px;border:1px solid var(--border);padding:16px;text-align:center">
+        <div style="font-size:11px;color:var(--text3);text-transform:uppercase;letter-spacing:.1em;margin-bottom:6px">Plano atual</div>
+        <div style="font-size:20px;font-weight:900;color:var(--text)" id="upgrade-plano-txt">Free</div>
+      </div>
+
+      <!-- CTA Free -->
+      <div id="upgrade-cta" style="padding:16px;display:flex;flex-direction:column;gap:10px">
+        <button onclick="solicitarUpgrade()" style="width:100%;background:linear-gradient(135deg,#f5a623,#ff6a00);border:none;border-radius:16px;padding:18px;font-size:15px;font-weight:900;color:#fff;cursor:pointer;letter-spacing:.05em;text-transform:uppercase;box-shadow:0 8px 24px #f5a62340">
+          ⭐ Quero ser Pro
+        </button>
+        <div style="text-align:center;font-size:11px;color:var(--text4);line-height:1.5">
+          Ao tocar, você será direcionado ao WhatsApp para ativar seu plano Pro.
+        </div>
+      </div>
+
+      <!-- Mensagem já é Pro -->
+      <div id="upgrade-pro-msg" style="display:none;margin:16px;background:#39d35318;border:1px solid #39d35330;border-radius:16px;padding:24px;text-align:center">
+        <div style="font-size:36px;margin-bottom:10px">🎉</div>
+        <div style="font-size:16px;font-weight:900;color:#39d353;margin-bottom:4px">Você já é Pro!</div>
+        <div style="font-size:12px;color:rgba(255,255,255,0.5)">Aproveite todos os recursos sem limite</div>
+      </div>
+
+      <div style="height:32px"></div>
     </div>
   </div>
 

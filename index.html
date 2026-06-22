@@ -2490,6 +2490,10 @@ async function startExec(idx) {
   state.execIdx = idx;
   // Garante que PRs estão carregados antes de iniciar
   if (!state.prs) await carregarPRs();
+  // Snapshot dos PRs ANTES da sessão — para comparar corretamente
+  if (!state.sessaoAtiva) {
+    state.preSessaoPRs = { ...state.prs };
+  }
   // Cria sessão se ainda não existe
   if (!state.sessaoAtiva) {
     iniciarSessao();
@@ -2849,6 +2853,7 @@ async function finalizarTreino() {
   await encerrarSessao();
   state.exsConcluidos = new Set();
   state.cardiosConcluidos = new Set();
+  state.preSessaoPRs = {};
   // Reseta estado do cardio
   if (cardioState.interval) { clearInterval(cardioState.interval); cardioState.interval = null; }
   cardioState.iniciado  = false;
@@ -4125,11 +4130,12 @@ async function salvarSerieExecutada(si) {
     repsVal = serie.repeticoes || null;
   }
 
-  // Verifica se é PR — garante comparação numérica
+  // Verifica se é PR — compara com histórico ANTERIOR à sessão atual
+  // preSessaoPRs = snapshot dos PRs no momento em que o treino foi iniciado
   let isPR = false;
   if (cargaVal && cargaVal > 0) {
-    const prAtual = state.prs ? parseFloat(state.prs[ex.id]) || 0 : 0;
-    if (cargaVal > prAtual) {
+    const prAnterior = state.preSessaoPRs ? parseFloat(state.preSessaoPRs[ex.id]) || 0 : 0;
+    if (cargaVal > prAnterior) {
       isPR = true;
     }
   }
@@ -6549,11 +6555,12 @@ async function salvarSerieExecutada(si) {
     repsVal = serie.repeticoes || null;
   }
 
-  // Verifica se é PR — garante comparação numérica
+  // Verifica se é PR — compara com histórico ANTERIOR à sessão atual
+  // preSessaoPRs = snapshot dos PRs no momento em que o treino foi iniciado
   let isPR = false;
   if (cargaVal && cargaVal > 0) {
-    const prAtual = state.prs ? parseFloat(state.prs[ex.id]) || 0 : 0;
-    if (cargaVal > prAtual) {
+    const prAnterior = state.preSessaoPRs ? parseFloat(state.preSessaoPRs[ex.id]) || 0 : 0;
+    if (cargaVal > prAnterior) {
       isPR = true;
     }
   }

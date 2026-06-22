@@ -2017,6 +2017,47 @@ select.form-input option{background:#0e0e1a;color:#fff}
     </div>
   </div>
 
+  <!-- ══════════ SCREEN DETALHE FICHA ══════════ -->
+  <div class="screen" id="screen-detalhe-ficha">
+    <div class="scroll">
+      <div class="back-row">
+        <button class="btn-back" onclick="goTo('screen-evolucao')">
+          <svg viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg>
+        </button>
+        <span class="back-label" id="detalhe-ficha-titulo">Ficha</span>
+      </div>
+
+      <!-- Hero -->
+      <div class="hero" style="padding-top:12px">
+        <div class="hero-glow"></div>
+        <div class="hero-label" id="detalhe-ficha-status-label">Ficha ativa</div>
+        <div class="hero-title" id="detalhe-ficha-nome">—</div>
+        <div class="chips-row" style="margin-top:10px">
+          <div class="chip" id="detalhe-ficha-chip-dias"><svg viewBox="0 0 24 24"><path d="M6 4v16M18 4v16M6 12h12"/></svg>— dias</div>
+          <div class="chip" id="detalhe-ficha-chip-treinos"><svg viewBox="0 0 24 24"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>— treinos</div>
+          <div class="chip" id="detalhe-ficha-chip-inicio"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/></svg>—</div>
+        </div>
+      </div>
+
+      <!-- Dias de treino -->
+      <div class="sec-lbl">Dias de treino</div>
+      <div style="padding:0 16px;display:flex;flex-direction:column;gap:8px" id="detalhe-ficha-dias"></div>
+
+      <!-- Ações -->
+      <div style="padding:20px 16px;display:flex;flex-direction:column;gap:10px" id="detalhe-ficha-acoes">
+        <button id="btn-ativar-ficha" onclick="ativarFicha()" style="display:none;width:100%;background:var(--grad);border:none;border-radius:14px;padding:16px;font-size:14px;font-weight:900;color:#fff;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;text-transform:uppercase;letter-spacing:.06em">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+          Ativar esta ficha
+        </button>
+        <button onclick="confirmarExcluirFicha()" style="width:100%;background:var(--bg2);border:1px solid var(--border);border-radius:14px;padding:14px;font-size:13px;font-weight:700;color:#ee097980;cursor:pointer">
+          Excluir ficha
+        </button>
+      </div>
+
+      <div style="height:20px"></div>
+    </div>
+  </div>
+
   <!-- ══════════ MODAL EDITAR EXERCICIO ══════════ -->
   <div class="modal-overlay" id="modal-edit-ex">
     <div class="modal">
@@ -3246,7 +3287,7 @@ async function loadFichas() {
       ? (f.volumeMedio/1000).toFixed(1) + 't'
       : f.volumeMedio > 0 ? f.volumeMedio + 'kg' : '—';
     return `
-    <div class="ficha-card ${f.status==='ativa'?'ativa':''}">
+    <div class="ficha-card ${f.status==='ativa'?'ativa':''}" onclick="abrirDetalhesFicha('${f.id}')" style="cursor:pointer">
       <div class="ficha-top">
         <div class="ficha-ico ${f.status==='ativa'?'fire':'arch'}">
           <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -4939,6 +4980,113 @@ function openNovoDia() {
 // ═══════════════════════════════════════════
 // EDITAR NOME DA FICHA
 // ═══════════════════════════════════════════
+let fichaDetalhando = null;
+
+async function abrirDetalhesFicha(fichaId) {
+  const { data: ficha } = await sb.from('fichas').select('*').eq('id', fichaId).single();
+  if (!ficha) return;
+  fichaDetalhando = ficha;
+
+  // Header
+  document.getElementById('detalhe-ficha-titulo').textContent = ficha.nome;
+  document.getElementById('detalhe-ficha-nome').textContent   = ficha.nome;
+  document.getElementById('detalhe-ficha-status-label').textContent =
+    ficha.status === 'ativa' ? '✦ Ficha ativa' : 'Ficha arquivada';
+
+  // Busca dias com exercícios
+  const { data: dias } = await sb.from('dias_treino')
+    .select('*, exercicios(id)')
+    .eq('ficha_id', fichaId)
+    .order('ordem');
+
+  // Busca treinos realizados
+  const { data: sessoes } = await sb.from('sessoes')
+    .select('id')
+    .eq('ficha_id', fichaId)
+    .not('finalizado_em', 'is', null);
+
+  const totalDias    = dias?.length || 0;
+  const totalTreinos = sessoes?.length || 0;
+  const inicio = new Date(ficha.created_at).toLocaleDateString('pt-BR', { day:'2-digit', month:'short', year:'numeric' });
+
+  document.getElementById('detalhe-ficha-chip-dias').innerHTML =
+    `<svg viewBox="0 0 24 24"><path d="M6 4v16M18 4v16M6 12h12"/></svg>${totalDias} dia${totalDias !== 1 ? 's' : ''}`;
+  document.getElementById('detalhe-ficha-chip-treinos').innerHTML =
+    `<svg viewBox="0 0 24 24"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>${totalTreinos} treino${totalTreinos !== 1 ? 's' : ''}`;
+  document.getElementById('detalhe-ficha-chip-inicio').innerHTML =
+    `<svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/></svg>${inicio}`;
+
+  // Lista de dias
+  const diasEl = document.getElementById('detalhe-ficha-dias');
+  const diasNomes = ['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'];
+  if (!dias || !dias.length) {
+    diasEl.innerHTML = '<div style="padding:16px;text-align:center;color:var(--text3);font-size:13px">Nenhum dia cadastrado</div>';
+  } else {
+    diasEl.innerHTML = dias.map(d => {
+      const numEx = d.exercicios?.length || 0;
+      return `<div style="background:var(--bg2);border-radius:14px;border:1px solid var(--border);padding:13px 14px;display:flex;align-items:center;gap:12px">
+        <div class="card-icon fire" style="width:36px;height:36px;border-radius:10px;flex-shrink:0">
+          <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M6 4v16M18 4v16M3 8h3M18 8h3M3 16h3M18 16h3M6 12h12"/>
+          </svg>
+        </div>
+        <div style="flex:1;min-width:0">
+          <div style="font-size:13px;font-weight:800;color:var(--text)">${d.nome}</div>
+          <div style="font-size:11px;color:var(--text3);margin-top:2px">${diasNomes[d.dia_semana]} · ${numEx} exercício${numEx !== 1 ? 's' : ''}</div>
+        </div>
+      </div>`;
+    }).join('');
+  }
+
+  // Botão ativar — só aparece se arquivada
+  const btnAtivar = document.getElementById('btn-ativar-ficha');
+  btnAtivar.style.display = ficha.status === 'arquivada' ? 'flex' : 'none';
+
+  goTo('screen-detalhe-ficha');
+}
+
+async function ativarFicha() {
+  if (!fichaDetalhando) return;
+
+  if (!confirm('Ativar "' + fichaDetalhando.nome + '"? A ficha atual será arquivada.')) return;
+
+  // Arquiva todas as ativas
+  await sb.from('fichas').update({ status:'arquivada', archived_at: new Date() })
+    .eq('user_id', state.user.id).eq('status','ativa');
+
+  // Ativa esta
+  const { error } = await sb.from('fichas').update({ status:'ativa', archived_at: null })
+    .eq('id', fichaDetalhando.id);
+
+  if (!error) {
+    showToast('Ficha ativada!');
+    fichaDetalhando.status = 'ativa';
+    document.getElementById('btn-ativar-ficha').style.display = 'none';
+    document.getElementById('detalhe-ficha-status-label').textContent = '✦ Ficha ativa';
+    await loadTreino();
+    await loadFichas();
+  }
+}
+
+async function confirmarExcluirFicha() {
+  if (!fichaDetalhando) return;
+  if (!confirm('Excluir "' + fichaDetalhando.nome + '"? Esta ação não pode ser desfeita.')) return;
+
+  // Não permite excluir ficha ativa
+  if (fichaDetalhando.status === 'ativa') {
+    showToast('Não é possível excluir a ficha ativa.');
+    return;
+  }
+
+  const { error } = await sb.from('fichas').delete().eq('id', fichaDetalhando.id);
+  if (!error) {
+    showToast('Ficha excluída!');
+    fichaDetalhando = null;
+    await loadFichas();
+    goTo('screen-evolucao');
+  }
+}
+
 async function editarNomeFicha(id, nomeAtual) {
   const novo = prompt('Novo nome da ficha:', nomeAtual);
   if (!novo || novo.trim() === nomeAtual) return;

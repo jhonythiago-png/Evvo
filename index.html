@@ -1312,13 +1312,6 @@ select.form-input option{background:#0e0e1a;color:#fff}
         </button>
       </div>
 
-      <!-- Botão Finalizar Treino — aparece no último exercício -->
-      <div id="btn-finalizar-treino-wrap" style="display:none;padding:8px 16px 0">
-        <button onclick="finalizarTreino()" style="width:100%;background:linear-gradient(135deg,#39d353,#1a7a2e);border-radius:14px;padding:15px;display:flex;align-items:center;justify-content:center;gap:8px;color:#fff;font-size:14px;font-weight:900;text-transform:uppercase;letter-spacing:.08em;border:none;cursor:pointer">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
-          Finalizar treino
-        </button>
-      </div>
     </div>
   </div>
 
@@ -2511,12 +2504,7 @@ function renderExec() {
 
   document.getElementById('exec-counter').textContent = `${idx+1} de ${exs.length}`;
 
-  // Último exercício — esconde Próximo, mostra Finalizar verde
-  const isUltimo = (idx === exs.length - 1);
-  const btnNextEl  = document.getElementById('btn-next');
-  const btnFinWrap = document.getElementById('btn-finalizar-treino-wrap');
-  if (btnNextEl)  btnNextEl.style.display  = isUltimo ? 'none'  : '';
-  if (btnFinWrap) btnFinWrap.style.display = isUltimo ? 'block' : 'none';
+
 
 
   document.getElementById('exec-name').textContent = ex.nome;
@@ -2833,7 +2821,6 @@ function nextEx() {
     renderExec();
     renderExOverview(state.execIdx);
   }
-  // Se é o último, o botão verde "Finalizar treino" já aparece na tela
 }
 
 function prevEx() {

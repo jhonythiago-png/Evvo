@@ -4131,14 +4131,17 @@ async function salvarSerieExecutada(si) {
   }
 
   // Verifica se é PR — compara com histórico ANTERIOR à sessão atual
-  // preSessaoPRs = snapshot dos PRs no momento em que o treino foi iniciado
   let isPR = false;
+  const prAnterior = state.preSessaoPRs ? parseFloat(state.preSessaoPRs[ex.id]) || 0 : 0;
   if (cargaVal && cargaVal > 0) {
-    const prAnterior = state.preSessaoPRs ? parseFloat(state.preSessaoPRs[ex.id]) || 0 : 0;
-    if (cargaVal > prAnterior) {
-      isPR = true;
-    }
+    // Tem carga — compara com histórico anterior
+    if (cargaVal > prAnterior) isPR = true;
+  } else if (prAnterior === 0 && repsVal && repsVal !== '—') {
+    // Sem carga mas primeiro registro com reps — é PR
+    isPR = true;
   }
+
+  console.log(`Série ${si+1} | carga:${cargaVal} | prAnterior:${state.preSessaoPRs?.[ex.id]||0} | isPR:${isPR}`);
 
   await sb.from('series_executadas').insert({
     sessao_id:    state.sessaoAtiva.id,
@@ -6556,14 +6559,17 @@ async function salvarSerieExecutada(si) {
   }
 
   // Verifica se é PR — compara com histórico ANTERIOR à sessão atual
-  // preSessaoPRs = snapshot dos PRs no momento em que o treino foi iniciado
   let isPR = false;
+  const prAnterior = state.preSessaoPRs ? parseFloat(state.preSessaoPRs[ex.id]) || 0 : 0;
   if (cargaVal && cargaVal > 0) {
-    const prAnterior = state.preSessaoPRs ? parseFloat(state.preSessaoPRs[ex.id]) || 0 : 0;
-    if (cargaVal > prAnterior) {
-      isPR = true;
-    }
+    // Tem carga — compara com histórico anterior
+    if (cargaVal > prAnterior) isPR = true;
+  } else if (prAnterior === 0 && repsVal && repsVal !== '—') {
+    // Sem carga mas primeiro registro com reps — é PR
+    isPR = true;
   }
+
+  console.log(`Série ${si+1} | carga:${cargaVal} | prAnterior:${state.preSessaoPRs?.[ex.id]||0} | isPR:${isPR}`);
 
   await sb.from('series_executadas').insert({
     sessao_id:    state.sessaoAtiva.id,

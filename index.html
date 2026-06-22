@@ -2481,13 +2481,15 @@ function renderExOverview(doneTo) {
 // ═══════════════════════════════════════════
 // EXECUÇÃO FOCADA
 // ═══════════════════════════════════════════
-function startExec(idx) {
+async function startExec(idx) {
   // Se é início de treino novo, limpa dados anteriores
   if (idx === 0 && !state.sessaoAtiva) {
     seriesExecutadas = {};
     state.exsConcluidos = new Set();
   }
   state.execIdx = idx;
+  // Garante que PRs estão carregados antes de iniciar
+  if (!state.prs) await carregarPRs();
   // Cria sessão se ainda não existe
   if (!state.sessaoAtiva) {
     iniciarSessao();
@@ -4123,11 +4125,11 @@ async function salvarSerieExecutada(si) {
     repsVal = serie.repeticoes || null;
   }
 
-  // Verifica se é PR
+  // Verifica se é PR — garante comparação numérica
   let isPR = false;
   if (cargaVal && cargaVal > 0) {
-    const prAtual = state.prs?.[ex.id];
-    if (!prAtual || cargaVal > prAtual) {
+    const prAtual = state.prs ? parseFloat(state.prs[ex.id]) || 0 : 0;
+    if (cargaVal > prAtual) {
       isPR = true;
     }
   }
@@ -4152,9 +4154,9 @@ async function salvarSerieExecutada(si) {
       conquistado_em: new Date().toISOString(),
     }, { onConflict: 'user_id,exercicio_id' });
 
-    // Atualiza cache local
+    // Atualiza cache local imediatamente para próximas séries da mesma sessão
     if (!state.prs) state.prs = {};
-    state.prs[ex.id] = cargaVal;
+    state.prs[ex.id] = parseFloat(cargaVal);
 
     // Mostra badge PR na série
     mostrarBadgePR(si, cargaVal);
@@ -4191,7 +4193,7 @@ async function carregarPRs() {
     .select('exercicio_id, carga_kg')
     .eq('user_id', state.user.id);
   state.prs = {};
-  (data || []).forEach(p => { state.prs[p.exercicio_id] = p.carga_kg; });
+  (data || []).forEach(p => { state.prs[p.exercicio_id] = parseFloat(p.carga_kg) || 0; });
 }
 
 async function desmarcarSerieExecutada(si) {
@@ -6526,11 +6528,11 @@ async function salvarSerieExecutada(si) {
     repsVal = serie.repeticoes || null;
   }
 
-  // Verifica se é PR
+  // Verifica se é PR — garante comparação numérica
   let isPR = false;
   if (cargaVal && cargaVal > 0) {
-    const prAtual = state.prs?.[ex.id];
-    if (!prAtual || cargaVal > prAtual) {
+    const prAtual = state.prs ? parseFloat(state.prs[ex.id]) || 0 : 0;
+    if (cargaVal > prAtual) {
       isPR = true;
     }
   }
@@ -6555,9 +6557,9 @@ async function salvarSerieExecutada(si) {
       conquistado_em: new Date().toISOString(),
     }, { onConflict: 'user_id,exercicio_id' });
 
-    // Atualiza cache local
+    // Atualiza cache local imediatamente para próximas séries da mesma sessão
     if (!state.prs) state.prs = {};
-    state.prs[ex.id] = cargaVal;
+    state.prs[ex.id] = parseFloat(cargaVal);
 
     // Mostra badge PR na série
     mostrarBadgePR(si, cargaVal);
@@ -6594,7 +6596,7 @@ async function carregarPRs() {
     .select('exercicio_id, carga_kg')
     .eq('user_id', state.user.id);
   state.prs = {};
-  (data || []).forEach(p => { state.prs[p.exercicio_id] = p.carga_kg; });
+  (data || []).forEach(p => { state.prs[p.exercicio_id] = parseFloat(p.carga_kg) || 0; });
 }
 
 async function desmarcarSerieExecutada(si) {

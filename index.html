@@ -1224,10 +1224,13 @@ select.form-input option{background:#0e0e1a;color:#fff}
 
       <div class="ex-overview" id="ex-overview"></div>
 
-      <button class="btn-main" onclick="startExec(0)">
-        <svg viewBox="0 0 24 24"><polygon points="5 3 19 12 5 21 5 3"/></svg>
-        Iniciar treino
-      </button>
+      <!-- Botão dinâmico: Iniciar / Continuar / Finalizar -->
+      <div id="dia-btn-wrap" style="padding:0 16px">
+        <button class="btn-main" id="dia-btn-action" style="margin:0;width:100%" onclick="acaoPrincipalDia()">
+          <svg viewBox="0 0 24 24" id="dia-btn-icon"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+          <span id="dia-btn-text">Iniciar treino</span>
+        </button>
+      </div>
 
       <div style="height:16px"></div>
     </div>
@@ -1236,7 +1239,7 @@ select.form-input option{background:#0e0e1a;color:#fff}
   <!-- ══════════ EXECUÇÃO FOCADA ══════════ -->
   <div class="screen" id="screen-exec">
     <div class="exec-topbar">
-      <button class="btn-back" onclick="goTo('screen-dia')">
+      <button class="btn-back" onclick="atualizarBotaoDia();goTo('screen-dia')">
         <svg viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg>
       </button>
       <div class="exec-counter" id="exec-counter">1 de 1</div>
@@ -2447,6 +2450,7 @@ async function openDia(diaId) {
 
   // lista exercícios
   renderExOverview(0);
+  atualizarBotaoDia();
   goTo('screen-dia');
 }
 
@@ -2760,14 +2764,61 @@ function editReps(si) {
   }
 }
 
+function atualizarBotaoDia() {
+  const total     = state.exerciciosAtual.length;
+  const concluidos = state.exsConcluidos?.size || 0;
+  const temSessao  = !!state.sessaoAtiva;
+  const tudo       = total > 0 && concluidos >= total;
+
+  const btn  = document.getElementById('dia-btn-action');
+  const icon = document.getElementById('dia-btn-icon');
+  const txt  = document.getElementById('dia-btn-text');
+  if (!btn || !txt || !icon) return;
+
+  if (tudo) {
+    // Todos concluídos — mostra Finalizar
+    btn.style.background = 'linear-gradient(135deg,#39d353,#1a7a2e)';
+    icon.innerHTML = '<polyline points="20 6 9 17 4 12"/>';
+    txt.textContent = 'Finalizar treino';
+  } else if (temSessao) {
+    // Em andamento — mostra Continuar
+    btn.style.background = '';
+    btn.style.removeProperty('background');
+    icon.innerHTML = '<polygon points="5 3 19 12 5 21 5 3"/>';
+    txt.textContent = 'Continuar treino';
+  } else {
+    // Não iniciou — mostra Iniciar
+    btn.style.background = '';
+    btn.style.removeProperty('background');
+    icon.innerHTML = '<polygon points="5 3 19 12 5 21 5 3"/>';
+    txt.textContent = 'Iniciar treino';
+  }
+}
+
+function acaoPrincipalDia() {
+  const total    = state.exerciciosAtual.length;
+  const concluidos = state.exsConcluidos?.size || 0;
+  const tudo     = total > 0 && concluidos >= total;
+
+  if (tudo) {
+    // Finaliza o treino
+    finalizarTreino();
+  } else {
+    // Acha o próximo exercício não concluído
+    const proximo = state.exerciciosAtual.findIndex((_, i) => !state.exsConcluidos?.has(i));
+    startExec(proximo >= 0 ? proximo : 0);
+  }
+}
+
 function nextEx() {
   if (state.execIdx < state.exerciciosAtual.length - 1) {
     state.execIdx++;
     renderExec();
     renderExOverview(state.execIdx);
   } else {
-    // Volta para tela de visão geral do dia — usuário clica em Finalizar quando quiser
+    // Último exercício — volta para visão geral com botão Finalizar
     renderExOverview(state.exerciciosAtual.length);
+    atualizarBotaoDia();
     goTo('screen-dia');
     showToast('🎉 Todos os exercícios concluídos!');
   }
@@ -5446,6 +5497,7 @@ async function openDia(diaId) {
 
   // lista exercícios
   renderExOverview(0);
+  atualizarBotaoDia();
   goTo('screen-dia');
 }
 

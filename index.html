@@ -3549,26 +3549,18 @@ async function criarExercicio() {
 async function deletarExercicio(exId) {
   if (!confirm('Excluir este exercicio e todas as suas series?')) return;
 
-  // 1. Busca IDs das series_template deste exercício
-  const { data: seriesIds } = await sb
-    .from('series_template')
-    .select('id')
-    .eq('exercicio_id', exId);
+  // A FK é series_executadas.exercicio_id → exercicios.id
+  // Precisa deletar nesta ordem exata:
 
-  // 2. Deleta series_executadas que referenciam essas séries
-  if (seriesIds && seriesIds.length) {
-    await sb.from('series_executadas')
-      .delete()
-      .eq('exercicio_id', exId);
-  }
+  // 1. series_executadas com esse exercicio_id
+  await sb.from('series_executadas').delete().eq('exercicio_id', exId);
 
-  // 3. Deleta series_template
+  // 2. series_template com esse exercicio_id
   await sb.from('series_template').delete().eq('exercicio_id', exId);
 
-  // 4. Agora deleta o exercício
+  // 3. Agora o exercício não tem mais dependências — pode deletar
   const { error } = await sb.from('exercicios').delete().eq('id', exId);
   if (error) {
-    console.error('Erro ao excluir exercício:', error);
     showToast('Erro ao excluir: ' + error.message);
     return;
   }
@@ -4846,10 +4838,17 @@ async function salvarPerfil() {
 function atualizarAvatarPerfil() {
   const av = document.getElementById('profile-avatar');
   if (!av) return;
-  if (state.perfil?.avatar_url) {
-    av.innerHTML = `<img src="${state.perfil.avatar_url}" style="width:100%;height:100%;object-fit:cover;border-radius:50%" alt="foto">`;
+  const url = state.perfil?.avatar_url;
+  const ini = (state.perfil?.nome || '?').charAt(0).toUpperCase();
+  if (url && url.startsWith('http')) {
+    const img = document.createElement('img');
+    img.src = url;
+    img.style.cssText = 'width:100%;height:100%;object-fit:cover;border-radius:50%';
+    img.onerror = function(){ av.textContent = ini; };
+    av.innerHTML = '';
+    av.appendChild(img);
   } else {
-    av.textContent = (state.perfil?.nome || '?').charAt(0).toUpperCase();
+    av.textContent = ini;
   }
 }
 
@@ -6351,26 +6350,18 @@ async function criarExercicio() {
 async function deletarExercicio(exId) {
   if (!confirm('Excluir este exercicio e todas as suas series?')) return;
 
-  // 1. Busca IDs das series_template deste exercício
-  const { data: seriesIds } = await sb
-    .from('series_template')
-    .select('id')
-    .eq('exercicio_id', exId);
+  // A FK é series_executadas.exercicio_id → exercicios.id
+  // Precisa deletar nesta ordem exata:
 
-  // 2. Deleta series_executadas que referenciam essas séries
-  if (seriesIds && seriesIds.length) {
-    await sb.from('series_executadas')
-      .delete()
-      .eq('exercicio_id', exId);
-  }
+  // 1. series_executadas com esse exercicio_id
+  await sb.from('series_executadas').delete().eq('exercicio_id', exId);
 
-  // 3. Deleta series_template
+  // 2. series_template com esse exercicio_id
   await sb.from('series_template').delete().eq('exercicio_id', exId);
 
-  // 4. Agora deleta o exercício
+  // 3. Agora o exercício não tem mais dependências — pode deletar
   const { error } = await sb.from('exercicios').delete().eq('id', exId);
   if (error) {
-    console.error('Erro ao excluir exercício:', error);
     showToast('Erro ao excluir: ' + error.message);
     return;
   }
@@ -7476,8 +7467,10 @@ async function salvarPerfil() {
 function atualizarAvatarPerfil() {
   const av = document.getElementById('profile-avatar');
   if (!av) return;
-  if (state.perfil?.avatar_url) {
-    av.innerHTML = `<img src="${state.perfil.avatar_url}" style="width:100%;height:100%;object-fit:cover;border-radius:50%" alt="foto">`;
+  const url = state.perfil?.avatar_url;
+  // Só usa a foto se for uma URL absoluta válida (começa com http)
+  if (url && url.startsWith('http')) {
+    av.innerHTML = '<img src="' + url + '" style="width:100%;height:100%;object-fit:cover;border-radius:50%" alt="foto" onerror="this.parentElement.textContent='' + (state.perfil?.nome||'?').charAt(0).toUpperCase() + ''">';
   } else {
     av.textContent = (state.perfil?.nome || '?').charAt(0).toUpperCase();
   }

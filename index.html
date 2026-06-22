@@ -2495,7 +2495,7 @@ async function startExec(idx) {
   }
   // Cria sessão se ainda não existe
   if (!state.sessaoAtiva) {
-    iniciarSessao();
+    await iniciarSessao();
   }
   renderExec();
   goTo('screen-exec');
@@ -4151,16 +4151,20 @@ async function salvarSerieExecutada(si) {
 
   // Se for PR, atualiza tabela prs e estado local
   if (isPR) {
-    await sb.from('prs').upsert({
-      user_id:       state.user.id,
-      exercicio_id:  ex.id,
-      carga_kg:      cargaVal,
-      conquistado_em: new Date().toISOString(),
-    }, { onConflict: 'user_id,exercicio_id' });
+    // Só atualiza tabela prs se for MAIOR que o recorde atual no banco
+    const prAtualNoBanco = state.prs?.[ex.id] || 0;
+    if (cargaVal > prAtualNoBanco) {
+      await sb.from('prs').upsert({
+        user_id:       state.user.id,
+        exercicio_id:  ex.id,
+        carga_kg:      cargaVal,
+        conquistado_em: new Date().toISOString(),
+      }, { onConflict: 'user_id,exercicio_id' });
 
-    // Atualiza cache local imediatamente para próximas séries da mesma sessão
-    if (!state.prs) state.prs = {};
-    state.prs[ex.id] = parseFloat(cargaVal);
+      // Atualiza cache local com novo recorde
+      if (!state.prs) state.prs = {};
+      state.prs[ex.id] = parseFloat(cargaVal);
+    }
 
     // Mostra badge PR na série
     mostrarBadgePR(si, cargaVal);
@@ -6575,16 +6579,20 @@ async function salvarSerieExecutada(si) {
 
   // Se for PR, atualiza tabela prs e estado local
   if (isPR) {
-    await sb.from('prs').upsert({
-      user_id:       state.user.id,
-      exercicio_id:  ex.id,
-      carga_kg:      cargaVal,
-      conquistado_em: new Date().toISOString(),
-    }, { onConflict: 'user_id,exercicio_id' });
+    // Só atualiza tabela prs se for MAIOR que o recorde atual no banco
+    const prAtualNoBanco = state.prs?.[ex.id] || 0;
+    if (cargaVal > prAtualNoBanco) {
+      await sb.from('prs').upsert({
+        user_id:       state.user.id,
+        exercicio_id:  ex.id,
+        carga_kg:      cargaVal,
+        conquistado_em: new Date().toISOString(),
+      }, { onConflict: 'user_id,exercicio_id' });
 
-    // Atualiza cache local imediatamente para próximas séries da mesma sessão
-    if (!state.prs) state.prs = {};
-    state.prs[ex.id] = parseFloat(cargaVal);
+      // Atualiza cache local com novo recorde
+      if (!state.prs) state.prs = {};
+      state.prs[ex.id] = parseFloat(cargaVal);
+    }
 
     // Mostra badge PR na série
     mostrarBadgePR(si, cargaVal);

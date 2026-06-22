@@ -2524,21 +2524,31 @@ function renderExec() {
     const vel    = serie.velocidade  || null;
     const incl   = serie.inclinacao  || null;
 
-    // reset timer
+    // Atualiza dados previstos sempre
     cardioState.duracaoPrevista = durMin * 60;
-    cardioState.velocidade = vel;    // guarda velocidade para usar ao finalizar
+    cardioState.velocidade = vel;
     cardioState.inclinacao = incl;
-    cardioState.iniciado = false;
-    cardioState.inicio   = null;
-    cardioState.concluido = ex._cardio_concluido || false;
-    if (cardioState.interval) { clearInterval(cardioState.interval); cardioState.interval = null; }
     document.getElementById('cardio-previsto').textContent = formatarTempo(durMin * 60);
-    document.getElementById('cardio-timer').textContent    = '00:00';
 
-    const btnIniciar = document.getElementById('btn-cardio-iniciar');
-    if (btnIniciar) {
-      btnIniciar.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polygon points="5 3 19 12 5 21 5 3"/></svg> Iniciar';
-      btnIniciar.style.color = 'var(--accent)';
+    // Só reseta o timer se o cardio NÃO estiver rodando
+    if (!cardioState.iniciado) {
+      cardioState.inicio   = null;
+      cardioState.concluido = ex._cardio_concluido || false;
+      document.getElementById('cardio-timer').textContent = '00:00';
+      const btnIniciar = document.getElementById('btn-cardio-iniciar');
+      if (btnIniciar) {
+        btnIniciar.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polygon points="5 3 19 12 5 21 5 3"/></svg> Iniciar';
+        btnIniciar.style.color = 'var(--accent)';
+      }
+    } else {
+      // Cardio em andamento — mostra tempo atual sem resetar
+      const elapsed = Math.floor((Date.now() - cardioState.inicio) / 1000);
+      document.getElementById('cardio-timer').textContent = formatarTempo(elapsed);
+      const btnIniciar = document.getElementById('btn-cardio-iniciar');
+      if (btnIniciar) {
+        btnIniciar.innerHTML = '⏱ Em andamento...';
+        btnIniciar.style.color = 'var(--success)';
+      }
     }
 
     // dados do cardio
@@ -3538,9 +3548,16 @@ async function criarExercicio() {
 
 async function deletarExercicio(exId) {
   if (!confirm('Excluir este exercicio e todas as suas series?')) return;
-  await sb.from('exercicios').delete().eq('id', exId);
-  showToast('Exercicio removido');
-  await renderExEditList();
+  // Deleta séries primeiro
+  await sb.from('series_template').delete().eq('exercicio_id', exId);
+  // Deleta exercício
+  const { error } = await sb.from('exercicios').delete().eq('id', exId);
+  if (error) { showToast('Erro ao excluir'); return; }
+  showToast('Exercício removido');
+  // Força re-render da lista
+  if (editState.diaEditando) {
+    await renderExEditList();
+  }
 }
 
 // ═══════════════════════════════════════════
@@ -4360,11 +4377,14 @@ function iniciarCardio() {
     btnIniciar.style.color = 'var(--success)';
   }
 
+  // Usa Date.now() - inicio para calcular tempo real
+  // Funciona mesmo se o interval for suspenso em background
   cardioState.interval = setInterval(() => {
+    if (!cardioState.inicio) return;
     const elapsed = Math.floor((Date.now() - cardioState.inicio) / 1000);
     const timerEl = document.getElementById('cardio-timer');
     if (timerEl) timerEl.textContent = formatarTempo(elapsed);
-  }, 1000);
+  }, 500); // 500ms para mais precisão
 }
 
 async function finalizarCardio() {
@@ -5105,11 +5125,18 @@ function pararHeartbeat() {
 }
 
 // Pausa quando a aba fica em background, retoma quando volta
+// EXCETO se o cardio estiver em andamento — timer não pode parar
 document.addEventListener('visibilitychange', () => {
+  const cardioRodando = (typeof cardioState !== 'undefined') && cardioState.iniciado;
   if (document.hidden) {
-    pararHeartbeat();
+    if (!cardioRodando) pararHeartbeat();
   } else if (state.user) {
-    iniciarHeartbeat();
+    if (!heartbeatInterval) iniciarHeartbeat();
+    if (cardioRodando && cardioState.inicio) {
+      const elapsed = Math.floor((Date.now() - cardioState.inicio) / 1000);
+      const timerEl = document.getElementById('cardio-timer');
+      if (timerEl) timerEl.textContent = formatarTempo(elapsed);
+    }
   }
 });
 
@@ -5458,21 +5485,31 @@ function renderExec() {
     const vel    = serie.velocidade  || null;
     const incl   = serie.inclinacao  || null;
 
-    // reset timer
+    // Atualiza dados previstos sempre
     cardioState.duracaoPrevista = durMin * 60;
-    cardioState.velocidade = vel;    // guarda velocidade para usar ao finalizar
+    cardioState.velocidade = vel;
     cardioState.inclinacao = incl;
-    cardioState.iniciado = false;
-    cardioState.inicio   = null;
-    cardioState.concluido = ex._cardio_concluido || false;
-    if (cardioState.interval) { clearInterval(cardioState.interval); cardioState.interval = null; }
     document.getElementById('cardio-previsto').textContent = formatarTempo(durMin * 60);
-    document.getElementById('cardio-timer').textContent    = '00:00';
 
-    const btnIniciar = document.getElementById('btn-cardio-iniciar');
-    if (btnIniciar) {
-      btnIniciar.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polygon points="5 3 19 12 5 21 5 3"/></svg> Iniciar';
-      btnIniciar.style.color = 'var(--accent)';
+    // Só reseta o timer se o cardio NÃO estiver rodando
+    if (!cardioState.iniciado) {
+      cardioState.inicio   = null;
+      cardioState.concluido = ex._cardio_concluido || false;
+      document.getElementById('cardio-timer').textContent = '00:00';
+      const btnIniciar = document.getElementById('btn-cardio-iniciar');
+      if (btnIniciar) {
+        btnIniciar.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polygon points="5 3 19 12 5 21 5 3"/></svg> Iniciar';
+        btnIniciar.style.color = 'var(--accent)';
+      }
+    } else {
+      // Cardio em andamento — mostra tempo atual sem resetar
+      const elapsed = Math.floor((Date.now() - cardioState.inicio) / 1000);
+      document.getElementById('cardio-timer').textContent = formatarTempo(elapsed);
+      const btnIniciar = document.getElementById('btn-cardio-iniciar');
+      if (btnIniciar) {
+        btnIniciar.innerHTML = '⏱ Em andamento...';
+        btnIniciar.style.color = 'var(--success)';
+      }
     }
 
     // dados do cardio
@@ -6296,9 +6333,16 @@ async function criarExercicio() {
 
 async function deletarExercicio(exId) {
   if (!confirm('Excluir este exercicio e todas as suas series?')) return;
-  await sb.from('exercicios').delete().eq('id', exId);
-  showToast('Exercicio removido');
-  await renderExEditList();
+  // Deleta séries primeiro
+  await sb.from('series_template').delete().eq('exercicio_id', exId);
+  // Deleta exercício
+  const { error } = await sb.from('exercicios').delete().eq('id', exId);
+  if (error) { showToast('Erro ao excluir'); return; }
+  showToast('Exercício removido');
+  // Força re-render da lista
+  if (editState.diaEditando) {
+    await renderExEditList();
+  }
 }
 
 // ═══════════════════════════════════════════
@@ -6947,11 +6991,14 @@ function iniciarCardio() {
     btnIniciar.style.color = 'var(--success)';
   }
 
+  // Usa Date.now() - inicio para calcular tempo real
+  // Funciona mesmo se o interval for suspenso em background
   cardioState.interval = setInterval(() => {
+    if (!cardioState.inicio) return;
     const elapsed = Math.floor((Date.now() - cardioState.inicio) / 1000);
     const timerEl = document.getElementById('cardio-timer');
     if (timerEl) timerEl.textContent = formatarTempo(elapsed);
-  }, 1000);
+  }, 500); // 500ms para mais precisão
 }
 
 async function finalizarCardio() {
@@ -7691,11 +7738,18 @@ function pararHeartbeat() {
 }
 
 // Pausa quando a aba fica em background, retoma quando volta
+// EXCETO se o cardio estiver em andamento — timer não pode parar
 document.addEventListener('visibilitychange', () => {
+  const cardioRodando = (typeof cardioState !== 'undefined') && cardioState.iniciado;
   if (document.hidden) {
-    pararHeartbeat();
+    if (!cardioRodando) pararHeartbeat();
   } else if (state.user) {
-    iniciarHeartbeat();
+    if (!heartbeatInterval) iniciarHeartbeat();
+    if (cardioRodando && cardioState.inicio) {
+      const elapsed = Math.floor((Date.now() - cardioState.inicio) / 1000);
+      const timerEl = document.getElementById('cardio-timer');
+      if (timerEl) timerEl.textContent = formatarTempo(elapsed);
+    }
   }
 });
 

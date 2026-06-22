@@ -1534,7 +1534,6 @@ select.form-input option{background:#0e0e1a;color:#fff}
               <div><span class="sc-tag">EVVO</span></div>
               <div class="sc-center">
                 <div class="sc-emoji" id="sc-emoji">🔥</div>
-                <div class="sc-workout" id="sc-workout">Meu treino</div>
                 <div class="sc-sub" id="sc-sub">hoje</div>
                 <div class="sc-stats" id="sc-stats">
                   <div class="sc-stat"><div class="v">—</div><div class="l">séries</div></div>
@@ -2409,8 +2408,9 @@ async function updateShareTreino() {
 
   // Atualiza card
   const nomeDia = data.dias_treino?.nome || 'Meu treino';
-  document.getElementById('sc-workout').textContent = nomeDia;
-  document.getElementById('sc-sub').textContent = data.fichas?.nome || '';
+  // sc-workout removido do card — nome usado apenas internamente
+  const scSub = document.getElementById('sc-sub');
+  if (scSub) scSub.textContent = nomeDia;
 
   const statsEl = document.getElementById('sc-stats');
   if (statsEl) {
@@ -5802,8 +5802,9 @@ async function updateShareTreino() {
 
   // Atualiza card
   const nomeDia = data.dias_treino?.nome || 'Meu treino';
-  document.getElementById('sc-workout').textContent = nomeDia;
-  document.getElementById('sc-sub').textContent = data.fichas?.nome || '';
+  // sc-workout removido do card — nome usado apenas internamente
+  const scSub = document.getElementById('sc-sub');
+  if (scSub) scSub.textContent = nomeDia;
 
   const statsEl = document.getElementById('sc-stats');
   if (statsEl) {

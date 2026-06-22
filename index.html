@@ -2488,11 +2488,10 @@ async function startExec(idx) {
     state.exsConcluidos = new Set();
   }
   state.execIdx = idx;
-  // Garante que PRs estão carregados antes de iniciar
-  if (!state.prs) await carregarPRs();
-  // Snapshot dos PRs ANTES da sessão — para comparar corretamente
+  // Recarrega PRs do banco antes de iniciar para garantir dados atualizados
   if (!state.sessaoAtiva) {
-    state.preSessaoPRs = { ...state.prs };
+    await carregarPRs(); // sempre recarrega do banco antes de nova sessão
+    state.preSessaoPRs = { ...state.prs }; // snapshot antes de qualquer coisa desta sessão
   }
   // Cria sessão se ainda não existe
   if (!state.sessaoAtiva) {
@@ -4134,14 +4133,10 @@ async function salvarSerieExecutada(si) {
   let isPR = false;
   const prAnterior = state.preSessaoPRs ? parseFloat(state.preSessaoPRs[ex.id]) || 0 : 0;
   if (cargaVal && cargaVal > 0) {
-    // Tem carga — compara com histórico anterior
+    // PR só se SUPERAR o recorde anterior (não apenas igualar)
     if (cargaVal > prAnterior) isPR = true;
-  } else if (prAnterior === 0 && repsVal && repsVal !== '—') {
-    // Sem carga mas primeiro registro com reps — é PR
-    isPR = true;
   }
-
-  console.log(`Série ${si+1} | carga:${cargaVal} | prAnterior:${state.preSessaoPRs?.[ex.id]||0} | isPR:${isPR}`);
+  // Sem carga: não marca como PR (não há como comparar)
 
   await sb.from('series_executadas').insert({
     sessao_id:    state.sessaoAtiva.id,
@@ -6562,14 +6557,10 @@ async function salvarSerieExecutada(si) {
   let isPR = false;
   const prAnterior = state.preSessaoPRs ? parseFloat(state.preSessaoPRs[ex.id]) || 0 : 0;
   if (cargaVal && cargaVal > 0) {
-    // Tem carga — compara com histórico anterior
+    // PR só se SUPERAR o recorde anterior (não apenas igualar)
     if (cargaVal > prAnterior) isPR = true;
-  } else if (prAnterior === 0 && repsVal && repsVal !== '—') {
-    // Sem carga mas primeiro registro com reps — é PR
-    isPR = true;
   }
-
-  console.log(`Série ${si+1} | carga:${cargaVal} | prAnterior:${state.preSessaoPRs?.[ex.id]||0} | isPR:${isPR}`);
+  // Sem carga: não marca como PR (não há como comparar)
 
   await sb.from('series_executadas').insert({
     sessao_id:    state.sessaoAtiva.id,

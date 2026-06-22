@@ -3548,16 +3548,33 @@ async function criarExercicio() {
 
 async function deletarExercicio(exId) {
   if (!confirm('Excluir este exercicio e todas as suas series?')) return;
-  // Deleta séries primeiro
-  await sb.from('series_template').delete().eq('exercicio_id', exId);
-  // Deleta exercício
-  const { error } = await sb.from('exercicios').delete().eq('id', exId);
-  if (error) { showToast('Erro ao excluir'); return; }
-  showToast('Exercício removido');
-  // Força re-render da lista
-  if (editState.diaEditando) {
-    await renderExEditList();
+
+  // 1. Busca IDs das series_template deste exercício
+  const { data: seriesIds } = await sb
+    .from('series_template')
+    .select('id')
+    .eq('exercicio_id', exId);
+
+  // 2. Deleta series_executadas que referenciam essas séries
+  if (seriesIds && seriesIds.length) {
+    await sb.from('series_executadas')
+      .delete()
+      .eq('exercicio_id', exId);
   }
+
+  // 3. Deleta series_template
+  await sb.from('series_template').delete().eq('exercicio_id', exId);
+
+  // 4. Agora deleta o exercício
+  const { error } = await sb.from('exercicios').delete().eq('id', exId);
+  if (error) {
+    console.error('Erro ao excluir exercício:', error);
+    showToast('Erro ao excluir: ' + error.message);
+    return;
+  }
+
+  showToast('Exercício removido');
+  await renderExEditList();
 }
 
 // ═══════════════════════════════════════════
@@ -6333,16 +6350,33 @@ async function criarExercicio() {
 
 async function deletarExercicio(exId) {
   if (!confirm('Excluir este exercicio e todas as suas series?')) return;
-  // Deleta séries primeiro
-  await sb.from('series_template').delete().eq('exercicio_id', exId);
-  // Deleta exercício
-  const { error } = await sb.from('exercicios').delete().eq('id', exId);
-  if (error) { showToast('Erro ao excluir'); return; }
-  showToast('Exercício removido');
-  // Força re-render da lista
-  if (editState.diaEditando) {
-    await renderExEditList();
+
+  // 1. Busca IDs das series_template deste exercício
+  const { data: seriesIds } = await sb
+    .from('series_template')
+    .select('id')
+    .eq('exercicio_id', exId);
+
+  // 2. Deleta series_executadas que referenciam essas séries
+  if (seriesIds && seriesIds.length) {
+    await sb.from('series_executadas')
+      .delete()
+      .eq('exercicio_id', exId);
   }
+
+  // 3. Deleta series_template
+  await sb.from('series_template').delete().eq('exercicio_id', exId);
+
+  // 4. Agora deleta o exercício
+  const { error } = await sb.from('exercicios').delete().eq('id', exId);
+  if (error) {
+    console.error('Erro ao excluir exercício:', error);
+    showToast('Erro ao excluir: ' + error.message);
+    return;
+  }
+
+  showToast('Exercício removido');
+  await renderExEditList();
 }
 
 // ═══════════════════════════════════════════

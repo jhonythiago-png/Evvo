@@ -2511,11 +2511,14 @@ function renderExec() {
 
   document.getElementById('exec-counter').textContent = `${idx+1} de ${exs.length}`;
 
-  // Mostra botão finalizar treino no último exercício
-  const btnFinalizarWrap = document.getElementById('btn-finalizar-treino-wrap');
-  if (btnFinalizarWrap) {
-    btnFinalizarWrap.style.display = (idx === exs.length - 1) ? 'block' : 'none';
-  }
+  // Último exercício — esconde Próximo, mostra Finalizar verde
+  const isUltimo = (idx === exs.length - 1);
+  const btnNextEl  = document.getElementById('btn-next');
+  const btnFinWrap = document.getElementById('btn-finalizar-treino-wrap');
+  if (btnNextEl)  btnNextEl.style.display  = isUltimo ? 'none'  : '';
+  if (btnFinWrap) btnFinWrap.style.display = isUltimo ? 'block' : 'none';
+
+
   document.getElementById('exec-name').textContent = ex.nome;
   document.getElementById('exec-meta').textContent = `${ex.grupo_muscular||''}${ex.equipamento?' · '+ex.equipamento:''}`;
 

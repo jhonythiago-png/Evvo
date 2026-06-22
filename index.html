@@ -8,6 +8,7 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="EVVO">
 <meta name="theme-color" content="#080810">
+<meta name="app-version" content="1.0.0">
 <title>EVVO</title>
 
 <!-- PWA -->
@@ -2208,6 +2209,7 @@ function showApp() {
   loadMedidas();
   updateShareProfile();
   carregarPRs();
+  iniciarHeartbeat();
 }
 
 // ═══════════════════════════════════════════
@@ -2257,6 +2259,7 @@ async function doRegister() {
 }
 
 async function doLogout() {
+  pararHeartbeat();
   await sb.auth.signOut();
   state = { user:null, perfil:null, fichaAtiva:null, diasTreino:[], diaAtual:null, exerciciosAtual:[], execIdx:0, sessaoAtiva:null, medidas:null, exsConcluidos:new Set() };
   document.getElementById('bottom-nav').classList.remove('visible');
@@ -5022,6 +5025,94 @@ function desenharGrafico(labels, valores, isPRs) {
   });
 }
 
+
+// ═══════════════════════════════════════════
+// HEARTBEAT — verificação silenciosa a cada 30s
+// ═══════════════════════════════════════════
+let heartbeatInterval = null;
+
+async function verificarStatus() {
+  if (!state.user) return;
+
+  try {
+    const { data, error } = await sb
+      .from('perfis')
+      .select('status, plano, nome, app_version')
+      .eq('id', state.user.id)
+      .single();
+
+    if (error || !data) return;
+
+    // 1. Usuário bloqueado — desloga imediatamente
+    if (data.status === 'bloqueado') {
+      pararHeartbeat();
+      showToast('Sua conta foi suspensa.');
+      setTimeout(async () => {
+        await sb.auth.signOut();
+        state = { user:null, perfil:null, fichaAtiva:null, diasTreino:[],
+          diaAtual:null, exerciciosAtual:[], execIdx:0, sessaoAtiva:null,
+          medidas:null, exsConcluidos:new Set(), prs:{} };
+        document.getElementById('bottom-nav').classList.remove('visible');
+        goTo('screen-login');
+      }, 2000);
+      return;
+    }
+
+    // 2. Plano alterado — atualiza silenciosamente
+    if (state.perfil && data.plano !== state.perfil.plano) {
+      state.perfil.plano = data.plano;
+      const planEl = document.getElementById('profile-plan');
+      if (planEl) {
+        planEl.textContent = data.plano === 'pro' ? '⭐ Pro' : 'Free';
+        planEl.className = 'profile-plan ' + (data.plano === 'pro' ? 'plan-pro' : 'plan-free');
+      }
+      if (data.plano === 'pro') showToast('🎉 Bem-vindo ao plano Pro!');
+    }
+
+    // 3. Nome alterado pelo admin — atualiza
+    if (state.perfil && data.nome !== state.perfil.nome) {
+      state.perfil.nome = data.nome;
+      const nameEl = document.getElementById('profile-name');
+      if (nameEl) nameEl.textContent = data.nome;
+      updateGreeting();
+    }
+
+    // 4. Nova versão do app disponível — recarrega silenciosamente
+    const versaoAtual = document.querySelector('meta[name="app-version"]')?.content;
+    if (data.app_version && versaoAtual && data.app_version !== versaoAtual) {
+      showToast('🔄 Atualizando o app...');
+      setTimeout(() => window.location.reload(true), 2000);
+      return;
+    }
+
+  } catch(e) {
+    // Silencioso — não mostra erro de rede ao usuário
+    console.log('Heartbeat silencioso:', e.message);
+  }
+}
+
+function iniciarHeartbeat() {
+  // Verifica imediatamente e depois a cada 30s
+  verificarStatus();
+  heartbeatInterval = setInterval(verificarStatus, 30000);
+}
+
+function pararHeartbeat() {
+  if (heartbeatInterval) {
+    clearInterval(heartbeatInterval);
+    heartbeatInterval = null;
+  }
+}
+
+// Pausa quando a aba fica em background, retoma quando volta
+document.addEventListener('visibilitychange', () => {
+  if (document.hidden) {
+    pararHeartbeat();
+  } else if (state.user) {
+    iniciarHeartbeat();
+  }
+});
+
 // ═══════════════════════════════════════════
 // START
 // ═══════════════════════════════════════════
@@ -5052,6 +5143,7 @@ function showApp() {
   loadMedidas();
   updateShareProfile();
   carregarPRs();
+  iniciarHeartbeat();
 }
 
 // ═══════════════════════════════════════════
@@ -5101,6 +5193,7 @@ async function doRegister() {
 }
 
 async function doLogout() {
+  pararHeartbeat();
   await sb.auth.signOut();
   state = { user:null, perfil:null, fichaAtiva:null, diasTreino:[], diaAtual:null, exerciciosAtual:[], execIdx:0, sessaoAtiva:null, medidas:null, exsConcluidos:new Set() };
   document.getElementById('bottom-nav').classList.remove('visible');
@@ -7517,6 +7610,94 @@ function desenharGrafico(labels, valores, isPRs) {
     }
   });
 }
+
+
+// ═══════════════════════════════════════════
+// HEARTBEAT — verificação silenciosa a cada 30s
+// ═══════════════════════════════════════════
+let heartbeatInterval = null;
+
+async function verificarStatus() {
+  if (!state.user) return;
+
+  try {
+    const { data, error } = await sb
+      .from('perfis')
+      .select('status, plano, nome, app_version')
+      .eq('id', state.user.id)
+      .single();
+
+    if (error || !data) return;
+
+    // 1. Usuário bloqueado — desloga imediatamente
+    if (data.status === 'bloqueado') {
+      pararHeartbeat();
+      showToast('Sua conta foi suspensa.');
+      setTimeout(async () => {
+        await sb.auth.signOut();
+        state = { user:null, perfil:null, fichaAtiva:null, diasTreino:[],
+          diaAtual:null, exerciciosAtual:[], execIdx:0, sessaoAtiva:null,
+          medidas:null, exsConcluidos:new Set(), prs:{} };
+        document.getElementById('bottom-nav').classList.remove('visible');
+        goTo('screen-login');
+      }, 2000);
+      return;
+    }
+
+    // 2. Plano alterado — atualiza silenciosamente
+    if (state.perfil && data.plano !== state.perfil.plano) {
+      state.perfil.plano = data.plano;
+      const planEl = document.getElementById('profile-plan');
+      if (planEl) {
+        planEl.textContent = data.plano === 'pro' ? '⭐ Pro' : 'Free';
+        planEl.className = 'profile-plan ' + (data.plano === 'pro' ? 'plan-pro' : 'plan-free');
+      }
+      if (data.plano === 'pro') showToast('🎉 Bem-vindo ao plano Pro!');
+    }
+
+    // 3. Nome alterado pelo admin — atualiza
+    if (state.perfil && data.nome !== state.perfil.nome) {
+      state.perfil.nome = data.nome;
+      const nameEl = document.getElementById('profile-name');
+      if (nameEl) nameEl.textContent = data.nome;
+      updateGreeting();
+    }
+
+    // 4. Nova versão do app disponível — recarrega silenciosamente
+    const versaoAtual = document.querySelector('meta[name="app-version"]')?.content;
+    if (data.app_version && versaoAtual && data.app_version !== versaoAtual) {
+      showToast('🔄 Atualizando o app...');
+      setTimeout(() => window.location.reload(true), 2000);
+      return;
+    }
+
+  } catch(e) {
+    // Silencioso — não mostra erro de rede ao usuário
+    console.log('Heartbeat silencioso:', e.message);
+  }
+}
+
+function iniciarHeartbeat() {
+  // Verifica imediatamente e depois a cada 30s
+  verificarStatus();
+  heartbeatInterval = setInterval(verificarStatus, 30000);
+}
+
+function pararHeartbeat() {
+  if (heartbeatInterval) {
+    clearInterval(heartbeatInterval);
+    heartbeatInterval = null;
+  }
+}
+
+// Pausa quando a aba fica em background, retoma quando volta
+document.addEventListener('visibilitychange', () => {
+  if (document.hidden) {
+    pararHeartbeat();
+  } else if (state.user) {
+    iniciarHeartbeat();
+  }
+});
 
 // ═══════════════════════════════════════════
 // START

@@ -1743,15 +1743,15 @@ select.form-input option{background:#0e0e1a;color:#fff}
           <span>Editar perfil</span>
           <svg class="arr" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg>
         </div>
-        <div class="menu-item">
+        <div class="menu-item" onclick="goTo('screen-alterar-senha')">
           <svg viewBox="0 0 24 24"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
           <span>Alterar senha</span>
           <svg class="arr" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg>
         </div>
-        <div class="menu-item">
-          <svg viewBox="0 0 24 24"><path d="M18 8h1a4 4 0 0 1 0 8h-1"/><path d="M2 8h16v9a4 4 0 0 1-4 4H6a4 4 0 0 1-4-4V8z"/><line x1="6" y1="1" x2="6" y2="4"/><line x1="10" y1="1" x2="10" y2="4"/><line x1="14" y1="1" x2="14" y2="4"/></svg>
-          <span>Upgrade para Pro</span>
-          <svg class="arr" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg>
+        <div class="menu-item" onclick="abrirUpgrade()" style="background:#f5a62310;border-color:#f5a62330">
+          <svg viewBox="0 0 24 24" style="stroke:#f5a623"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+          <span style="color:#f5a623;font-weight:800">Upgrade para Pro</span>
+          <svg class="arr" viewBox="0 0 24 24" style="stroke:#f5a623"><polyline points="9 18 15 12 9 6"/></svg>
         </div>
         <div class="menu-item" id="btn-admin" style="display:none;background:#ff6a0010;border-color:#ff6a0030" onclick="window.open('./painel-55444dc3db5d.html','_blank')">
           <svg viewBox="0 0 24 24" style="stroke:var(--accent)"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
@@ -1886,6 +1886,92 @@ select.form-input option{background:#0e0e1a;color:#fff}
         </select>
       </div>
       <button class="btn-primary" onclick="criarDia()">Criar dia</button>
+    </div>
+  </div>
+
+  <!-- ══════════ SCREEN ALTERAR SENHA ══════════ -->
+  <div class="screen" id="screen-alterar-senha">
+    <div class="scroll">
+      <div class="back-row">
+        <button class="btn-back" onclick="goTo('screen-perfil')">
+          <svg viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg>
+        </button>
+        <span class="back-label">Alterar senha</span>
+      </div>
+      <div style="padding:24px 20px;display:flex;flex-direction:column;gap:16px">
+        <div style="background:var(--bg2);border-radius:18px;border:1px solid var(--border);padding:20px;display:flex;flex-direction:column;gap:14px">
+          <div class="form-group">
+            <label class="form-label">Senha atual</label>
+            <input class="form-input" type="password" id="senha-atual" placeholder="••••••••" autocomplete="current-password">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Nova senha</label>
+            <input class="form-input" type="password" id="senha-nova" placeholder="••••••••" autocomplete="new-password">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Confirmar nova senha</label>
+            <input class="form-input" type="password" id="senha-nova2" placeholder="••••••••" autocomplete="new-password">
+          </div>
+          <div id="senha-erro" style="display:none;color:#ee0979;font-size:12px;font-weight:700;padding:8px 12px;background:#ee097910;border-radius:10px"></div>
+        </div>
+        <button class="btn-primary" onclick="alterarSenha()">
+          <svg viewBox="0 0 24 24" style="width:18px;height:18px;stroke:#fff;fill:none;stroke-width:2.5;stroke-linecap:round;stroke-linejoin:round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+          Salvar nova senha
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════ SCREEN UPGRADE PRO ══════════ -->
+  <div class="screen" id="screen-upgrade">
+    <div class="scroll">
+      <div class="back-row">
+        <button class="btn-back" onclick="goTo('screen-perfil')">
+          <svg viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg>
+        </button>
+        <span class="back-label">Upgrade para Pro</span>
+      </div>
+      <div style="padding:24px 20px;display:flex;flex-direction:column;gap:16px">
+        <!-- Hero -->
+        <div style="background:linear-gradient(135deg,#1a0a00,#3a1800);border-radius:20px;border:1px solid #f5a62340;padding:28px 20px;text-align:center">
+          <div style="font-size:48px;margin-bottom:12px">⭐</div>
+          <div style="font-size:22px;font-weight:900;color:#f5a623;letter-spacing:-.5px">EVVO Pro</div>
+          <div style="font-size:13px;color:rgba(255,255,255,0.6);margin-top:6px">Desbloqueie o potencial completo</div>
+        </div>
+
+        <!-- Benefícios -->
+        <div style="background:var(--bg2);border-radius:18px;border:1px solid var(--border);overflow:hidden">
+          ${['Fichas ilimitadas de treino','Histórico completo sem limite','Gráficos avançados de evolução','Compartilhamento com marca premium','Suporte prioritário'].map((b,i,a) => `
+          <div style="padding:14px 16px;display:flex;align-items:center;gap:12px${i<a.length-1?';border-bottom:1px solid var(--border)':''}">
+            <div style="width:28px;height:28px;border-radius:8px;background:#f5a62320;display:flex;align-items:center;justify-content:center;flex-shrink:0">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#f5a623" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+            </div>
+            <span style="font-size:13px;font-weight:700;color:var(--text)">${b}</span>
+          </div>`).join('')}
+        </div>
+
+        <!-- Plano atual -->
+        <div id="upgrade-plano-atual" style="background:var(--bg2);border-radius:14px;border:1px solid var(--border);padding:16px;text-align:center">
+          <div style="font-size:11px;color:var(--text3);text-transform:uppercase;letter-spacing:.1em;margin-bottom:4px">Seu plano atual</div>
+          <div style="font-size:18px;font-weight:900;color:var(--text)" id="upgrade-plano-txt">Free</div>
+        </div>
+
+        <!-- CTA -->
+        <div id="upgrade-cta" style="display:flex;flex-direction:column;gap:10px">
+          <div style="background:#f5a62315;border:1px solid #f5a62330;border-radius:14px;padding:14px 16px;text-align:center;font-size:12px;color:rgba(255,255,255,0.6);line-height:1.5">
+            Para fazer upgrade, entre em contato com o administrador ou aguarde a ativação automática após o pagamento.
+          </div>
+          <button onclick="solicitarUpgrade()" style="width:100%;background:linear-gradient(135deg,#f5a623,#ff6a00);border:none;border-radius:14px;padding:16px;font-size:14px;font-weight:900;color:#fff;cursor:pointer;letter-spacing:.05em;text-transform:uppercase">
+            ⭐ Quero ser Pro
+          </button>
+        </div>
+
+        <div id="upgrade-pro-msg" style="display:none;background:#39d35320;border:1px solid #39d35340;border-radius:14px;padding:16px;text-align:center">
+          <div style="font-size:20px;margin-bottom:6px">🎉</div>
+          <div style="font-size:14px;font-weight:800;color:#39d353">Você já é Pro!</div>
+          <div style="font-size:12px;color:rgba(255,255,255,0.5);margin-top:4px">Aproveite todos os benefícios</div>
+        </div>
+      </div>
     </div>
   </div>
 
@@ -2160,18 +2246,6 @@ select.form-input option{background:#0e0e1a;color:#fff}
           </div>
         </div>
 
-        <!-- Senha -->
-        <div style="background:var(--bg2);border-radius:16px;border:1px solid var(--border);overflow:hidden">
-          <div style="padding:10px 14px 0;font-size:9px;color:var(--accent);font-weight:800;text-transform:uppercase;letter-spacing:.12em">Alterar senha</div>
-          <div style="padding:12px 14px;border-bottom:1px solid var(--border)">
-            <label style="font-size:10px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.1em;display:block;margin-bottom:6px">Nova senha</label>
-            <input class="form-input" type="password" id="ep-senha" placeholder="mínimo 6 caracteres (deixe vazio para não alterar)">
-          </div>
-          <div style="padding:12px 14px">
-            <label style="font-size:10px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.1em;display:block;margin-bottom:6px">Confirmar nova senha</label>
-            <input class="form-input" type="password" id="ep-senha2" placeholder="repita a nova senha">
-          </div>
-        </div>
 
         <div id="ep-erro" style="background:#ee09791a;border:1px solid #ee097933;border-radius:10px;padding:10px 14px;font-size:12px;color:#ee0979;display:none"></div>
 
@@ -4291,6 +4365,71 @@ async function baixarMarcaDagua() {
 // ═══════════════════════════════════════════
 // TOAST
 // ═══════════════════════════════════════════
+async function alterarSenha() {
+  const atual  = document.getElementById('senha-atual').value;
+  const nova   = document.getElementById('senha-nova').value;
+  const nova2  = document.getElementById('senha-nova2').value;
+  const erro   = document.getElementById('senha-erro');
+  erro.style.display = 'none';
+
+  if (!atual || !nova || !nova2) {
+    erro.textContent = 'Preencha todos os campos.';
+    erro.style.display = 'block'; return;
+  }
+  if (nova.length < 6) {
+    erro.textContent = 'A nova senha deve ter ao menos 6 caracteres.';
+    erro.style.display = 'block'; return;
+  }
+  if (nova !== nova2) {
+    erro.textContent = 'As senhas não coincidem.';
+    erro.style.display = 'block'; return;
+  }
+
+  // Reautentica com senha atual para confirmar
+  const email = state.user.email;
+  const { error: reErr } = await sb.auth.signInWithPassword({ email, password: atual });
+  if (reErr) {
+    erro.textContent = 'Senha atual incorreta.';
+    erro.style.display = 'block'; return;
+  }
+
+  const { error } = await sb.auth.updateUser({ password: nova });
+  if (error) {
+    erro.textContent = 'Erro ao alterar senha: ' + error.message;
+    erro.style.display = 'block'; return;
+  }
+
+  // Limpa campos e volta
+  document.getElementById('senha-atual').value = '';
+  document.getElementById('senha-nova').value = '';
+  document.getElementById('senha-nova2').value = '';
+  showToast('Senha alterada com sucesso!');
+  goTo('screen-perfil');
+}
+
+function abrirUpgrade() {
+  const plano = state.perfil?.plano || 'free';
+  const txtEl = document.getElementById('upgrade-plano-txt');
+  const ctaEl = document.getElementById('upgrade-cta');
+  const proEl = document.getElementById('upgrade-pro-msg');
+  if (txtEl) txtEl.textContent = plano === 'pro' ? '⭐ Pro' : 'Free';
+  if (plano === 'pro') {
+    if (ctaEl) ctaEl.style.display = 'none';
+    if (proEl) proEl.style.display = 'block';
+  } else {
+    if (ctaEl) ctaEl.style.display = 'flex';
+    if (proEl) proEl.style.display = 'none';
+  }
+  goTo('screen-upgrade');
+}
+
+function solicitarUpgrade() {
+  // Abre WhatsApp ou mostra mensagem de contato
+  const msg = encodeURIComponent('Olá! Quero fazer upgrade para o EVVO Pro. Meu usuário: @' + (state.perfil?.nome || ''));
+  const url = 'https://wa.me/?text=' + msg;
+  window.open(url, '_blank');
+}
+
 function showToast(msg) {
   const t = document.getElementById('toast');
   t.textContent = msg;
@@ -5534,8 +5673,6 @@ function abrirEditarPerfil() {
 
   // Preenche campos
   document.getElementById('ep-nome').value = state.perfil.nome || '';
-  document.getElementById('ep-senha').value = '';
-  document.getElementById('ep-senha2').value = '';
   document.getElementById('ep-erro').style.display = 'none';
 
   // Data de nascimento
@@ -5572,25 +5709,11 @@ function abrirEditarPerfil() {
 
 async function salvarPerfil() {
   const nome   = document.getElementById('ep-nome').value.trim();
-  const senha  = document.getElementById('ep-senha').value;
-  const senha2 = document.getElementById('ep-senha2').value;
   const erro   = document.getElementById('ep-erro');
   erro.style.display = 'none';
 
   if (!nome) {
     erro.textContent = 'Digite seu nome.';
-    erro.style.display = 'block';
-    return;
-  }
-
-  if (senha && senha.length < 6) {
-    erro.textContent = 'Senha deve ter ao menos 6 caracteres.';
-    erro.style.display = 'block';
-    return;
-  }
-
-  if (senha && senha !== senha2) {
-    erro.textContent = 'As senhas não coincidem.';
     erro.style.display = 'block';
     return;
   }
@@ -5643,15 +5766,7 @@ async function salvarPerfil() {
     return;
   }
 
-  // Atualiza senha se foi preenchida
-  if (senha) {
-    const { error: errSenha } = await sb.auth.updateUser({ password: senha });
-    if (errSenha) {
-      erro.textContent = 'Perfil salvo, mas erro ao alterar senha: ' + errSenha.message;
-      erro.style.display = 'block';
-      return;
-    }
-  }
+
 
   // Atualiza estado local
   if (state.perfil) {

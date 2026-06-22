@@ -2422,6 +2422,12 @@ async function openDia(diaId) {
 
   state.exerciciosAtual = exs || [];
 
+  // Reseta estado do cardio ao abrir novo dia
+  if (cardioState.interval) { clearInterval(cardioState.interval); cardioState.interval = null; }
+  cardioState.iniciado  = false;
+  cardioState.inicio    = null;
+  cardioState.concluido = false;
+
   // atualiza tela
   const diasNomes = ['Domingo','Segunda-feira','Terça-feira','Quarta-feira','Quinta-feira','Sexta-feira','Sábado'];
   document.getElementById('dia-label').textContent = diasNomes[dia.dia_semana];
@@ -2768,6 +2774,11 @@ function prevEx() {
 async function finalizarTreino() {
   await encerrarSessao();
   state.exsConcluidos = new Set();
+  // Reseta estado do cardio
+  if (cardioState.interval) { clearInterval(cardioState.interval); cardioState.interval = null; }
+  cardioState.iniciado  = false;
+  cardioState.inicio    = null;
+  cardioState.concluido = false;
   showToast('🎉 Treino finalizado!');
   goTo('screen-treino');
 }
@@ -5399,6 +5410,12 @@ async function openDia(diaId) {
 
   state.exerciciosAtual = exs || [];
 
+  // Reseta estado do cardio ao abrir novo dia
+  if (cardioState.interval) { clearInterval(cardioState.interval); cardioState.interval = null; }
+  cardioState.iniciado  = false;
+  cardioState.inicio    = null;
+  cardioState.concluido = false;
+
   // atualiza tela
   const diasNomes = ['Domingo','Segunda-feira','Terça-feira','Quarta-feira','Quinta-feira','Sexta-feira','Sábado'];
   document.getElementById('dia-label').textContent = diasNomes[dia.dia_semana];
@@ -5682,6 +5699,11 @@ function prevEx() {
 async function finalizarTreino() {
   await encerrarSessao();
   state.exsConcluidos = new Set();
+  // Reseta estado do cardio
+  if (cardioState.interval) { clearInterval(cardioState.interval); cardioState.interval = null; }
+  cardioState.iniciado  = false;
+  cardioState.inicio    = null;
+  cardioState.concluido = false;
   showToast('🎉 Treino finalizado!');
   goTo('screen-treino');
 }
@@ -7465,14 +7487,19 @@ async function salvarPerfil() {
 
 
 function atualizarAvatarPerfil() {
-  const av = document.getElementById('profile-avatar');
+  const av  = document.getElementById('profile-avatar');
   if (!av) return;
   const url = state.perfil?.avatar_url;
-  // Só usa a foto se for uma URL absoluta válida (começa com http)
+  const ini = (state.perfil?.nome || '?').charAt(0).toUpperCase();
+  av.innerHTML = '';
   if (url && url.startsWith('http')) {
-    av.innerHTML = '<img src="' + url + '" style="width:100%;height:100%;object-fit:cover;border-radius:50%" alt="foto" onerror="this.parentElement.textContent='' + (state.perfil?.nome||'?').charAt(0).toUpperCase() + ''">';
+    const img    = document.createElement('img');
+    img.src      = url;
+    img.style.cssText = 'width:100%;height:100%;object-fit:cover;border-radius:50%';
+    img.onerror  = function() { av.innerHTML = ''; av.textContent = ini; };
+    av.appendChild(img);
   } else {
-    av.textContent = (state.perfil?.nome || '?').charAt(0).toUpperCase();
+    av.textContent = ini;
   }
 }
 

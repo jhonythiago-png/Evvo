@@ -1216,10 +1216,10 @@ select.form-input option{background:#0e0e1a;color:#fff}
       <div class="hero" style="padding-top:12px">
         <div class="hero-glow"></div>
         <div class="hero-label" id="dia-label">Segunda-feira</div>
-        <div style="display:flex;align-items:center;gap:8px">
-          <div class="hero-title" id="dia-title">Peito &amp; Tríceps</div>
-          <button onclick="editarTituloDia()" style="background:none;border:none;padding:4px;cursor:pointer;flex-shrink:0;opacity:0.5" title="Editar nome">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--text2)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <div class="hero-title" id="dia-title" style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+          <span id="dia-title-txt">Peito &amp; Tríceps</span>
+          <button onclick="editarTituloDia()" style="background:none;border:none;padding:2px 4px;cursor:pointer;opacity:0.55;display:inline-flex;align-items:center" title="Editar nome">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="var(--text2)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
               <path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"/>
             </svg>
           </button>
@@ -2597,7 +2597,9 @@ async function openDia(diaId) {
   // atualiza tela
   const diasNomes = ['Domingo','Segunda-feira','Terça-feira','Quarta-feira','Quinta-feira','Sexta-feira','Sábado'];
   document.getElementById('dia-label').textContent = diasNomes[dia.dia_semana];
-  document.getElementById('dia-title').textContent = dia.nome;
+  const diaTitleTxt = document.getElementById('dia-title-txt');
+  if (diaTitleTxt) diaTitleTxt.textContent = dia.nome;
+  else document.getElementById('dia-title').textContent = dia.nome;
 
   // chips
   const totalSeries = state.exerciciosAtual.reduce((acc, e) => acc + (e.series_template?.length || 0), 0);
@@ -3573,16 +3575,26 @@ async function baixarMarcaDaguaCard() {
   const cardEl = document.getElementById('share-card-el');
   if (!cardEl) return;
 
+  // Salva e remove fundo temporariamente para PNG transparente
+  const bgOriginal = cardEl.style.background;
+  const bgElOriginal = document.getElementById('sc-bg')?.style.background;
+  cardEl.style.background = 'transparent';
+  const scBg = document.getElementById('sc-bg');
+  if (scBg) scBg.style.background = 'transparent';
+
   try {
-    // Captura o card com html2canvas
     const canvas = await html2canvas(cardEl, {
       scale: 2,
       useCORS: true,
       allowTaint: true,
-      backgroundColor: null, // transparente
+      backgroundColor: null,
       logging: false,
       removeContainer: true,
     });
+
+    // Restaura fundo
+    cardEl.style.background = bgOriginal;
+    if (scBg) scBg.style.background = bgElOriginal;
 
     canvas.toBlob(async (blob) => {
       const file = new File([blob], 'evvo-marcadagua.png', { type: 'image/png' });
@@ -3605,6 +3617,8 @@ async function baixarMarcaDaguaCard() {
       showToast('Imagem salva!');
     }, 'image/png');
   } catch(e) {
+    cardEl.style.background = bgOriginal;
+    if (scBg) scBg.style.background = bgElOriginal;
     showToast('Erro: ' + e.message);
   }
 }
@@ -4365,8 +4379,8 @@ async function editarTituloDia() {
   const { error } = await sb.from('dias_treino').update({ nome: novo.trim() }).eq('id', state.diaAtual.id);
   if (!error) {
     state.diaAtual.nome = novo.trim();
-    document.getElementById('dia-title').textContent = novo.trim();
-    // Atualiza também na lista de dias
+    const txtEl = document.getElementById('dia-title-txt');
+    if (txtEl) txtEl.textContent = novo.trim();
     const dia = state.diasTreino.find(d => d.id === state.diaAtual.id);
     if (dia) dia.nome = novo.trim();
     showToast('Nome atualizado!');

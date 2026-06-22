@@ -19,6 +19,7 @@
 
 <!-- Supabase -->
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
 
 <style>
 /* ═══════════════════════════════════════════
@@ -3496,121 +3497,61 @@ function nextPhrase() {
 }
 
 async function shareCard() {
-  if (navigator.share) {
-    try {
-      await navigator.share({ title:'EVVO — Meu treino', text: PHRASES[pIdx] + '\n\n#EVVO #treino' });
-    } catch(e) {}
-  } else {
-    showToast('Compartilhamento não disponível neste browser');
+  const cardEl = document.getElementById('share-card-el');
+  if (!cardEl) return;
+
+  try {
+    showToast('Preparando...');
+    const canvas = await html2canvas(cardEl, {
+      scale: 2,
+      useCORS: true,
+      backgroundColor: null,
+      logging: false,
+    });
+
+    canvas.toBlob(async (blob) => {
+      const file = new File([blob], 'evvo-card.jpg', { type: 'image/jpeg' });
+      if (navigator.share && navigator.canShare && navigator.canShare({ files: [file] })) {
+        try {
+          await navigator.share({
+            files: [file],
+            title: 'EVVO — Meu treino',
+            text: PHRASES[pIdx] + '\n\n#EVVO #treino',
+          });
+        } catch(e) {
+          if (e.name !== 'AbortError') showToast('Erro ao compartilhar');
+        }
+      } else if (navigator.share) {
+        // Fallback só texto
+        try {
+          await navigator.share({ title:'EVVO — Meu treino', text: PHRASES[pIdx] + '\n\n#EVVO #treino' });
+        } catch(e) {}
+      } else {
+        showToast('Compartilhamento não disponível neste browser');
+      }
+    }, 'image/jpeg', 0.95);
+  } catch(e) {
+    showToast('Erro ao gerar imagem');
   }
 }
 
 async function baixarCard() {
   showToast('Gerando imagem...');
 
-  const W = cardFormato === 'story' ? 1080 : 1080;
-  const H = cardFormato === 'story' ? 1920 : 1080;
+  const cardEl = document.getElementById('share-card-el');
+  if (!cardEl) { showToast('Erro ao gerar card'); return; }
 
-  const canvas = document.createElement('canvas');
-  canvas.width  = W;
-  canvas.height = H;
-  const ctx = canvas.getContext('2d');
-
-  // Fundo gradiente igual ao card
-  const bgEl = document.getElementById('sc-bg');
-  const bgStyle = bgEl ? bgEl.style.background : BGs[0];
-  // Desenha fundo sólido escuro
-  ctx.fillStyle = '#0a0010';
-  ctx.fillRect(0, 0, W, H);
-
-  // Gradiente do fundo
-  const bgGrad = ctx.createLinearGradient(0, 0, W, H);
-  bgGrad.addColorStop(0, '#0a0010');
-  bgGrad.addColorStop(0.5, '#1a0020');
-  bgGrad.addColorStop(1, '#ff6a00');
-  ctx.fillStyle = bgGrad;
-  ctx.fillRect(0, 0, W, H);
-
-  const pad = 80;
-  const cx  = W / 2;
-
-  // Emoji (se visível)
-  const emojiEl = document.getElementById('sc-emoji');
-  const emojiVisible = emojiEl && emojiEl.style.display !== 'none';
-  if (emojiVisible && emojiEl.textContent) {
-    ctx.font = `${Math.round(W * 0.11)}px serif`;
-    ctx.textAlign = 'center';
-    ctx.fillText(emojiEl.textContent, cx, H * 0.38);
-  }
-
-  // Stats
-  const scStats = document.getElementById('sc-stats');
-  const statsItems = scStats ? scStats.querySelectorAll('.sc-stat') : [];
-  const statFontSize = Math.round(W * 0.065);
-  const labelFontSize = Math.round(W * 0.026);
-  const statsY = emojiVisible ? H * 0.50 : H * 0.46;
-  const statStep = Math.round((W - pad * 2) / Math.max(statsItems.length, 1));
-  let xStat = pad;
-  statsItems.forEach((el, i) => {
-    const v = el.querySelector('.v')?.textContent || '—';
-    const l = el.querySelector('.l')?.textContent || '';
-    ctx.font = `bold ${statFontSize}px -apple-system, sans-serif`;
-    ctx.fillStyle = i === 0 ? '#ff6a00' : '#ffffff';
-    ctx.textAlign = 'left';
-    ctx.fillText(v, xStat, statsY);
-    ctx.font = `${labelFontSize}px -apple-system, sans-serif`;
-    ctx.fillStyle = 'rgba(255,255,255,0.5)';
-    ctx.fillText(l.toUpperCase(), xStat, statsY + labelFontSize + 8);
-    xStat += statStep;
-  });
-
-  // Divisor
-  const divY = statsY + statFontSize + labelFontSize + 30;
-  ctx.strokeStyle = 'rgba(255,255,255,0.15)';
-  ctx.lineWidth = 2;
-  ctx.beginPath();
-  ctx.moveTo(pad, divY);
-  ctx.lineTo(W - pad, divY);
-  ctx.stroke();
-
-  // Frase motivacional
-  const phraseEl = document.getElementById('sc-phrase');
-  if (phraseEl) {
-    const phrase = phraseEl.textContent;
-    ctx.font = `italic ${Math.round(W * 0.028)}px -apple-system, sans-serif`;
-    ctx.fillStyle = 'rgba(255,255,255,0.5)';
-    ctx.textAlign = 'center';
-    // Quebra texto em linhas
-    const words = phrase.split(' ');
-    const maxW = W - pad * 2;
-    let line = '', lines = [];
-    words.forEach(w => {
-      const test = line + w + ' ';
-      if (ctx.measureText(test).width > maxW && line) {
-        lines.push(line.trim());
-        line = w + ' ';
-      } else { line = test; }
+  try {
+    const canvas = await html2canvas(cardEl, {
+      scale: 2,
+      useCORS: true,
+      backgroundColor: null,
+      logging: false,
     });
-    if (line.trim()) lines.push(line.trim());
-    lines.forEach((l, i) => ctx.fillText(l, cx, divY + 50 + i * 38));
-  }
 
-  // @usuario e tag EVVO em baixo
-  const username = (state.perfil?.nome || 'usuario').toLowerCase().replace(/\s+/g, '');
-  ctx.font = `bold ${Math.round(W * 0.026)}px -apple-system, sans-serif`;
-  ctx.fillStyle = 'rgba(255,255,255,0.6)';
-  ctx.textAlign = 'left';
-  ctx.fillText('@' + username, pad, H - 80);
-
-  ctx.font = `bold ${Math.round(W * 0.022)}px -apple-system, sans-serif`;
-  ctx.fillStyle = 'rgba(255,255,255,0.3)';
-  ctx.textAlign = 'right';
-  ctx.fillText('EVVO APP', W - pad, H - 80);
-
-  // Salva
-  setTimeout(() => {
     canvas.toBlob(async (blob) => {
       const file = new File([blob], 'evvo-card.jpg', { type: 'image/jpeg' });
+      // Tenta Web Share API (salva na galeria no mobile)
       if (navigator.share && navigator.canShare && navigator.canShare({ files: [file] })) {
         try {
           await navigator.share({ files: [file], title: 'EVVO Card' });
@@ -3619,6 +3560,7 @@ async function baixarCard() {
           if (e.name === 'AbortError') return;
         }
       }
+      // Fallback: download direto
       const url  = URL.createObjectURL(blob);
       const link = document.createElement('a');
       link.download = 'evvo-card.jpg';
@@ -3626,8 +3568,11 @@ async function baixarCard() {
       link.click();
       setTimeout(() => URL.revokeObjectURL(url), 1000);
       showToast('Card salvo!');
-    }, 'image/jpeg', 0.92);
-  }, 100);
+    }, 'image/jpeg', 0.95);
+  } catch(e) {
+    console.error('html2canvas error:', e);
+    showToast('Erro ao gerar imagem');
+  }
 }
 
 // ── MODO FOTO ──
@@ -6631,121 +6576,61 @@ function nextPhrase() {
 }
 
 async function shareCard() {
-  if (navigator.share) {
-    try {
-      await navigator.share({ title:'EVVO — Meu treino', text: PHRASES[pIdx] + '\n\n#EVVO #treino' });
-    } catch(e) {}
-  } else {
-    showToast('Compartilhamento não disponível neste browser');
+  const cardEl = document.getElementById('share-card-el');
+  if (!cardEl) return;
+
+  try {
+    showToast('Preparando...');
+    const canvas = await html2canvas(cardEl, {
+      scale: 2,
+      useCORS: true,
+      backgroundColor: null,
+      logging: false,
+    });
+
+    canvas.toBlob(async (blob) => {
+      const file = new File([blob], 'evvo-card.jpg', { type: 'image/jpeg' });
+      if (navigator.share && navigator.canShare && navigator.canShare({ files: [file] })) {
+        try {
+          await navigator.share({
+            files: [file],
+            title: 'EVVO — Meu treino',
+            text: PHRASES[pIdx] + '\n\n#EVVO #treino',
+          });
+        } catch(e) {
+          if (e.name !== 'AbortError') showToast('Erro ao compartilhar');
+        }
+      } else if (navigator.share) {
+        // Fallback só texto
+        try {
+          await navigator.share({ title:'EVVO — Meu treino', text: PHRASES[pIdx] + '\n\n#EVVO #treino' });
+        } catch(e) {}
+      } else {
+        showToast('Compartilhamento não disponível neste browser');
+      }
+    }, 'image/jpeg', 0.95);
+  } catch(e) {
+    showToast('Erro ao gerar imagem');
   }
 }
 
 async function baixarCard() {
   showToast('Gerando imagem...');
 
-  const W = cardFormato === 'story' ? 1080 : 1080;
-  const H = cardFormato === 'story' ? 1920 : 1080;
+  const cardEl = document.getElementById('share-card-el');
+  if (!cardEl) { showToast('Erro ao gerar card'); return; }
 
-  const canvas = document.createElement('canvas');
-  canvas.width  = W;
-  canvas.height = H;
-  const ctx = canvas.getContext('2d');
-
-  // Fundo gradiente igual ao card
-  const bgEl = document.getElementById('sc-bg');
-  const bgStyle = bgEl ? bgEl.style.background : BGs[0];
-  // Desenha fundo sólido escuro
-  ctx.fillStyle = '#0a0010';
-  ctx.fillRect(0, 0, W, H);
-
-  // Gradiente do fundo
-  const bgGrad = ctx.createLinearGradient(0, 0, W, H);
-  bgGrad.addColorStop(0, '#0a0010');
-  bgGrad.addColorStop(0.5, '#1a0020');
-  bgGrad.addColorStop(1, '#ff6a00');
-  ctx.fillStyle = bgGrad;
-  ctx.fillRect(0, 0, W, H);
-
-  const pad = 80;
-  const cx  = W / 2;
-
-  // Emoji (se visível)
-  const emojiEl = document.getElementById('sc-emoji');
-  const emojiVisible = emojiEl && emojiEl.style.display !== 'none';
-  if (emojiVisible && emojiEl.textContent) {
-    ctx.font = `${Math.round(W * 0.11)}px serif`;
-    ctx.textAlign = 'center';
-    ctx.fillText(emojiEl.textContent, cx, H * 0.38);
-  }
-
-  // Stats
-  const scStats = document.getElementById('sc-stats');
-  const statsItems = scStats ? scStats.querySelectorAll('.sc-stat') : [];
-  const statFontSize = Math.round(W * 0.065);
-  const labelFontSize = Math.round(W * 0.026);
-  const statsY = emojiVisible ? H * 0.50 : H * 0.46;
-  const statStep = Math.round((W - pad * 2) / Math.max(statsItems.length, 1));
-  let xStat = pad;
-  statsItems.forEach((el, i) => {
-    const v = el.querySelector('.v')?.textContent || '—';
-    const l = el.querySelector('.l')?.textContent || '';
-    ctx.font = `bold ${statFontSize}px -apple-system, sans-serif`;
-    ctx.fillStyle = i === 0 ? '#ff6a00' : '#ffffff';
-    ctx.textAlign = 'left';
-    ctx.fillText(v, xStat, statsY);
-    ctx.font = `${labelFontSize}px -apple-system, sans-serif`;
-    ctx.fillStyle = 'rgba(255,255,255,0.5)';
-    ctx.fillText(l.toUpperCase(), xStat, statsY + labelFontSize + 8);
-    xStat += statStep;
-  });
-
-  // Divisor
-  const divY = statsY + statFontSize + labelFontSize + 30;
-  ctx.strokeStyle = 'rgba(255,255,255,0.15)';
-  ctx.lineWidth = 2;
-  ctx.beginPath();
-  ctx.moveTo(pad, divY);
-  ctx.lineTo(W - pad, divY);
-  ctx.stroke();
-
-  // Frase motivacional
-  const phraseEl = document.getElementById('sc-phrase');
-  if (phraseEl) {
-    const phrase = phraseEl.textContent;
-    ctx.font = `italic ${Math.round(W * 0.028)}px -apple-system, sans-serif`;
-    ctx.fillStyle = 'rgba(255,255,255,0.5)';
-    ctx.textAlign = 'center';
-    // Quebra texto em linhas
-    const words = phrase.split(' ');
-    const maxW = W - pad * 2;
-    let line = '', lines = [];
-    words.forEach(w => {
-      const test = line + w + ' ';
-      if (ctx.measureText(test).width > maxW && line) {
-        lines.push(line.trim());
-        line = w + ' ';
-      } else { line = test; }
+  try {
+    const canvas = await html2canvas(cardEl, {
+      scale: 2,
+      useCORS: true,
+      backgroundColor: null,
+      logging: false,
     });
-    if (line.trim()) lines.push(line.trim());
-    lines.forEach((l, i) => ctx.fillText(l, cx, divY + 50 + i * 38));
-  }
 
-  // @usuario e tag EVVO em baixo
-  const username = (state.perfil?.nome || 'usuario').toLowerCase().replace(/\s+/g, '');
-  ctx.font = `bold ${Math.round(W * 0.026)}px -apple-system, sans-serif`;
-  ctx.fillStyle = 'rgba(255,255,255,0.6)';
-  ctx.textAlign = 'left';
-  ctx.fillText('@' + username, pad, H - 80);
-
-  ctx.font = `bold ${Math.round(W * 0.022)}px -apple-system, sans-serif`;
-  ctx.fillStyle = 'rgba(255,255,255,0.3)';
-  ctx.textAlign = 'right';
-  ctx.fillText('EVVO APP', W - pad, H - 80);
-
-  // Salva
-  setTimeout(() => {
     canvas.toBlob(async (blob) => {
       const file = new File([blob], 'evvo-card.jpg', { type: 'image/jpeg' });
+      // Tenta Web Share API (salva na galeria no mobile)
       if (navigator.share && navigator.canShare && navigator.canShare({ files: [file] })) {
         try {
           await navigator.share({ files: [file], title: 'EVVO Card' });
@@ -6754,6 +6639,7 @@ async function baixarCard() {
           if (e.name === 'AbortError') return;
         }
       }
+      // Fallback: download direto
       const url  = URL.createObjectURL(blob);
       const link = document.createElement('a');
       link.download = 'evvo-card.jpg';
@@ -6761,8 +6647,11 @@ async function baixarCard() {
       link.click();
       setTimeout(() => URL.revokeObjectURL(url), 1000);
       showToast('Card salvo!');
-    }, 'image/jpeg', 0.92);
-  }, 100);
+    }, 'image/jpeg', 0.95);
+  } catch(e) {
+    console.error('html2canvas error:', e);
+    showToast('Erro ao gerar imagem');
+  }
 }
 
 // ── MODO FOTO ──

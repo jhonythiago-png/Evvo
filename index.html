@@ -2525,9 +2525,10 @@ function renderExec() {
   document.getElementById('btn-prev').style.opacity = idx === 0 ? '.3' : '1';
   const isLast = idx === exs.length - 1;
   const btnNext = document.getElementById('btn-next');
-  btnNext.innerHTML = isLast
-    ? `<svg viewBox="0 0 24 24" style="width:16px;height:16px;stroke:#fff;fill:none;stroke-width:2.5;stroke-linecap:round;stroke-linejoin:round"><polyline points="20 6 9 17 4 12"/></svg> Finalizar`
-    : `Próximo <svg viewBox="0 0 24 24" style="width:16px;height:16px;stroke:#fff;fill:none;stroke-width:2.5;stroke-linecap:round;stroke-linejoin:round"><polyline points="9 18 15 12 9 6"/></svg>`;
+  // Sempre reseta cor e onclick ao navegar
+  btnNext.style.background = '';
+  btnNext.onclick = nextEx;
+  btnNext.innerHTML = `Próximo <svg viewBox="0 0 24 24" style="width:16px;height:16px;stroke:#fff;fill:none;stroke-width:2.5;stroke-linecap:round;stroke-linejoin:round"><polyline points="9 18 15 12 9 6"/></svg>`;
 
   const cont = document.getElementById('exec-series');
   const isCardio = ex.tipo === 'cardio';
@@ -2826,14 +2827,13 @@ function nextEx() {
     renderExec();
     renderExOverview(state.execIdx);
   } else {
-    // Último exercício concluído — transforma botão Próximo em Finalizar treino
+    // Último exercício — muda botão para Finalizar treino (verde)
     const btnNext = document.getElementById('btn-next');
     if (btnNext) {
       btnNext.style.background = 'linear-gradient(135deg,#39d353,#1a7a2e)';
       btnNext.innerHTML = '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg> Finalizar treino';
       btnNext.onclick = finalizarTreino;
     }
-    showToast('🎉 Todos os exercícios concluídos!');
   }
 }
 

@@ -1243,7 +1243,7 @@ select.form-input option{background:#0e0e1a;color:#fff}
         <svg viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg>
       </button>
       <div class="exec-counter" id="exec-counter">1 de 1</div>
-      <button onclick="finalizarTreino()" style="font-size:10px;font-weight:800;color:var(--accent);text-transform:uppercase;letter-spacing:.08em;padding:6px 10px;background:#ff6a0015;border-radius:8px;border:1px solid #ff6a0030">
+      <button onclick="finalizarTreino()" style="font-size:10px;font-weight:800;color:#fff;text-transform:uppercase;letter-spacing:.08em;padding:6px 12px;background:linear-gradient(135deg,#ff6a00,#ee0979);border-radius:8px;border:none;cursor:pointer">
         Finalizar
       </button>
     </div>
@@ -2820,6 +2820,15 @@ function nextEx() {
     state.execIdx++;
     renderExec();
     renderExOverview(state.execIdx);
+  } else {
+    // Último exercício concluído — transforma botão Próximo em Finalizar treino
+    const btnNext = document.getElementById('btn-next');
+    if (btnNext) {
+      btnNext.style.background = 'linear-gradient(135deg,#39d353,#1a7a2e)';
+      btnNext.innerHTML = '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg> Finalizar treino';
+      btnNext.onclick = finalizarTreino;
+    }
+    showToast('🎉 Todos os exercícios concluídos!');
   }
 }
 
@@ -2828,13 +2837,22 @@ function prevEx() {
 }
 
 async function finalizarTreino() {
+  // Se não tem sessão ativa, não há nada para salvar
+  if (!state.sessaoAtiva) {
+    showToast('Nenhum treino em andamento');
+    goTo('screen-treino');
+    return;
+  }
+
   await encerrarSessao();
   state.exsConcluidos = new Set();
+  state.cardiosConcluidos = new Set();
   // Reseta estado do cardio
   if (cardioState.interval) { clearInterval(cardioState.interval); cardioState.interval = null; }
   cardioState.iniciado  = false;
   cardioState.inicio    = null;
   cardioState.concluido = false;
+  atualizarBotaoDia();
   showToast('🎉 Treino finalizado!');
   goTo('screen-treino');
 }

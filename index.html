@@ -3519,8 +3519,8 @@ function _desenharFotoCanvas(img) {
   ctx.fillStyle = grad;
   ctx.fillRect(0, overlayY, W, overlayH);
 
-  // 3. Textos
-  const textY  = posicaoOverlay === 'top' ? 80 : H - overlayH + 60;
+  // 3. Textos — posicionados mais abaixo dentro do overlay
+  const textY  = posicaoOverlay === 'top' ? 80 : H - overlayH + 160;
   const padding = 60;
 
   // Logo + nome EVVO + slogan
@@ -6389,8 +6389,8 @@ function _desenharFotoCanvas(img) {
   ctx.fillStyle = grad;
   ctx.fillRect(0, overlayY, W, overlayH);
 
-  // 3. Textos
-  const textY  = posicaoOverlay === 'top' ? 80 : H - overlayH + 60;
+  // 3. Textos — posicionados mais abaixo dentro do overlay
+  const textY  = posicaoOverlay === 'top' ? 80 : H - overlayH + 160;
   const padding = 60;
 
   // Logo + nome EVVO + slogan

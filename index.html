@@ -3552,10 +3552,18 @@ function _desenharFotoCanvas(img) {
   ctx.textAlign = 'left';
   ctx.fillText('EVVO', padding + iconSize + 14, textY - 10);
 
-  // Slogan
-  ctx.font = '22px -apple-system, sans-serif';
-  ctx.fillStyle = 'rgba(255,255,255,0.55)';
-  ctx.fillText('evolua todo dia', padding + iconSize + 14, textY + 16);
+  // Slogan — uppercase, letter-spacing largo, igual ao da tela de login
+  ctx.font = '700 20px -apple-system, sans-serif';
+  ctx.fillStyle = 'rgba(255,255,255,0.45)';
+  // Simula letter-spacing .2em desenhando letra por letra
+  const sloganTxt = 'EVOLUA TODO DIA';
+  const sloganX = padding + iconSize + 16;
+  const sloganY = textY + 18;
+  let cx = sloganX;
+  for (const ch of sloganTxt) {
+    ctx.fillText(ch, cx, sloganY);
+    cx += ctx.measureText(ch).width + 4; // ~.2em de espaçamento extra
+  }
 
   // Linha laranja
   ctx.strokeStyle = '#ff6a00';
@@ -6422,10 +6430,18 @@ function _desenharFotoCanvas(img) {
   ctx.textAlign = 'left';
   ctx.fillText('EVVO', padding + iconSize + 14, textY - 10);
 
-  // Slogan
-  ctx.font = '22px -apple-system, sans-serif';
-  ctx.fillStyle = 'rgba(255,255,255,0.55)';
-  ctx.fillText('evolua todo dia', padding + iconSize + 14, textY + 16);
+  // Slogan — uppercase, letter-spacing largo, igual ao da tela de login
+  ctx.font = '700 20px -apple-system, sans-serif';
+  ctx.fillStyle = 'rgba(255,255,255,0.45)';
+  // Simula letter-spacing .2em desenhando letra por letra
+  const sloganTxt = 'EVOLUA TODO DIA';
+  const sloganX = padding + iconSize + 16;
+  const sloganY = textY + 18;
+  let cx = sloganX;
+  for (const ch of sloganTxt) {
+    ctx.fillText(ch, cx, sloganY);
+    cx += ctx.measureText(ch).width + 4; // ~.2em de espaçamento extra
+  }
 
   // Linha laranja
   ctx.strokeStyle = '#ff6a00';

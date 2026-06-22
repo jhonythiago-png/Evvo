@@ -2427,6 +2427,7 @@ async function openDia(diaId) {
   cardioState.iniciado  = false;
   cardioState.inicio    = null;
   cardioState.concluido = false;
+  state.cardiosConcluidos = new Set();
 
   // atualiza tela
   const diasNomes = ['Domingo','Segunda-feira','Terça-feira','Quarta-feira','Quinta-feira','Sexta-feira','Sábado'];
@@ -2539,7 +2540,9 @@ function renderExec() {
     // Só reseta o timer se o cardio NÃO estiver rodando
     if (!cardioState.iniciado) {
       cardioState.inicio   = null;
-      cardioState.concluido = ex._cardio_concluido || false;
+      // Verifica se este cardio específico já foi concluído
+    const esteCardioConcluido = !!(state.cardiosConcluidos?.has(state.execIdx)) || ex._cardio_concluido;
+    cardioState.concluido = esteCardioConcluido;
       document.getElementById('cardio-timer').textContent = '00:00';
       const btnIniciar = document.getElementById('btn-cardio-iniciar');
       if (btnIniciar) {
@@ -2763,7 +2766,10 @@ function nextEx() {
     renderExec();
     renderExOverview(state.execIdx);
   } else {
-    finalizarTreino();
+    // Volta para tela de visão geral do dia — usuário clica em Finalizar quando quiser
+    renderExOverview(state.exerciciosAtual.length);
+    goTo('screen-dia');
+    showToast('🎉 Todos os exercícios concluídos!');
   }
 }
 
@@ -4451,10 +4457,12 @@ async function finalizarCardio() {
   const key = `${state.execIdx}_cardio`;
   seriesExecutadas[key] = { carga: vel || 0, reps: minReal };
 
-  // Marca concluído
+  // Marca concluído no estado persistente
   ex._cardio_concluido = true;
   ex._cardio_tempo_real = tempoFinalSeg;
   state.exsConcluidos.add(state.execIdx);
+  if (!state.cardiosConcluidos) state.cardiosConcluidos = new Set();
+  state.cardiosConcluidos.add(state.execIdx);
 
   showToast(`Cardio concluído — ${tempoStr}! 🔥`);
   setTimeout(() => nextEx(), 800);
@@ -4463,20 +4471,18 @@ async function finalizarCardio() {
 // ═══════════════════════════════════════════
 // TODAS AS SÉRIES FEITAS
 // ═══════════════════════════════════════════
-function todasFeitas() {
+async function todasFeitas() {
   const ex = state.exerciciosAtual[state.execIdx];
   if (!ex) return;
   const series = ex.series_template || [];
   const total = series.length;
   if (!total) { nextEx(); return; }
 
-  // Marca todas visualmente e salva cada uma
+  // Marca todas visualmente primeiro
   for (let si = 0; si < total; si++) {
     const row = document.getElementById(`sr-${si}`);
     const btn = document.getElementById(`sc-${si}`);
     if (!row || !btn) continue;
-    // Só salva se não estava done ainda
-    const jaFeita = row.querySelector('.sn')?.classList.contains('done');
     row.querySelectorAll('.sn,.sf').forEach(e => {
       e.classList.remove('now','next');
       e.classList.add('done');
@@ -4484,11 +4490,16 @@ function todasFeitas() {
     btn.classList.remove('now','next');
     btn.classList.add('done');
     btn.innerHTML = '<svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>';
-    if (!jaFeita) salvarSerieExecutada(si);
+  }
+
+  // Salva cada série sequencialmente (await) para garantir detecção correta de PRs
+  for (let si = 0; si < total; si++) {
+    const jaFeita = !!(seriesExecutadas[`${state.execIdx}_${si}`]);
+    if (!jaFeita) await salvarSerieExecutada(si);
   }
 
   showToast(`${total} séries concluídas! 💪`);
-  setTimeout(() => nextEx(), 600);
+  setTimeout(() => nextEx(), 800);
 }
 
 
@@ -5415,6 +5426,7 @@ async function openDia(diaId) {
   cardioState.iniciado  = false;
   cardioState.inicio    = null;
   cardioState.concluido = false;
+  state.cardiosConcluidos = new Set();
 
   // atualiza tela
   const diasNomes = ['Domingo','Segunda-feira','Terça-feira','Quarta-feira','Quinta-feira','Sexta-feira','Sábado'];
@@ -6847,10 +6859,12 @@ async function finalizarCardio() {
   const key = `${state.execIdx}_cardio`;
   seriesExecutadas[key] = { carga: vel || 0, reps: minReal };
 
-  // Marca concluído
+  // Marca concluído no estado persistente
   ex._cardio_concluido = true;
   ex._cardio_tempo_real = tempoFinalSeg;
   state.exsConcluidos.add(state.execIdx);
+  if (!state.cardiosConcluidos) state.cardiosConcluidos = new Set();
+  state.cardiosConcluidos.add(state.execIdx);
 
   showToast(`Cardio concluído — ${tempoStr}! 🔥`);
   setTimeout(() => nextEx(), 800);
@@ -6859,20 +6873,18 @@ async function finalizarCardio() {
 // ═══════════════════════════════════════════
 // TODAS AS SÉRIES FEITAS
 // ═══════════════════════════════════════════
-function todasFeitas() {
+async function todasFeitas() {
   const ex = state.exerciciosAtual[state.execIdx];
   if (!ex) return;
   const series = ex.series_template || [];
   const total = series.length;
   if (!total) { nextEx(); return; }
 
-  // Marca todas visualmente e salva cada uma
+  // Marca todas visualmente primeiro
   for (let si = 0; si < total; si++) {
     const row = document.getElementById(`sr-${si}`);
     const btn = document.getElementById(`sc-${si}`);
     if (!row || !btn) continue;
-    // Só salva se não estava done ainda
-    const jaFeita = row.querySelector('.sn')?.classList.contains('done');
     row.querySelectorAll('.sn,.sf').forEach(e => {
       e.classList.remove('now','next');
       e.classList.add('done');
@@ -6880,11 +6892,16 @@ function todasFeitas() {
     btn.classList.remove('now','next');
     btn.classList.add('done');
     btn.innerHTML = '<svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>';
-    if (!jaFeita) salvarSerieExecutada(si);
+  }
+
+  // Salva cada série sequencialmente (await) para garantir detecção correta de PRs
+  for (let si = 0; si < total; si++) {
+    const jaFeita = !!(seriesExecutadas[`${state.execIdx}_${si}`]);
+    if (!jaFeita) await salvarSerieExecutada(si);
   }
 
   showToast(`${total} séries concluídas! 💪`);
-  setTimeout(() => nextEx(), 600);
+  setTimeout(() => nextEx(), 800);
 }
 
 

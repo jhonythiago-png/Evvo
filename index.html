@@ -1500,75 +1500,143 @@ select.form-input option{background:#0e0e1a;color:#fff}
         <div class="hero-title">Compartilhar</div>
       </div>
 
-      <div class="share-card-wrap">
-        <div class="share-card">
-          <div class="sc-bg" id="sc-bg" style="background:linear-gradient(145deg,#0a0010 0%,#1a0020 45%,#ff6a00 100%)"></div>
-          <svg class="sc-deco" width="200" height="100" viewBox="0 0 200 100" fill="none">
-            <rect x="8" y="42" width="184" height="16" rx="8" fill="white"/>
-            <rect x="0" y="26" width="26" height="48" rx="10" fill="white"/>
-            <rect x="174" y="26" width="26" height="48" rx="10" fill="white"/>
-          </svg>
-          <div class="sc-inner">
-            <div><span class="sc-tag">EVVO</span></div>
-            <div class="sc-center">
-              <div class="sc-emoji" id="sc-emoji">🔥</div>
-              <div class="sc-workout" id="sc-workout">Meu treino</div>
-              <div class="sc-sub" id="sc-sub">hoje</div>
-              <div class="sc-stats" id="sc-stats">
-                <div class="sc-stat"><div class="v">—</div><div class="l">séries</div></div>
-                <div class="sc-stat"><div class="v">—</div><div class="l">volume</div></div>
+      <!-- Abas: Card / Foto -->
+      <div style="display:flex;gap:5px;padding:0 16px 16px">
+        <button id="share-tab-card" onclick="switchShareTab('card')"
+          style="flex:1;padding:9px;border-radius:11px;font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.06em;background:var(--grad);color:#fff;border:none;cursor:pointer">
+          Card
+        </button>
+        <button id="share-tab-foto" onclick="switchShareTab('foto')"
+          style="flex:1;padding:9px;border-radius:11px;font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.06em;background:var(--border);color:var(--text3);border:none;cursor:pointer">
+          Minha Foto
+        </button>
+      </div>
+
+      <!-- ── TAB CARD ── -->
+      <div id="share-content-card">
+        <div class="share-card-wrap">
+          <div class="share-card" id="share-card-el">
+            <div class="sc-bg" id="sc-bg" style="background:linear-gradient(145deg,#0a0010 0%,#1a0020 45%,#ff6a00 100%)"></div>
+            <svg class="sc-deco" width="200" height="100" viewBox="0 0 200 100" fill="none">
+              <rect x="8" y="42" width="184" height="16" rx="8" fill="white"/>
+              <rect x="0" y="26" width="26" height="48" rx="10" fill="white"/>
+              <rect x="174" y="26" width="26" height="48" rx="10" fill="white"/>
+            </svg>
+            <div class="sc-inner">
+              <div><span class="sc-tag">EVVO</span></div>
+              <div class="sc-center">
+                <div class="sc-emoji" id="sc-emoji">🔥</div>
+                <div class="sc-workout" id="sc-workout">Meu treino</div>
+                <div class="sc-sub" id="sc-sub">hoje</div>
+                <div class="sc-stats" id="sc-stats">
+                  <div class="sc-stat"><div class="v">—</div><div class="l">séries</div></div>
+                  <div class="sc-stat"><div class="v">—</div><div class="l">volume</div></div>
+                </div>
+                <div class="sc-divider"></div>
+                <div class="sc-phrase" id="sc-phrase">Cada série é um passo. Cada treino é uma vitória.</div>
               </div>
-              <div class="sc-divider"></div>
-              <div class="sc-phrase" id="sc-phrase">Cada série é um passo. Cada treino é uma vitória.</div>
-            </div>
-            <div class="sc-bottom">
-              <div class="sc-user">
-                <div class="sc-avatar" id="sc-avatar">?</div>
-                <span class="sc-username" id="sc-username">@evvo</span>
+              <div class="sc-bottom">
+                <div class="sc-user">
+                  <div class="sc-avatar" id="sc-avatar">?</div>
+                  <span class="sc-username" id="sc-username">@evvo</span>
+                </div>
+                <div class="sc-apptag">EVVO APP</div>
               </div>
-              <div class="sc-apptag">EVVO APP</div>
             </div>
           </div>
         </div>
-      </div>
 
-      <div class="opts-row2">
-        <div class="opt-grp">
-          <div class="opt-lbl">Fundo</div>
-          <div class="swatches">
-            <div class="sw sel" id="sw0" onclick="setBg(0)" style="background:linear-gradient(135deg,#1a0020,#ff6a00)"></div>
-            <div class="sw" id="sw1" onclick="setBg(1)" style="background:linear-gradient(135deg,#1a1200,#f5a623)"></div>
-            <div class="sw" id="sw2" onclick="setBg(2)" style="background:linear-gradient(135deg,#001a33,#00cfff)"></div>
-            <div class="sw" id="sw3" onclick="setBg(3)" style="background:linear-gradient(135deg,#0f1f0f,#39d353)"></div>
+        <div class="opts-row2">
+          <div class="opt-grp">
+            <div class="opt-lbl">Fundo</div>
+            <div class="swatches">
+              <div class="sw sel" id="sw0" onclick="setBg(0)" style="background:linear-gradient(135deg,#1a0020,#ff6a00)"></div>
+              <div class="sw" id="sw1" onclick="setBg(1)" style="background:linear-gradient(135deg,#1a1200,#f5a623)"></div>
+              <div class="sw" id="sw2" onclick="setBg(2)" style="background:linear-gradient(135deg,#001a33,#00cfff)"></div>
+              <div class="sw" id="sw3" onclick="setBg(3)" style="background:linear-gradient(135deg,#0f1f0f,#39d353)"></div>
+            </div>
+          </div>
+          <div class="opt-grp">
+            <div class="opt-lbl">Ícone</div>
+            <div class="emojis">
+              <div class="ej sel" id="ej0" onclick="setEmoji('🔥','ej0')">🔥</div>
+              <div class="ej" id="ej1" onclick="setEmoji('💪','ej1')">💪</div>
+              <div class="ej" id="ej2" onclick="setEmoji('⚡','ej2')">⚡</div>
+              <div class="ej" id="ej3" onclick="setEmoji('🏆','ej3')">🏆</div>
+            </div>
           </div>
         </div>
-        <div class="opt-grp">
-          <div class="opt-lbl">Ícone</div>
-          <div class="emojis">
-            <div class="ej sel" id="ej0" onclick="setEmoji('🔥','ej0')">🔥</div>
-            <div class="ej" id="ej1" onclick="setEmoji('💪','ej1')">💪</div>
-            <div class="ej" id="ej2" onclick="setEmoji('⚡','ej2')">⚡</div>
-            <div class="ej" id="ej3" onclick="setEmoji('🏆','ej3')">🏆</div>
-          </div>
+
+        <div class="phrase-row2">
+          <div class="phrase-box2"><p id="phrase-box-txt">Cada série é um passo. Cada treino é uma vitória.</p></div>
+          <button class="btn-refresh" onclick="nextPhrase()">
+            <svg viewBox="0 0 24 24"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
+          </button>
+        </div>
+
+        <div class="share-btns">
+          <button class="btn-share" style="background:linear-gradient(135deg,#ff6a00,#ee0979)" onclick="shareCard()">
+            <svg viewBox="0 0 24 24"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
+            Compartilhar
+          </button>
+          <button class="btn-dl" onclick="baixarCard()">
+            <svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+          </button>
         </div>
       </div>
 
-      <div class="phrase-row2">
-        <div class="phrase-box2"><p id="phrase-box-txt">Cada série é um passo. Cada treino é uma vitória.</p></div>
-        <button class="btn-refresh" onclick="nextPhrase()">
-          <svg viewBox="0 0 24 24"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
-        </button>
+      <!-- ── TAB FOTO ── -->
+      <div id="share-content-foto" style="display:none">
+
+        <!-- Preview canvas -->
+        <div style="padding:0 16px 12px">
+          <div style="position:relative;border-radius:18px;overflow:hidden;background:var(--bg2);border:1px solid var(--border);aspect-ratio:4/5">
+            <canvas id="foto-canvas" style="width:100%;height:100%;display:block;object-fit:cover"></canvas>
+            <!-- Placeholder quando sem foto -->
+            <div id="foto-placeholder" style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;cursor:pointer" onclick="escolherFotoShare()">
+              <div style="width:60px;height:60px;border-radius:50%;background:var(--border);display:flex;align-items:center;justify-content:center">
+                <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="var(--text3)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
+              </div>
+              <div style="font-size:13px;font-weight:700;color:var(--text3)">Toque para escolher uma foto</div>
+              <div style="font-size:11px;color:var(--text4)">As informações do treino serão sobrepostas</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Opções da marca d'água -->
+        <div style="padding:0 16px 12px;display:flex;flex-direction:column;gap:10px">
+          <div style="background:var(--bg2);border-radius:14px;border:1px solid var(--border);padding:14px">
+            <div style="font-size:10px;color:var(--text3);font-weight:700;text-transform:uppercase;letter-spacing:.1em;margin-bottom:12px">Posição das informações</div>
+            <div style="display:flex;gap:8px">
+              <button id="pos-top" onclick="setPosicao('top')" style="flex:1;padding:8px;border-radius:10px;font-size:11px;font-weight:700;background:var(--grad);color:#fff;border:none;cursor:pointer">Topo</button>
+              <button id="pos-bottom" onclick="setPosicao('bottom')" style="flex:1;padding:8px;border-radius:10px;font-size:11px;font-weight:700;background:var(--border);color:var(--text3);border:none;cursor:pointer">Base</button>
+            </div>
+          </div>
+
+          <div style="background:var(--bg2);border-radius:14px;border:1px solid var(--border);padding:14px">
+            <div style="font-size:10px;color:var(--text3);font-weight:700;text-transform:uppercase;letter-spacing:.1em;margin-bottom:12px">Opacidade do overlay</div>
+            <input type="range" id="overlay-opacity" min="0.3" max="0.9" step="0.05" value="0.6"
+              oninput="renderFotoCanvas()" style="width:100%;accent-color:var(--accent)">
+          </div>
+        </div>
+
+        <input type="file" id="foto-share-input" accept="image/*" style="display:none" onchange="carregarFotoShare(event)">
+
+        <div style="padding:0 16px;display:flex;gap:8px">
+          <button onclick="escolherFotoShare()" style="flex:1;background:var(--bg2);border:1px solid var(--border2);border-radius:14px;padding:14px;display:flex;align-items:center;justify-content:center;gap:7px;font-size:12px;font-weight:800;color:var(--text2)">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
+            Escolher foto
+          </button>
+          <button onclick="compartilharFoto()" style="flex:2;background:var(--grad);border-radius:14px;padding:14px;display:flex;align-items:center;justify-content:center;gap:7px;font-size:12px;font-weight:800;color:#fff;text-transform:uppercase;letter-spacing:.08em;border:none;cursor:pointer">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
+            Compartilhar
+          </button>
+          <button onclick="baixarFoto()" style="width:50px;height:50px;background:var(--bg2);border:1px solid var(--border2);border-radius:14px;display:flex;align-items:center;justify-content:center;flex-shrink:0;cursor:pointer">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--text3)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+          </button>
+        </div>
       </div>
 
-      <div class="share-btns">
-        <button class="btn-share" id="btn-share-main" style="background:linear-gradient(135deg,#ff6a00,#ee0979)" onclick="shareCard()">
-          <svg viewBox="0 0 24 24"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
-          Compartilhar
-        </button>
-        <button class="btn-dl">
-          <svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-        </button>
-      </div>
       <div style="height:20px"></div>
     </div>
   </div>
@@ -2989,11 +3057,24 @@ const BGs = [
   'linear-gradient(145deg,#000d1a 0%,#001a33 45%,#00cfff 100%)',
   'linear-gradient(145deg,#050f05 0%,#0f1f0f 45%,#39d353 100%)',
 ];
-const ACCS = ['linear-gradient(135deg,#ff6a00,#ee0979)','linear-gradient(135deg,#f5a623,#ee8c00)','linear-gradient(135deg,#00cfff,#0070cc)','linear-gradient(135deg,#39d353,#1a7a2e)'];
+
+let shareTab = 'card';
+let fotoShareBase64 = null;
+let posicaoOverlay  = 'bottom';
+
+function switchShareTab(tab) {
+  shareTab = tab;
+  const isCard = tab === 'card';
+  document.getElementById('share-content-card').style.display = isCard ? 'block' : 'none';
+  document.getElementById('share-content-foto').style.display = isCard ? 'none' : 'block';
+  document.getElementById('share-tab-card').style.background = isCard ? 'var(--grad)' : 'var(--border)';
+  document.getElementById('share-tab-card').style.color = isCard ? '#fff' : 'var(--text3)';
+  document.getElementById('share-tab-foto').style.background = !isCard ? 'var(--grad)' : 'var(--border)';
+  document.getElementById('share-tab-foto').style.color = !isCard ? '#fff' : 'var(--text3)';
+}
 
 function setBg(i) {
   document.getElementById('sc-bg').style.background = BGs[i];
-  document.getElementById('btn-share-main').style.background = ACCS[i];
   for(let j=0;j<4;j++) document.getElementById('sw'+j).classList.remove('sel');
   document.getElementById('sw'+i).classList.add('sel');
 }
@@ -3028,6 +3109,188 @@ async function shareCard() {
   } else {
     showToast('Compartilhamento não disponível neste browser');
   }
+}
+
+async function baixarCard() {
+  showToast('Em breve: download do card!');
+}
+
+// ── MODO FOTO ──
+function setPosicao(pos) {
+  posicaoOverlay = pos;
+  document.getElementById('pos-top').style.background    = pos === 'top' ? 'var(--grad)' : 'var(--border)';
+  document.getElementById('pos-top').style.color         = pos === 'top' ? '#fff' : 'var(--text3)';
+  document.getElementById('pos-bottom').style.background = pos === 'bottom' ? 'var(--grad)' : 'var(--border)';
+  document.getElementById('pos-bottom').style.color      = pos === 'bottom' ? '#fff' : 'var(--text3)';
+  renderFotoCanvas();
+}
+
+function escolherFotoShare() {
+  document.getElementById('foto-share-input').click();
+}
+
+function carregarFotoShare(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = (e) => {
+    fotoShareBase64 = e.target.result;
+    document.getElementById('foto-placeholder').style.display = 'none';
+    renderFotoCanvas();
+  };
+  reader.readAsDataURL(file);
+  event.target.value = '';
+}
+
+function renderFotoCanvas() {
+  if (!fotoShareBase64) return;
+
+  const canvas  = document.getElementById('foto-canvas');
+  const opacity = parseFloat(document.getElementById('overlay-opacity').value);
+  const dpr     = window.devicePixelRatio || 1;
+
+  const img = new Image();
+  img.onload = () => {
+    // Dimensões — 4:5 (formato Instagram)
+    const W = 1080;
+    const H = 1350;
+    canvas.width  = W;
+    canvas.height = H;
+    canvas.style.width  = '100%';
+    canvas.style.height = '100%';
+
+    const ctx = canvas.getContext('2d');
+
+    // 1. Desenha foto cobrindo tudo (object-cover)
+    const imgRatio = img.width / img.height;
+    const canRatio = W / H;
+    let sw, sh, sx, sy;
+    if (imgRatio > canRatio) {
+      sh = img.height; sw = sh * canRatio;
+      sx = (img.width - sw) / 2; sy = 0;
+    } else {
+      sw = img.width; sh = sw / canRatio;
+      sx = 0; sy = (img.height - sh) / 2;
+    }
+    ctx.drawImage(img, sx, sy, sw, sh, 0, 0, W, H);
+
+    // 2. Overlay escuro na posição escolhida
+    const overlayH = 420;
+    const overlayY = posicaoOverlay === 'top' ? 0 : H - overlayH;
+    const grad = ctx.createLinearGradient(0, overlayY, 0, overlayY + overlayH);
+    if (posicaoOverlay === 'top') {
+      grad.addColorStop(0, `rgba(0,0,0,${opacity})`);
+      grad.addColorStop(1, 'rgba(0,0,0,0)');
+    } else {
+      grad.addColorStop(0, 'rgba(0,0,0,0)');
+      grad.addColorStop(1, `rgba(0,0,0,${opacity})`);
+    }
+    ctx.fillStyle = grad;
+    ctx.fillRect(0, overlayY, W, overlayH);
+
+    // 3. Marca d'água EVVO
+    const textY = posicaoOverlay === 'top' ? 80 : H - overlayH + 60;
+    const padding = 60;
+
+    // Logo EVVO
+    ctx.fillStyle = '#ff6a00';
+    ctx.font = 'bold 36px -apple-system, sans-serif';
+    ctx.textAlign = 'left';
+    ctx.fillText('EVVO', padding, textY);
+
+    // Linha separadora laranja
+    ctx.strokeStyle = '#ff6a00';
+    ctx.lineWidth = 3;
+    ctx.beginPath();
+    ctx.moveTo(padding, textY + 16);
+    ctx.lineTo(W - padding, textY + 16);
+    ctx.stroke();
+
+    // Nome do treino
+    const nomeTreino = document.getElementById('sc-workout').textContent || 'Meu Treino';
+    ctx.fillStyle = '#ffffff';
+    ctx.font = 'bold 72px -apple-system, sans-serif';
+    ctx.textAlign = 'left';
+    // Quebra linha se necessário
+    const palavras = nomeTreino.split(' ');
+    let linha1 = '', linha2 = '';
+    palavras.forEach(p => {
+      if (ctx.measureText(linha1 + p).width < W - padding*2 - 20) linha1 += p + ' ';
+      else linha2 += p + ' ';
+    });
+    ctx.fillText(linha1.trim(), padding, textY + 80);
+    if (linha2.trim()) ctx.fillText(linha2.trim(), padding, textY + 160);
+
+    // Stats: volume + séries
+    const statsY = linha2.trim() ? textY + 220 : textY + 160;
+    const scStats = document.getElementById('sc-stats');
+    const statsItems = scStats ? scStats.querySelectorAll('.sc-stat') : [];
+
+    ctx.font = 'bold 52px -apple-system, sans-serif';
+    let xStat = padding;
+    statsItems.forEach((el, i) => {
+      const v = el.querySelector('.v')?.textContent || '—';
+      const l = el.querySelector('.l')?.textContent || '';
+      ctx.fillStyle = i === 0 ? '#ff6a00' : '#ffffff';
+      ctx.textAlign = 'left';
+      ctx.fillText(v, xStat, statsY);
+      ctx.font = '28px -apple-system, sans-serif';
+      ctx.fillStyle = 'rgba(255,255,255,0.6)';
+      ctx.fillText(l.toUpperCase(), xStat, statsY + 36);
+      ctx.font = 'bold 52px -apple-system, sans-serif';
+      xStat += 200;
+    });
+
+    // Data
+    const dataStr = new Date().toLocaleDateString('pt-BR', { day:'2-digit', month:'long', year:'numeric' });
+    ctx.font = '28px -apple-system, sans-serif';
+    ctx.fillStyle = 'rgba(255,255,255,0.5)';
+    ctx.textAlign = 'left';
+    ctx.fillText(dataStr, padding, statsY + 80);
+
+    // @usuario no canto
+    const username = state.perfil?.nome?.toLowerCase().replace(/\s+/g,'') || 'usuario';
+    ctx.font = 'bold 30px -apple-system, sans-serif';
+    ctx.fillStyle = 'rgba(255,255,255,0.7)';
+    ctx.textAlign = 'right';
+    ctx.fillText('@' + username + ' • EVVO', W - padding, H - 50);
+
+    // Badge recorde se tiver
+    if (document.getElementById('sc-emoji')?.textContent === '🏆') {
+      ctx.font = 'bold 28px -apple-system, sans-serif';
+      ctx.fillStyle = '#f5a623';
+      ctx.textAlign = 'left';
+      ctx.fillText('🏆 Novo Recorde!', padding, statsY + 120);
+    }
+  };
+  img.src = fotoShareBase64;
+}
+
+async function compartilharFoto() {
+  if (!fotoShareBase64) { showToast('Escolha uma foto primeiro'); return; }
+  const canvas = document.getElementById('foto-canvas');
+  canvas.toBlob(async (blob) => {
+    if (navigator.share && navigator.canShare?.({ files: [new File([blob], 'evvo.jpg', { type: 'image/jpeg' })] })) {
+      try {
+        await navigator.share({
+          files: [new File([blob], 'evvo-treino.jpg', { type: 'image/jpeg' })],
+          title: 'Meu treino — EVVO',
+        });
+      } catch(e) { baixarFoto(); }
+    } else {
+      baixarFoto();
+    }
+  }, 'image/jpeg', 0.92);
+}
+
+async function baixarFoto() {
+  const canvas = document.getElementById('foto-canvas');
+  if (!canvas.width) { showToast('Escolha uma foto primeiro'); return; }
+  const link = document.createElement('a');
+  link.download = 'evvo-treino.jpg';
+  link.href = canvas.toDataURL('image/jpeg', 0.92);
+  link.click();
+  showToast('Foto salva!');
 }
 
 // ═══════════════════════════════════════════
@@ -5433,11 +5696,24 @@ const BGs = [
   'linear-gradient(145deg,#000d1a 0%,#001a33 45%,#00cfff 100%)',
   'linear-gradient(145deg,#050f05 0%,#0f1f0f 45%,#39d353 100%)',
 ];
-const ACCS = ['linear-gradient(135deg,#ff6a00,#ee0979)','linear-gradient(135deg,#f5a623,#ee8c00)','linear-gradient(135deg,#00cfff,#0070cc)','linear-gradient(135deg,#39d353,#1a7a2e)'];
+
+let shareTab = 'card';
+let fotoShareBase64 = null;
+let posicaoOverlay  = 'bottom';
+
+function switchShareTab(tab) {
+  shareTab = tab;
+  const isCard = tab === 'card';
+  document.getElementById('share-content-card').style.display = isCard ? 'block' : 'none';
+  document.getElementById('share-content-foto').style.display = isCard ? 'none' : 'block';
+  document.getElementById('share-tab-card').style.background = isCard ? 'var(--grad)' : 'var(--border)';
+  document.getElementById('share-tab-card').style.color = isCard ? '#fff' : 'var(--text3)';
+  document.getElementById('share-tab-foto').style.background = !isCard ? 'var(--grad)' : 'var(--border)';
+  document.getElementById('share-tab-foto').style.color = !isCard ? '#fff' : 'var(--text3)';
+}
 
 function setBg(i) {
   document.getElementById('sc-bg').style.background = BGs[i];
-  document.getElementById('btn-share-main').style.background = ACCS[i];
   for(let j=0;j<4;j++) document.getElementById('sw'+j).classList.remove('sel');
   document.getElementById('sw'+i).classList.add('sel');
 }
@@ -5472,6 +5748,188 @@ async function shareCard() {
   } else {
     showToast('Compartilhamento não disponível neste browser');
   }
+}
+
+async function baixarCard() {
+  showToast('Em breve: download do card!');
+}
+
+// ── MODO FOTO ──
+function setPosicao(pos) {
+  posicaoOverlay = pos;
+  document.getElementById('pos-top').style.background    = pos === 'top' ? 'var(--grad)' : 'var(--border)';
+  document.getElementById('pos-top').style.color         = pos === 'top' ? '#fff' : 'var(--text3)';
+  document.getElementById('pos-bottom').style.background = pos === 'bottom' ? 'var(--grad)' : 'var(--border)';
+  document.getElementById('pos-bottom').style.color      = pos === 'bottom' ? '#fff' : 'var(--text3)';
+  renderFotoCanvas();
+}
+
+function escolherFotoShare() {
+  document.getElementById('foto-share-input').click();
+}
+
+function carregarFotoShare(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = (e) => {
+    fotoShareBase64 = e.target.result;
+    document.getElementById('foto-placeholder').style.display = 'none';
+    renderFotoCanvas();
+  };
+  reader.readAsDataURL(file);
+  event.target.value = '';
+}
+
+function renderFotoCanvas() {
+  if (!fotoShareBase64) return;
+
+  const canvas  = document.getElementById('foto-canvas');
+  const opacity = parseFloat(document.getElementById('overlay-opacity').value);
+  const dpr     = window.devicePixelRatio || 1;
+
+  const img = new Image();
+  img.onload = () => {
+    // Dimensões — 4:5 (formato Instagram)
+    const W = 1080;
+    const H = 1350;
+    canvas.width  = W;
+    canvas.height = H;
+    canvas.style.width  = '100%';
+    canvas.style.height = '100%';
+
+    const ctx = canvas.getContext('2d');
+
+    // 1. Desenha foto cobrindo tudo (object-cover)
+    const imgRatio = img.width / img.height;
+    const canRatio = W / H;
+    let sw, sh, sx, sy;
+    if (imgRatio > canRatio) {
+      sh = img.height; sw = sh * canRatio;
+      sx = (img.width - sw) / 2; sy = 0;
+    } else {
+      sw = img.width; sh = sw / canRatio;
+      sx = 0; sy = (img.height - sh) / 2;
+    }
+    ctx.drawImage(img, sx, sy, sw, sh, 0, 0, W, H);
+
+    // 2. Overlay escuro na posição escolhida
+    const overlayH = 420;
+    const overlayY = posicaoOverlay === 'top' ? 0 : H - overlayH;
+    const grad = ctx.createLinearGradient(0, overlayY, 0, overlayY + overlayH);
+    if (posicaoOverlay === 'top') {
+      grad.addColorStop(0, `rgba(0,0,0,${opacity})`);
+      grad.addColorStop(1, 'rgba(0,0,0,0)');
+    } else {
+      grad.addColorStop(0, 'rgba(0,0,0,0)');
+      grad.addColorStop(1, `rgba(0,0,0,${opacity})`);
+    }
+    ctx.fillStyle = grad;
+    ctx.fillRect(0, overlayY, W, overlayH);
+
+    // 3. Marca d'água EVVO
+    const textY = posicaoOverlay === 'top' ? 80 : H - overlayH + 60;
+    const padding = 60;
+
+    // Logo EVVO
+    ctx.fillStyle = '#ff6a00';
+    ctx.font = 'bold 36px -apple-system, sans-serif';
+    ctx.textAlign = 'left';
+    ctx.fillText('EVVO', padding, textY);
+
+    // Linha separadora laranja
+    ctx.strokeStyle = '#ff6a00';
+    ctx.lineWidth = 3;
+    ctx.beginPath();
+    ctx.moveTo(padding, textY + 16);
+    ctx.lineTo(W - padding, textY + 16);
+    ctx.stroke();
+
+    // Nome do treino
+    const nomeTreino = document.getElementById('sc-workout').textContent || 'Meu Treino';
+    ctx.fillStyle = '#ffffff';
+    ctx.font = 'bold 72px -apple-system, sans-serif';
+    ctx.textAlign = 'left';
+    // Quebra linha se necessário
+    const palavras = nomeTreino.split(' ');
+    let linha1 = '', linha2 = '';
+    palavras.forEach(p => {
+      if (ctx.measureText(linha1 + p).width < W - padding*2 - 20) linha1 += p + ' ';
+      else linha2 += p + ' ';
+    });
+    ctx.fillText(linha1.trim(), padding, textY + 80);
+    if (linha2.trim()) ctx.fillText(linha2.trim(), padding, textY + 160);
+
+    // Stats: volume + séries
+    const statsY = linha2.trim() ? textY + 220 : textY + 160;
+    const scStats = document.getElementById('sc-stats');
+    const statsItems = scStats ? scStats.querySelectorAll('.sc-stat') : [];
+
+    ctx.font = 'bold 52px -apple-system, sans-serif';
+    let xStat = padding;
+    statsItems.forEach((el, i) => {
+      const v = el.querySelector('.v')?.textContent || '—';
+      const l = el.querySelector('.l')?.textContent || '';
+      ctx.fillStyle = i === 0 ? '#ff6a00' : '#ffffff';
+      ctx.textAlign = 'left';
+      ctx.fillText(v, xStat, statsY);
+      ctx.font = '28px -apple-system, sans-serif';
+      ctx.fillStyle = 'rgba(255,255,255,0.6)';
+      ctx.fillText(l.toUpperCase(), xStat, statsY + 36);
+      ctx.font = 'bold 52px -apple-system, sans-serif';
+      xStat += 200;
+    });
+
+    // Data
+    const dataStr = new Date().toLocaleDateString('pt-BR', { day:'2-digit', month:'long', year:'numeric' });
+    ctx.font = '28px -apple-system, sans-serif';
+    ctx.fillStyle = 'rgba(255,255,255,0.5)';
+    ctx.textAlign = 'left';
+    ctx.fillText(dataStr, padding, statsY + 80);
+
+    // @usuario no canto
+    const username = state.perfil?.nome?.toLowerCase().replace(/\s+/g,'') || 'usuario';
+    ctx.font = 'bold 30px -apple-system, sans-serif';
+    ctx.fillStyle = 'rgba(255,255,255,0.7)';
+    ctx.textAlign = 'right';
+    ctx.fillText('@' + username + ' • EVVO', W - padding, H - 50);
+
+    // Badge recorde se tiver
+    if (document.getElementById('sc-emoji')?.textContent === '🏆') {
+      ctx.font = 'bold 28px -apple-system, sans-serif';
+      ctx.fillStyle = '#f5a623';
+      ctx.textAlign = 'left';
+      ctx.fillText('🏆 Novo Recorde!', padding, statsY + 120);
+    }
+  };
+  img.src = fotoShareBase64;
+}
+
+async function compartilharFoto() {
+  if (!fotoShareBase64) { showToast('Escolha uma foto primeiro'); return; }
+  const canvas = document.getElementById('foto-canvas');
+  canvas.toBlob(async (blob) => {
+    if (navigator.share && navigator.canShare?.({ files: [new File([blob], 'evvo.jpg', { type: 'image/jpeg' })] })) {
+      try {
+        await navigator.share({
+          files: [new File([blob], 'evvo-treino.jpg', { type: 'image/jpeg' })],
+          title: 'Meu treino — EVVO',
+        });
+      } catch(e) { baixarFoto(); }
+    } else {
+      baixarFoto();
+    }
+  }, 'image/jpeg', 0.92);
+}
+
+async function baixarFoto() {
+  const canvas = document.getElementById('foto-canvas');
+  if (!canvas.width) { showToast('Escolha uma foto primeiro'); return; }
+  const link = document.createElement('a');
+  link.download = 'evvo-treino.jpg';
+  link.href = canvas.toDataURL('image/jpeg', 0.92);
+  link.click();
+  showToast('Foto salva!');
 }
 
 // ═══════════════════════════════════════════

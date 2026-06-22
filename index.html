@@ -1580,6 +1580,7 @@ select.form-input option{background:#0e0e1a;color:#fff}
               <div class="ej" id="ej1" onclick="setEmoji('💪','ej1')">💪</div>
               <div class="ej" id="ej2" onclick="setEmoji('⚡','ej2')">⚡</div>
               <div class="ej" id="ej3" onclick="setEmoji('🏆','ej3')">🏆</div>
+              <div class="ej" id="ej4" onclick="setEmoji('','ej4')" style="font-size:16px;color:var(--text4)">✕</div>
             </div>
           </div>
         </div>
@@ -3369,7 +3370,14 @@ function setCardFormato(fmt) {
 }
 
 function setEmoji(e, id) {
-  document.getElementById('sc-emoji').textContent = e;
+  const el = document.getElementById('sc-emoji');
+  if (e === '') {
+    // Esconde o emoji
+    el.style.display = 'none';
+  } else {
+    el.style.display = '';
+    el.textContent = e;
+  }
   document.querySelectorAll('.ej').forEach(el => el.classList.remove('sel'));
   document.getElementById(id).classList.add('sel');
 }
@@ -6248,7 +6256,14 @@ function setCardFormato(fmt) {
 }
 
 function setEmoji(e, id) {
-  document.getElementById('sc-emoji').textContent = e;
+  const el = document.getElementById('sc-emoji');
+  if (e === '') {
+    // Esconde o emoji
+    el.style.display = 'none';
+  } else {
+    el.style.display = '';
+    el.textContent = e;
+  }
   document.querySelectorAll('.ej').forEach(el => el.classList.remove('sel'));
   document.getElementById(id).classList.add('sel');
 }

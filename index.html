@@ -3357,7 +3357,7 @@ async function loadFichas() {
       ? (f.volumeMedio/1000).toFixed(1) + 't'
       : f.volumeMedio > 0 ? f.volumeMedio + 'kg' : '—';
     return `
-    <div class="ficha-card ${f.status==='ativa'?'ativa':''}" onclick="abrirDetalhesFicha(\`${f.id}\`)" style="cursor:pointer">
+    <div class="ficha-card ${f.status==='ativa'?'ativa':''}" onclick="abrirDetalhesFicha('${f.id}')" style="cursor:pointer">
       <div class="ficha-top">
         <div class="ficha-ico ${f.status==='ativa'?'fire':'arch'}">
           <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">

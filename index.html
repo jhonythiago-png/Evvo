@@ -3372,7 +3372,7 @@ async function loadFichas() {
         </div>
         <div style="display:flex;gap:6px;align-items:center;flex-shrink:0">
           <span class="card-badge ${f.status==='ativa'?'badge-accent':'badge-muted'}">${f.status==='ativa'?'Ativa':'Arq.'}</span>
-          <button class="btn-sm" style="background:var(--border)" onclick="editarNomeFicha('${f.id}','${nomeEscapado}')" title="Renomear">
+          <button class="btn-sm" style="background:var(--border)" onclick="event.stopPropagation();editarNomeFicha('${f.id}','${nomeEscapado}')" title="Renomear">
             <svg viewBox="0 0 24 24" fill="none" stroke="var(--text3)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"/></svg>
           </button>
         </div>

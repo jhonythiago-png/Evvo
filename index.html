@@ -1210,10 +1210,7 @@ select.form-input option{background:#0e0e1a;color:#fff}
         <div style="padding:20px;text-align:center;color:var(--text3);font-size:13px">Nenhum treino cadastrado ainda</div>
       </div>
 
-      <button class="btn-add" style="margin-bottom:20px" onclick="openNovoDia()">
-        <svg viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-        novo treino
-      </button>
+<div style="height:20px"></div>
     </div>
   </div>
 
@@ -2782,28 +2779,15 @@ function renderDayList() {
   }
   list.innerHTML = state.diasTreino.map(dia => {
     const diasNomes = ['Domingo','Segunda-feira','Terca-feira','Quarta-feira','Quinta-feira','Sexta-feira','Sabado'];
-    return `<div class="day-card" style="flex-direction:column;align-items:stretch;gap:0;padding:0;overflow:hidden">
-      <div style="display:flex;align-items:center;gap:12px;padding:13px 14px">
-        <div class="card-icon fire">
-          <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 4v16M18 4v16M3 8h3M18 8h3M3 16h3M18 16h3M6 12h12"/></svg>
-        </div>
-        <div class="card-info">
-          <div class="card-name">${dia.nome}</div>
-          <div class="card-meta">${diasNomes[dia.dia_semana]}</div>
-        </div>
+    return `<div class="day-card" onclick="openDia('${dia.id}')" style="cursor:pointer;display:flex;align-items:center;gap:12px;padding:13px 14px">
+      <div class="card-icon fire">
+        <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 4v16M18 4v16M3 8h3M18 8h3M3 16h3M18 16h3M6 12h12"/></svg>
       </div>
-      <div style="display:flex;border-top:1px solid var(--border)">
-        <button style="flex:1;padding:10px;display:flex;align-items:center;justify-content:center;gap:6px;font-size:11px;font-weight:800;color:var(--text3);text-transform:uppercase;letter-spacing:.08em;background:none;border:none;border-right:1px solid var(--border);cursor:pointer"
-          onclick="abrirEditarDia('${dia.id}')">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
-          Montar
-        </button>
-        <button style="flex:1;padding:10px;display:flex;align-items:center;justify-content:center;gap:6px;font-size:11px;font-weight:800;color:var(--accent);text-transform:uppercase;letter-spacing:.08em;background:none;border:none;cursor:pointer"
-          onclick="openDia('${dia.id}')">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="5 3 19 12 5 21 5 3"/></svg>
-          Treinar
-        </button>
+      <div class="card-info" style="flex:1">
+        <div class="card-name">${dia.nome}</div>
+        <div class="card-meta">${diasNomes[dia.dia_semana]}</div>
       </div>
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#ff6a00" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polygon points="5 3 19 12 5 21 5 3"/></svg>
     </div>`;
   }).join('');
 }
@@ -5095,19 +5079,35 @@ async function abrirDetalhesFicha(fichaId) {
   const diasEl = document.getElementById('detalhe-ficha-dias');
   const diasNomes = ['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'];
   if (!dias || !dias.length) {
-    diasEl.innerHTML = '<div style="padding:16px;text-align:center;color:var(--text3);font-size:13px">Nenhum dia cadastrado</div>';
+    diasEl.innerHTML = `<div style="padding:16px;text-align:center;color:var(--text3);font-size:13px">Nenhum dia cadastrado</div>
+      <button onclick="adicionarDiaFicha('${fichaId}')" style="width:100%;margin-top:8px;background:var(--border);border:none;border-radius:12px;padding:12px;font-size:12px;font-weight:700;color:var(--text3);cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+        Adicionar dia de treino
+      </button>`;
   } else {
     diasEl.innerHTML = dias.map(d => {
       const numEx = d.exercicios?.length || 0;
-      return `<div style="background:var(--bg2);border-radius:14px;border:1px solid var(--border);padding:13px 14px;display:flex;align-items:center;gap:12px">
-        <div class="card-icon fire" style="width:36px;height:36px;border-radius:10px;flex-shrink:0">
-          <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M6 4v16M18 4v16M3 8h3M18 8h3M3 16h3M18 16h3M6 12h12"/>
-          </svg>
+      return `<div style="background:var(--bg2);border-radius:14px;border:1px solid var(--border);overflow:hidden">
+        <div style="display:flex;align-items:center;gap:12px;padding:13px 14px">
+          <div class="card-icon fire" style="width:36px;height:36px;border-radius:10px;flex-shrink:0">
+            <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M6 4v16M18 4v16M3 8h3M18 8h3M3 16h3M18 16h3M6 12h12"/>
+            </svg>
+          </div>
+          <div style="flex:1;min-width:0">
+            <div style="font-size:13px;font-weight:800;color:var(--text)">${d.nome}</div>
+            <div style="font-size:11px;color:var(--text3);margin-top:2px">${diasNomes[d.dia_semana]} · ${numEx} exercício${numEx !== 1 ? 's' : ''}</div>
+          </div>
         </div>
-        <div style="flex:1;min-width:0">
-          <div style="font-size:13px;font-weight:800;color:var(--text)">${d.nome}</div>
-          <div style="font-size:11px;color:var(--text3);margin-top:2px">${diasNomes[d.dia_semana]} · ${numEx} exercício${numEx !== 1 ? 's' : ''}</div>
+        <div style="border-top:1px solid var(--border);display:flex">
+          <button onclick="abrirEditarDia('${d.id}')" style="flex:1;padding:10px;background:none;border:none;border-right:1px solid var(--border);display:flex;align-items:center;justify-content:center;gap:6px;font-size:11px;font-weight:800;color:var(--text3);text-transform:uppercase;letter-spacing:.08em;cursor:pointer">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+            Montar
+          </button>
+          <button onclick="adicionarDiaFicha('${fichaDetalhando?.id}')" style="flex:1;padding:10px;background:none;border:none;display:flex;align-items:center;justify-content:center;gap:6px;font-size:11px;font-weight:800;color:var(--text3);text-transform:uppercase;letter-spacing:.08em;cursor:pointer">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+            Novo dia
+          </button>
         </div>
       </div>`;
     }).join('');
@@ -5118,6 +5118,14 @@ async function abrirDetalhesFicha(fichaId) {
   btnAtivar.style.display = ficha.status === 'arquivada' ? 'flex' : 'none';
 
   goTo('screen-detalhe-ficha');
+}
+
+async function adicionarDiaFicha(fichaId) {
+  if (!fichaId) return;
+  // Seleciona essa ficha e abre modal de novo dia
+  const ficha = (state.todasFichas || []).find(f => f.id === fichaId);
+  if (ficha) state.fichaAtiva = ficha;
+  openNovoDia();
 }
 
 async function ativarFicha() {

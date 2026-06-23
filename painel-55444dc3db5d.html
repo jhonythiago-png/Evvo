@@ -172,7 +172,7 @@ button{cursor:pointer}
         <option value="ativo">Ativos</option>
         <option value="bloqueado">Bloqueados</option>
       </select>
-
+      <button class="btn-novo" onclick="abrirNovo()">+ Novo usuário</button>
     </div>
     <div class="tbl">
       <div class="thead">
@@ -380,26 +380,38 @@ async function criarUser(){
   e.style.display='none';
   if(!n||!u||!p){e.textContent='Preencha todos os campos.';e.style.display='block';return;}
   if(p.length<6){e.textContent='Senha mínimo 6 caracteres.';e.style.display='block';return;}
+  if(u.length<3){e.textContent='Usuário deve ter ao menos 3 caracteres.';e.style.display='block';return;}
 
-  const {data:authData, error}=await sb.auth.signUp({
-    email:u+'@evvo.app',
-    password:p,
-    options:{data:{nome:n,username:u}}
-  });
-  if(error){
-    e.textContent=error.message.includes('already')?'Usuário já existe.':error.message;
-    e.style.display='block';
-    return;
-  }
+  // Botão de criar vira loading
+  const btnCriar = document.querySelector('#m1 .bconf');
+  if(btnCriar){ btnCriar.textContent='Criando...'; btnCriar.disabled=true; }
 
-  // Aguarda o trigger criar o perfil e garante que existe
-  setTimeout(async()=>{
+  try {
+    const {data:authData, error}=await sb.auth.signUp({
+      email:u+'@evvo.app',
+      password:p,
+      options:{data:{nome:n,username:u}}
+    });
+
+    if(error){
+      const msg = error.message.includes('already') ? 'Usuário já existe.'
+        : error.message.includes('fetch') ? 'Erro de conexão. Tente novamente.'
+        : error.message;
+      e.textContent=msg;
+      e.style.display='block';
+      if(btnCriar){ btnCriar.textContent='Criar'; btnCriar.disabled=false; }
+      return;
+    }
+
     const userId = authData?.user?.id;
+
+    // Aguarda trigger e garante perfil criado
+    await new Promise(r => setTimeout(r, 2000));
+
     if(userId){
-      // Verifica se perfil foi criado pelo trigger
-      const {data:pf}=await sb.from('perfis').select('id').eq('id',userId).single();
+      const {data:pf}=await sb.from('perfis').select('id,plano').eq('id',userId).single();
       if(!pf){
-        // Trigger não rodou — cria perfil manualmente
+        // Trigger não rodou — insere manualmente
         await sb.from('perfis').insert({
           id: userId,
           nome: n,
@@ -407,16 +419,21 @@ async function criarUser(){
           plano: pl,
           status: 'ativo',
         });
-      } else if(pl==='pro'){
-        // Atualiza plano se pro
+      } else if(pl==='pro' && pf.plano !== 'pro'){
         await sb.from('perfis').update({plano:'pro'}).eq('id',userId);
       }
     }
-    load();
-  }, 2000);
 
-  fechar('m1');
-  toast('Usuário criado! Aguarde...');
+    fechar('m1');
+    toast('✅ Usuário criado com sucesso!');
+    load();
+
+  } catch(err) {
+    e.textContent = 'Erro inesperado: ' + (err.message || 'tente novamente');
+    e.style.display='block';
+  } finally {
+    if(btnCriar){ btnCriar.textContent='Criar'; btnCriar.disabled=false; }
+  }
 }
 
 // Editar

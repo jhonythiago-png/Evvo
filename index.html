@@ -5344,10 +5344,8 @@ async function renderHistoricoMedidas() {
       </div>`;
     }).join('');
 
-    // Badge de comparativo — só aparece se tem avaliação anterior
-    const temDelta = prev && metricas.length > 0;
     const pesoDeltaStr = pesoDelta
-      ? `<span style="font-size:10px;font-weight:800;color:${parseFloat(pesoDelta)<0?'#39d353':'#ff6a00'};margin-left:6px">${parseFloat(pesoDelta)>0?'↑':'↓'}${Math.abs(pesoDelta)}kg</span>`
+      ? `<span style="font-size:10px;font-weight:800;color:${parseFloat(pesoDelta)<0?'#39d353':'#ff6a00'};margin-left:5px">${parseFloat(pesoDelta)>0?'↑':'↓'}${Math.abs(pesoDelta)}kg</span>`
       : '';
 
     return `<div onclick="editarMedida('${m.id}')"
@@ -5360,17 +5358,13 @@ async function renderHistoricoMedidas() {
         </div>
         <div style="flex:1">
           <div style="font-size:13px;font-weight:800;color:var(--text)">${dateFmt}</div>
-          <div style="font-size:10px;color:var(--text3);margin-top:3px;display:flex;align-items:center;flex-wrap:wrap;gap:4px">
+          <div style="font-size:10px;color:var(--text3);margin-top:3px;display:flex;align-items:center;gap:4px">
             <span>${i===0?'✦ Mais recente':'Avaliação passada'}</span>
             ${m.peso_kg ? `<span>· ${m.peso_kg}kg${pesoDeltaStr}</span>` : ''}
           </div>
         </div>
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--text4)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
       </div>
-      ${temDelta ? `
-      <div style="padding:0 12px 12px;display:flex;flex-wrap:wrap;gap:5px">
-        ${metricas}
-      </div>` : ''}
     </div>`;
   }).join('');
 }
@@ -5383,11 +5377,18 @@ let medicaoEditandoId = null;
 let medicaoDetalhando = null;
 
 async function editarMedida(id) {
-  // Carrega o registro e abre tela de DETALHE (não o formulário direto)
   const { data, error } = await sb.from('medidas').select('*').eq('id', id).single();
   if (error || !data) { showToast('Erro ao carregar avaliação'); return; }
-
   medicaoDetalhando = data;
+
+  // Busca avaliação anterior para comparativo
+  const { data: anterior } = await sb.from('medidas')
+    .select('*')
+    .eq('user_id', state.user.id)
+    .lt('data_registro', data.data_registro)
+    .order('data_registro', { ascending: false })
+    .limit(1)
+    .single();
 
   // Data formatada no hero
   const dateFmt = new Date(data.data_registro + 'T12:00:00').toLocaleDateString('pt-BR', {
@@ -5399,30 +5400,49 @@ async function editarMedida(id) {
   const boneco = document.getElementById('detalhe-boneco');
   if (boneco) boneco.innerHTML = gerarBonecoHTML(data, state.perfil?.sexo || 'neutro');
 
-  // Tabela completa
+  // Campos com comparativo
   const campos = [
-    { l:'Peso',          v: data.peso_kg,         u:'kg'  },
-    { l:'Altura',        v: data.altura_cm,        u:'cm'  },
-    { l:'Peito',         v: data.peito_cm,         u:'cm'  },
-    { l:'Ombros',        v: data.ombros_cm,        u:'cm'  },
-    { l:'Cintura',       v: data.cintura_cm,       u:'cm'  },
-    { l:'Abdômen',       v: data.abdomen_cm,       u:'cm'  },
-    { l:'Braço direito', v: data.braco_d_cm,       u:'cm'  },
-    { l:'Braço esquerdo',v: data.braco_e_cm,       u:'cm'  },
-    { l:'Glúteo',        v: data.gluteo_cm,        u:'cm'  },
-    { l:'Coxa direita',  v: data.coxa_d_cm,        u:'cm'  },
-    { l:'Coxa esquerda', v: data.coxa_e_cm,        u:'cm'  },
-    { l:'Panturrilha',   v: data.panturrilha_cm,   u:'cm'  },
+    { l:'Peso',           v: data.peso_kg,        p: anterior?.peso_kg,        u:'kg',  neg:false },
+    { l:'Peito',          v: data.peito_cm,        p: anterior?.peito_cm,       u:'cm',  neg:false },
+    { l:'Ombros',         v: data.ombros_cm,       p: anterior?.ombros_cm,      u:'cm',  neg:false },
+    { l:'Cintura',        v: data.cintura_cm,      p: anterior?.cintura_cm,     u:'cm',  neg:true  },
+    { l:'Abdômen',        v: data.abdomen_cm,      p: anterior?.abdomen_cm,     u:'cm',  neg:true  },
+    { l:'Braço direito',  v: data.braco_d_cm,      p: anterior?.braco_d_cm,     u:'cm',  neg:false },
+    { l:'Braço esquerdo', v: data.braco_e_cm,      p: anterior?.braco_e_cm,     u:'cm',  neg:false },
+    { l:'Glúteo',         v: data.gluteo_cm,       p: anterior?.gluteo_cm,      u:'cm',  neg:false },
+    { l:'Coxa direita',   v: data.coxa_d_cm,       p: anterior?.coxa_d_cm,      u:'cm',  neg:false },
+    { l:'Coxa esquerda',  v: data.coxa_e_cm,       p: anterior?.coxa_e_cm,      u:'cm',  neg:false },
+    { l:'Panturrilha',    v: data.panturrilha_cm,  p: anterior?.panturrilha_cm, u:'cm',  neg:false },
   ].filter(c => c.v);
 
   const tabela = document.getElementById('detalhe-tabela');
   if (tabela) {
-    tabela.innerHTML = campos.map((c, i) => `
-      <div style="display:flex;justify-content:space-between;align-items:center;padding:11px 16px;${i < campos.length-1 ? 'border-bottom:1px solid var(--border)' : ''}">
+    tabela.innerHTML = campos.map((c, i) => {
+      const delta = (c.v && c.p) ? parseFloat((c.v - c.p).toFixed(1)) : null;
+      // neg=true: reduzir é positivo (cintura, abdomen)
+      const positivo = delta ? (c.neg ? delta < 0 : delta > 0) : null;
+      const deltaHTML = delta !== null
+        ? `<span style="font-size:11px;font-weight:800;color:${positivo ? '#39d353' : '#ff6a00'};margin-left:6px">
+            ${delta > 0 ? '↑' : '↓'}${Math.abs(delta)}${c.u}
+           </span>`
+        : '';
+      return `<div style="display:flex;justify-content:space-between;align-items:center;padding:12px 16px;${i < campos.length-1 ? 'border-bottom:1px solid var(--border)' : ''}">
         <span style="font-size:12px;font-weight:700;color:var(--text3)">${c.l}</span>
-        <span style="font-size:15px;font-weight:900;color:var(--text)">${c.v}<span style="font-size:10px;color:var(--text3);margin-left:2px">${c.u}</span></span>
-      </div>
-    `).join('') || '<div style="padding:16px;text-align:center;color:var(--text3);font-size:12px">Nenhuma medida registrada</div>';
+        <div style="display:flex;align-items:center">
+          <span style="font-size:15px;font-weight:900;color:var(--text)">${c.v}<span style="font-size:10px;color:var(--text3);margin-left:2px">${c.u}</span></span>
+          ${deltaHTML}
+        </div>
+      </div>`;
+    }).join('') || '<div style="padding:16px;text-align:center;color:var(--text3);font-size:12px">Nenhuma medida registrada</div>';
+
+    // Banner de comparativo no topo se tiver anterior
+    if (anterior) {
+      const dataAnt = new Date(anterior.data_registro + 'T12:00:00').toLocaleDateString('pt-BR', {day:'2-digit', month:'short', year:'numeric'});
+      tabela.innerHTML = `<div style="padding:10px 16px;background:#ff6a0010;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:6px">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="2.5"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+        <span style="font-size:10px;font-weight:700;color:var(--accent)">Comparando com ${dataAnt}</span>
+      </div>` + tabela.innerHTML;
+    }
   }
 
   goTo('screen-detalhe-medida');

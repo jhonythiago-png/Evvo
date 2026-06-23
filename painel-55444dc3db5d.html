@@ -461,9 +461,12 @@ function abrirDel(id,nome){
 }
 async function delUser(){
   const id=document.getElementById('m3id').value;
+  // Deleta perfil
   const {error}=await sb.from('perfis').delete().eq('id',id);
-  if(!error){fechar('m3');toast('Excluído');load();}
-  else toast('Erro ao excluir');
+  if(error){ toast('Erro: ' + error.message); return; }
+  fechar('m3');
+  toast('Usuário excluído!');
+  load();
 }
 
 // Fechar modal clicando fora

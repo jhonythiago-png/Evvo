@@ -5168,18 +5168,19 @@ async function confirmarExcluirFicha() {
   if (!fichaDetalhando) return;
   if (!confirm('Excluir "' + fichaDetalhando.nome + '"? Esta ação não pode ser desfeita.')) return;
 
-  // Não permite excluir ficha ativa
-  if (fichaDetalhando.status === 'ativa') {
-    showToast('Não é possível excluir a ficha ativa.');
-    return;
-  }
-
   const { error } = await sb.from('fichas').delete().eq('id', fichaDetalhando.id);
   if (!error) {
+    // Se era a ficha ativa, limpa o state
+    if (state.fichaAtiva?.id === fichaDetalhando.id) {
+      state.fichaAtiva = null;
+    }
     showToast('Ficha excluída!');
     fichaDetalhando = null;
+    await loadTreino();
     await loadFichas();
     goTo('screen-evolucao');
+  } else {
+    showToast('Erro ao excluir ficha');
   }
 }
 

@@ -2055,6 +2055,10 @@ select.form-input option{background:#0e0e1a;color:#fff}
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polygon points="5 3 19 12 5 21 5 3"/></svg>
           Ativar esta ficha
         </button>
+        <button onclick="adicionarDiaFicha(fichaDetalhando?.id)" style="width:100%;background:var(--bg2);border:1px solid var(--border);border-radius:14px;padding:14px;font-size:13px;font-weight:700;color:var(--text2);cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+          Novo dia de treino
+        </button>
         <button onclick="confirmarExcluirFicha()" style="width:100%;background:var(--bg2);border:1px solid var(--border);border-radius:14px;padding:14px;font-size:13px;font-weight:700;color:#ee097980;cursor:pointer">
           Excluir ficha
         </button>
@@ -5106,16 +5110,11 @@ async function abrirDetalhesFicha(fichaId) {
             <div style="font-size:11px;color:var(--text3);margin-top:2px">${diasNomes[d.dia_semana]} · ${numEx} exercício${numEx !== 1 ? 's' : ''}</div>
           </div>
         </div>
-        <div style="border-top:1px solid var(--border);display:flex">
-          <button onclick="abrirEditarDia('${d.id}')" style="flex:1;padding:10px;background:none;border:none;border-right:1px solid var(--border);display:flex;align-items:center;justify-content:center;gap:6px;font-size:11px;font-weight:800;color:var(--text3);text-transform:uppercase;letter-spacing:.08em;cursor:pointer">
+        <div style="border-top:1px solid var(--border)">
+          <button onclick="abrirEditarDia('${d.id}')" style="width:100%;padding:10px;background:none;border:none;display:flex;align-items:center;justify-content:center;gap:6px;font-size:11px;font-weight:800;color:var(--text3);text-transform:uppercase;letter-spacing:.08em;cursor:pointer">
             <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
             Montar
           </button>
-          <button onclick="adicionarDiaFicha('${fichaDetalhando?.id}')" style="flex:1;padding:10px;background:none;border:none;display:flex;align-items:center;justify-content:center;gap:6px;font-size:11px;font-weight:800;color:var(--text3);text-transform:uppercase;letter-spacing:.08em;cursor:pointer">
-            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-            Novo dia
-          </button>
-        </div>
       </div>`;
     }).join('');
   }

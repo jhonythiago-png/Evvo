@@ -172,7 +172,7 @@ button{cursor:pointer}
         <option value="ativo">Ativos</option>
         <option value="bloqueado">Bloqueados</option>
       </select>
-      <button class="btn-novo" onclick="abrirNovo()">+ Novo usuário</button>
+
     </div>
     <div class="tbl">
       <div class="thead">
@@ -380,16 +380,43 @@ async function criarUser(){
   e.style.display='none';
   if(!n||!u||!p){e.textContent='Preencha todos os campos.';e.style.display='block';return;}
   if(p.length<6){e.textContent='Senha mínimo 6 caracteres.';e.style.display='block';return;}
-  const {error}=await sb.auth.signUp({email:u+'@evvo.app',password:p,options:{data:{nome:n}}});
-  if(error){e.textContent=error.message.includes('already')?'Usuário já existe.':error.message;e.style.display='block';return;}
-  if(pl==='pro'){
-    setTimeout(async()=>{
-      const {data:pf}=await sb.from('perfis').select('id').eq('email',u+'@evvo.app').single();
-      if(pf) await sb.from('perfis').update({plano:'pro'}).eq('id',pf.id);
-      load();
-    },1500);
+
+  const {data:authData, error}=await sb.auth.signUp({
+    email:u+'@evvo.app',
+    password:p,
+    options:{data:{nome:n,username:u}}
+  });
+  if(error){
+    e.textContent=error.message.includes('already')?'Usuário já existe.':error.message;
+    e.style.display='block';
+    return;
   }
-  fechar('m1'); toast('Usuário criado!'); setTimeout(()=>load(),1500);
+
+  // Aguarda o trigger criar o perfil e garante que existe
+  setTimeout(async()=>{
+    const userId = authData?.user?.id;
+    if(userId){
+      // Verifica se perfil foi criado pelo trigger
+      const {data:pf}=await sb.from('perfis').select('id').eq('id',userId).single();
+      if(!pf){
+        // Trigger não rodou — cria perfil manualmente
+        await sb.from('perfis').insert({
+          id: userId,
+          nome: n,
+          email: u+'@evvo.app',
+          plano: pl,
+          status: 'ativo',
+        });
+      } else if(pl==='pro'){
+        // Atualiza plano se pro
+        await sb.from('perfis').update({plano:'pro'}).eq('id',userId);
+      }
+    }
+    load();
+  }, 2000);
+
+  fechar('m1');
+  toast('Usuário criado! Aguarde...');
 }
 
 // Editar

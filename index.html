@@ -5344,8 +5344,14 @@ async function renderHistoricoMedidas() {
       </div>`;
     }).join('');
 
+    // Badge de comparativo — só aparece se tem avaliação anterior
+    const temDelta = prev && metricas.length > 0;
+    const pesoDeltaStr = pesoDelta
+      ? `<span style="font-size:10px;font-weight:800;color:${parseFloat(pesoDelta)<0?'#39d353':'#ff6a00'};margin-left:6px">${parseFloat(pesoDelta)>0?'↑':'↓'}${Math.abs(pesoDelta)}kg</span>`
+      : '';
+
     return `<div onclick="editarMedida('${m.id}')"
-      style="background:var(--bg2);border-radius:16px;border:1px solid var(--border);overflow:hidden;margin-bottom:8px;cursor:pointer;active:background:var(--bg3)"
+      style="background:var(--bg2);border-radius:16px;border:1px solid var(--border);overflow:hidden;margin-bottom:8px;cursor:pointer"
       ontouchstart="this.style.background='var(--bg3)'" ontouchend="this.style.background='var(--bg2)'">
       <div style="padding:13px 14px;display:flex;align-items:center;gap:12px">
         <div style="width:46px;height:46px;border-radius:13px;background:var(--grad);display:flex;flex-direction:column;align-items:center;justify-content:center;flex-shrink:0;box-shadow:0 4px 12px #ff6a0033">
@@ -5354,10 +5360,17 @@ async function renderHistoricoMedidas() {
         </div>
         <div style="flex:1">
           <div style="font-size:13px;font-weight:800;color:var(--text)">${dateFmt}</div>
-          <div style="font-size:10px;color:var(--text3);margin-top:3px">${i===0?'✦ Mais recente':'Avaliação passada'}${m.peso_kg?' · '+m.peso_kg+'kg':''}</div>
+          <div style="font-size:10px;color:var(--text3);margin-top:3px;display:flex;align-items:center;flex-wrap:wrap;gap:4px">
+            <span>${i===0?'✦ Mais recente':'Avaliação passada'}</span>
+            ${m.peso_kg ? `<span>· ${m.peso_kg}kg${pesoDeltaStr}</span>` : ''}
+          </div>
         </div>
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--text4)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
       </div>
+      ${temDelta ? `
+      <div style="padding:0 12px 12px;display:flex;flex-wrap:wrap;gap:5px">
+        ${metricas}
+      </div>` : ''}
     </div>`;
   }).join('');
 }

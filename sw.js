@@ -6,7 +6,7 @@ self.addEventListener('fetch', function(event) {
   const url = new URL(event.request.url);
   
   // NUNCA intercepta o admin
-  if (url.pathname.includes('admin')) {
+  if (url.pathname.includes('admin') || url.pathname.includes('painel')) {
     return;
   }
   

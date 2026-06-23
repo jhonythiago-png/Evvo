@@ -5058,7 +5058,8 @@ async function abrirDetalhesFicha(fichaId) {
   fichaDetalhando = ficha;
 
   // Header
-  document.getElementById('detalhe-ficha-titulo').textContent = ficha.nome;
+  const tituloEl = document.getElementById('detalhe-ficha-titulo');
+  if (tituloEl) tituloEl.textContent = ficha.nome;
   document.getElementById('detalhe-ficha-nome').textContent   = ficha.nome;
   document.getElementById('detalhe-ficha-status-label').textContent =
     ficha.status === 'ativa' ? '✦ Ficha ativa' : 'Ficha arquivada';

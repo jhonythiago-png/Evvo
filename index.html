@@ -4717,8 +4717,13 @@ async function editarTituloDia() {
 }
 
 async function abrirEditarDia(diaId) {
-  const dia = state.diasTreino.find(d => d.id === diaId);
-  if (!dia) return;
+  // Busca primeiro em state.diasTreino, se não achar busca direto no banco
+  let dia = state.diasTreino.find(d => d.id === diaId);
+  if (!dia) {
+    const { data } = await sb.from('dias_treino').select('*').eq('id', diaId).single();
+    if (!data) { showToast('Erro ao abrir dia'); return; }
+    dia = data;
+  }
   editState.diaEditando = dia;
 
   document.getElementById('editar-dia-label').textContent = DIAS_NOMES[dia.dia_semana];

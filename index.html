@@ -1189,14 +1189,23 @@ select.form-input option{background:#0e0e1a;color:#fff}
           <div style="font-size:14px;color:var(--text2);font-weight:700;letter-spacing:-.2px" id="treino-greeting">Ola 👋</div>
         </div>
         <div class="hero-title">Meu Treino</div>
-        <div class="hero-sub">Toque em um dia para começar</div>
+        <!-- Seletor de ficha -->
+        <div id="ficha-selector-wrap" style="margin-top:10px;display:none">
+          <button onclick="toggleFichaSelector()" id="ficha-selector-btn"
+            style="background:#ff6a0018;border:1px solid #ff6a0035;border-radius:20px;padding:5px 12px 5px 10px;display:flex;align-items:center;gap:6px;cursor:pointer">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#ff6a00" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M6 4v16M18 4v16M6 12h12"/></svg>
+            <span id="ficha-selector-nome" style="font-size:11px;font-weight:800;color:#ff6a00">—</span>
+            <svg id="ficha-selector-arrow" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#ff6a00" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+          </button>
+        </div>
       </div>
 
-      <div class="week-row" id="week-row">
-        <!-- gerado via JS -->
-      </div>
+      <!-- Dropdown de fichas -->
+      <div id="ficha-dropdown" style="display:none;margin:4px 16px 0;background:var(--bg2);border:1px solid var(--border);border-radius:14px;overflow:hidden" id="ficha-dropdown"></div>
 
-      <div class="sec-lbl">Fichas da semana</div>
+      <div class="week-row" id="week-row"></div>
+
+      <div class="sec-lbl" id="day-list-label">Treinos</div>
       <div class="day-list" id="day-list">
         <div style="padding:20px;text-align:center;color:var(--text3);font-size:13px">Nenhum treino cadastrado ainda</div>
       </div>
@@ -2650,24 +2659,92 @@ function updateGreeting() {
 }
 
 async function loadTreino() {
-  // busca ficha ativa
+  // Busca TODAS as fichas do usuário (sem filtrar por status)
   const { data: fichas } = await sb.from('fichas')
-    .select('*').eq('user_id', state.user.id).eq('status','ativa').order('created_at',{ascending:false}).limit(1);
+    .select('*').eq('user_id', state.user.id).order('created_at', {ascending:false});
 
   if (!fichas || fichas.length === 0) {
+    document.getElementById('ficha-selector-wrap').style.display = 'none';
     renderWeekEmpty();
+    document.getElementById('day-list').innerHTML =
+      '<div style="padding:20px;text-align:center;color:var(--text3);font-size:13px">Nenhuma ficha ainda. Crie uma na aba Evolução!</div>';
     return;
   }
-  state.fichaAtiva = fichas[0];
 
-  // busca dias da ficha
+  state.todasFichas = fichas;
+
+  // Seleciona ficha: mantém a atual se ainda existir, senão pega a primeira
+  const fichaAtualId = state.fichaAtiva?.id;
+  const fichaAtual = fichas.find(f => f.id === fichaAtualId) || fichas[0];
+  state.fichaAtiva = fichaAtual;
+
+  // Atualiza seletor
+  const wrap = document.getElementById('ficha-selector-wrap');
+  const nomeEl = document.getElementById('ficha-selector-nome');
+  if (wrap) wrap.style.display = fichas.length > 1 ? 'block' : 'none';
+  if (nomeEl) nomeEl.textContent = fichaAtual.nome;
+
+  // Busca dias da ficha selecionada
   const { data: dias } = await sb.from('dias_treino')
-    .select('*').eq('ficha_id', state.fichaAtiva.id).order('ordem');
+    .select('*').eq('ficha_id', fichaAtual.id).order('ordem');
 
   state.diasTreino = dias || [];
   renderWeek();
   renderDayList();
   loadFichas();
+}
+
+let fichaDropdownAberto = false;
+
+function toggleFichaSelector() {
+  fichaDropdownAberto = !fichaDropdownAberto;
+  const dd = document.getElementById('ficha-dropdown');
+  const arrow = document.getElementById('ficha-selector-arrow');
+  if (fichaDropdownAberto) {
+    renderFichaDropdown();
+    dd.style.display = 'block';
+    if (arrow) arrow.style.transform = 'rotate(180deg)';
+  } else {
+    dd.style.display = 'none';
+    if (arrow) arrow.style.transform = '';
+  }
+}
+
+function renderFichaDropdown() {
+  const dd = document.getElementById('ficha-dropdown');
+  const fichas = state.todasFichas || [];
+  dd.innerHTML = fichas.map((f, i) => {
+    const isSelected = f.id === state.fichaAtiva?.id;
+    return `<div onclick="selecionarFicha('${f.id}')"
+      style="padding:12px 14px;display:flex;align-items:center;gap:10px;cursor:pointer;
+      ${isSelected ? 'background:#ff6a0015;' : ''}
+      ${i < fichas.length-1 ? 'border-bottom:1px solid var(--border);' : ''}">
+      <div style="width:8px;height:8px;border-radius:50%;background:${isSelected ? '#ff6a00' : 'var(--border2)'};flex-shrink:0"></div>
+      <span style="font-size:12px;font-weight:${isSelected?'800':'600'};color:${isSelected?'#fff':'var(--text2)'};flex:1">${f.nome}</span>
+      ${isSelected ? '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#ff6a00" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>' : ''}
+    </div>`;
+  }).join('');
+}
+
+async function selecionarFicha(fichaId) {
+  const ficha = (state.todasFichas || []).find(f => f.id === fichaId);
+  if (!ficha) return;
+
+  state.fichaAtiva = ficha;
+  document.getElementById('ficha-selector-nome').textContent = ficha.nome;
+
+  // Fecha dropdown
+  fichaDropdownAberto = false;
+  document.getElementById('ficha-dropdown').style.display = 'none';
+  const arrow = document.getElementById('ficha-selector-arrow');
+  if (arrow) arrow.style.transform = '';
+
+  // Carrega dias da nova ficha
+  const { data: dias } = await sb.from('dias_treino')
+    .select('*').eq('ficha_id', fichaId).order('ordem');
+  state.diasTreino = dias || [];
+  renderWeek();
+  renderDayList();
 }
 
 function renderWeekEmpty() {
@@ -3229,19 +3306,17 @@ async function criarFicha() {
   const nome = document.getElementById('ficha-nome').value.trim();
   if (!nome) { showToast('Digite um nome para a ficha'); return; }
 
-  // Free: só 1 ficha — bloqueia se já tiver uma
+  // Free: só 1 ficha total
   if (!isPro()) {
-    const { data: fichasAtivas } = await sb.from('fichas')
-      .select('id').eq('user_id', state.user.id).eq('status','ativa');
-    if (fichasAtivas && fichasAtivas.length >= 1) {
-      bloqueadoFree('Free só permite 1 ficha ativa. Faça upgrade para Pro!');
+    const { data: todasFichas } = await sb.from('fichas')
+      .select('id').eq('user_id', state.user.id);
+    if (todasFichas && todasFichas.length >= 1) {
+      bloqueadoFree('Free só permite 1 ficha. Faça upgrade para Pro!');
       return;
     }
   }
 
-  // arquiva fichas anteriores
-  await sb.from('fichas').update({ status:'arquivada', archived_at: new Date() })
-    .eq('user_id', state.user.id).eq('status','ativa');
+  // Não arquiva mais — todas as fichas ficam disponíveis
 
   const { data } = await sb.from('fichas').insert({ user_id: state.user.id, nome }).select().single();
   if (data) {

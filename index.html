@@ -2550,8 +2550,13 @@ async function doRegister() {
 
 async function doLogout() {
   pararHeartbeat();
+  _salvando = false;
   await sb.auth.signOut();
-  state = { user:null, perfil:null, fichaAtiva:null, diasTreino:[], diaAtual:null, exerciciosAtual:[], execIdx:0, sessaoAtiva:null, medidas:null, exsConcluidos:new Set() };
+  state = { user:null, perfil:null, fichaAtiva:null, diasTreino:[], diaAtual:null, exerciciosAtual:[], execIdx:0, sessaoAtiva:null, medidas:null, exsConcluidos:new Set(), prs:{}, preSessaoPRs:{}, todasFichas:[] };
+  seriesExecutadas = {};
+  fichaDetalhando = null;
+  fotoShareBase64 = null;
+  fotoShareImgCache = null;
   document.getElementById('bottom-nav').classList.remove('visible');
   goTo('screen-login');
 }
@@ -5193,12 +5198,22 @@ async function confirmarExcluirFicha() {
   if (!fichaDetalhando) return;
   if (!confirm('Excluir "' + fichaDetalhando.nome + '"? Esta ação não pode ser desfeita.')) return;
 
+  // Cascata manual: busca dias → exercícios → series_template
+  const { data: dias } = await sb.from('dias_treino').select('id').eq('ficha_id', fichaDetalhando.id);
+  if (dias?.length) {
+    const diaIds = dias.map(d => d.id);
+    const { data: exs } = await sb.from('exercicios').select('id').in('dia_id', diaIds);
+    if (exs?.length) {
+      const exIds = exs.map(e => e.id);
+      await sb.from('series_template').delete().in('exercicio_id', exIds);
+      await sb.from('exercicios').delete().in('dia_id', diaIds);
+    }
+    await sb.from('dias_treino').delete().eq('ficha_id', fichaDetalhando.id);
+  }
+
   const { error } = await sb.from('fichas').delete().eq('id', fichaDetalhando.id);
   if (!error) {
-    // Se era a ficha ativa, limpa o state
-    if (state.fichaAtiva?.id === fichaDetalhando.id) {
-      state.fichaAtiva = null;
-    }
+    if (state.fichaAtiva?.id === fichaDetalhando.id) state.fichaAtiva = null;
     showToast('Ficha excluída!');
     fichaDetalhando = null;
     await loadTreino();

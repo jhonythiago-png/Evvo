@@ -361,8 +361,16 @@ function filtrar(){
   }));
 }
 
-async function block_(id){await sb.from('perfis').update({status:'bloqueado'}).eq('id',id);toast('Bloqueado');load();}
-async function unlock(id){await sb.from('perfis').update({status:'ativo'}).eq('id',id);toast('Desbloqueado');load();}
+async function block_(id){
+  const {error}=await sb.from('perfis').update({status:'bloqueado'}).eq('id',id);
+  if(error){toast('Erro: '+error.message);console.error(error);return;}
+  toast('Usuário bloqueado!');load();
+}
+async function unlock(id){
+  const {error}=await sb.from('perfis').update({status:'ativo'}).eq('id',id);
+  if(error){toast('Erro: '+error.message);console.error(error);return;}
+  toast('Usuário desbloqueado!');load();
+}
 
 // Novo
 function abrirNovo(){
@@ -449,8 +457,8 @@ async function salvarEdit(){
   const pl=document.getElementById('m2p').value;
   const st=document.getElementById('m2s').value;
   const {error}=await sb.from('perfis').update({plano:pl,status:st}).eq('id',id);
-  if(!error){fechar('m2');toast('Salvo!');load();}
-  else toast('Erro ao salvar');
+  if(error){toast('Erro: '+error.message);console.error(error);return;}
+  fechar('m2');toast('Salvo!');load();
 }
 
 // Deletar

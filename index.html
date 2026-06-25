@@ -1279,6 +1279,7 @@ select.form-input option{background:#0e0e1a;color:#fff}
           </div>
           <div class="exec-ex-name" id="exec-name">Exercício</div>
           <div class="exec-ex-meta" id="exec-meta">—</div>
+          <div id="exec-obs" style="display:none;margin-top:6px;font-size:11px;color:var(--accent);font-style:italic;line-height:1.4;opacity:0.85"></div>
         </div>
         <div class="series-wrap">
           <div class="series-head">
@@ -2927,6 +2928,18 @@ function renderExec() {
 
   document.getElementById('exec-name').textContent = ex.nome;
   document.getElementById('exec-meta').textContent = `${ex.grupo_muscular||''}${ex.equipamento?' · '+ex.equipamento:''}`;
+
+  // Observação da série (usa a da primeira série como referência)
+  const obsEl = document.getElementById('exec-obs');
+  const primeiraObs = (ex.series_template || [])[0]?.observacao;
+  if (obsEl) {
+    if (primeiraObs) {
+      obsEl.textContent = primeiraObs;
+      obsEl.style.display = 'block';
+    } else {
+      obsEl.style.display = 'none';
+    }
+  }
 
   // barra de segmentos
   const bar = document.getElementById('seg-bar');

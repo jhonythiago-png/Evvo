@@ -1279,7 +1279,6 @@ select.form-input option{background:#0e0e1a;color:#fff}
           </div>
           <div class="exec-ex-name" id="exec-name">Exercício</div>
           <div class="exec-ex-meta" id="exec-meta">—</div>
-          <div id="exec-obs" style="display:none;margin-top:6px;font-size:11px;color:var(--accent);font-style:italic;line-height:1.4;opacity:0.85"></div>
         </div>
         <div class="series-wrap">
           <div class="series-head">
@@ -2450,19 +2449,8 @@ let state = {
   execIdx: 0,
   sessaoAtiva: null,
   medidas: null,
-  exsConcluidos: new Set(),
+  exsConcluidos: new Set(), // índices dos exercícios concluídos na sessão atual
 };
-
-// Flag global para prevenir duplo clique em operações async
-let _salvando = false;
-function iniciarSalvamento() {
-  if (_salvando) return false;
-  _salvando = true;
-  return true;
-}
-function finalizarSalvamento() {
-  _salvando = false;
-}
 
 // ═══════════════════════════════════════════
 // INIT
@@ -2551,13 +2539,8 @@ async function doRegister() {
 
 async function doLogout() {
   pararHeartbeat();
-  _salvando = false;
   await sb.auth.signOut();
-  state = { user:null, perfil:null, fichaAtiva:null, diasTreino:[], diaAtual:null, exerciciosAtual:[], execIdx:0, sessaoAtiva:null, medidas:null, exsConcluidos:new Set(), prs:{}, preSessaoPRs:{}, todasFichas:[] };
-  seriesExecutadas = {};
-  fichaDetalhando = null;
-  fotoShareBase64 = null;
-  fotoShareImgCache = null;
+  state = { user:null, perfil:null, fichaAtiva:null, diasTreino:[], diaAtual:null, exerciciosAtual:[], execIdx:0, sessaoAtiva:null, medidas:null, exsConcluidos:new Set() };
   document.getElementById('bottom-nav').classList.remove('visible');
   goTo('screen-login');
 }
@@ -2928,18 +2911,6 @@ function renderExec() {
 
   document.getElementById('exec-name').textContent = ex.nome;
   document.getElementById('exec-meta').textContent = `${ex.grupo_muscular||''}${ex.equipamento?' · '+ex.equipamento:''}`;
-
-  // Observação da série (usa a da primeira série como referência)
-  const obsEl = document.getElementById('exec-obs');
-  const primeiraObs = (ex.series_template || [])[0]?.observacao;
-  if (obsEl) {
-    if (primeiraObs) {
-      obsEl.textContent = primeiraObs;
-      obsEl.style.display = 'block';
-    } else {
-      obsEl.style.display = 'none';
-    }
-  }
 
   // barra de segmentos
   const bar = document.getElementById('seg-bar');
@@ -3342,9 +3313,7 @@ async function criarFicha() {
 
   // Não arquiva mais — todas as fichas ficam disponíveis
 
-  if (!iniciarSalvamento()) { showToast('Aguarde...'); return; }
   const { data } = await sb.from('fichas').insert({ user_id: state.user.id, nome }).select().single();
-  finalizarSalvamento();
   if (data) {
     state.fichaAtiva = data;
     document.getElementById('ficha-nome').value = '';
@@ -3368,19 +3337,35 @@ async function loadFichas() {
     return;
   }
 
-  // Para cada ficha busca dias e sessoes realizadas
-  const fichasComDados = await Promise.all(fichas.map(async f => {
-    const [{ count: totalDias }, { data: sessoes }] = await Promise.all([
-      sb.from('dias_treino').select('id', { count: 'exact', head: true }).eq('ficha_id', f.id),
-      sb.from('sessoes').select('volume_total_kg').eq('ficha_id', f.id).not('finalizado_em', 'is', null)
-    ]);
-    const totalSessoes = sessoes?.length || 0;
-    const volumeTotal  = sessoes?.reduce((acc, s) => acc + (s.volume_total_kg || 0), 0) || 0;
+  // Busca dias e sessões em 2 queries únicas (não N+1)
+  const fichaIds = fichas.map(f => f.id);
+
+  const [{ data: todosOsDias }, { data: todasSessoes }] = await Promise.all([
+    sb.from('dias_treino').select('ficha_id').in('ficha_id', fichaIds),
+    sb.from('sessoes').select('ficha_id, volume_total_kg').in('ficha_id', fichaIds).not('finalizado_em', 'is', null)
+  ]);
+
+  // Agrupa por ficha_id
+  const diasPorFicha = {};
+  (todosOsDias || []).forEach(d => {
+    diasPorFicha[d.ficha_id] = (diasPorFicha[d.ficha_id] || 0) + 1;
+  });
+  const sessoesPorFicha = {};
+  (todasSessoes || []).forEach(s => {
+    if (!sessoesPorFicha[s.ficha_id]) sessoesPorFicha[s.ficha_id] = { count: 0, volume: 0 };
+    sessoesPorFicha[s.ficha_id].count++;
+    sessoesPorFicha[s.ficha_id].volume += s.volume_total_kg || 0;
+  });
+
+  const fichasComDados = fichas.map(f => {
+    const totalDias    = diasPorFicha[f.id] || 0;
+    const totalSessoes = sessoesPorFicha[f.id]?.count || 0;
+    const volumeTotal  = sessoesPorFicha[f.id]?.volume || 0;
     const volumeMedio  = totalSessoes > 0 ? Math.round(volumeTotal / totalSessoes) : 0;
     const inicio = new Date(f.created_at).toLocaleDateString('pt-BR', { day:'2-digit', month:'short', year:'numeric' });
     const fim    = f.archived_at ? new Date(f.archived_at).toLocaleDateString('pt-BR', { day:'2-digit', month:'short' }) : 'hoje';
-    return { ...f, totalDias: totalDias || 0, totalSessoes, volumeMedio, inicio, fim };
-  }));
+    return { ...f, totalDias, totalSessoes, volumeMedio, inicio, fim };
+  });
 
   list.innerHTML = fichasComDados.map(f => {
     const nomeEscapado = f.nome.replace(/'/g, "\'");
@@ -4658,8 +4643,12 @@ function showToast(msg) {
 // OBSERVAR NAVEGAÇÃO PARA CARREGAR DADOS
 // ═══════════════════════════════════════════
 const origNavTo = navTo;
+let _telaAtual = '';
 window.navTo = function(screenId, btn) {
   origNavTo(screenId, btn);
+  // Só recarrega se mudou de tela
+  if (screenId === _telaAtual) return;
+  _telaAtual = screenId;
   if (screenId === 'screen-evolucao') { loadFichas(); loadHistorico(); }
   if (screenId === 'screen-medidas') setupMedidasDate();
   if (screenId === 'screen-share') updateShareTreino();
@@ -4713,7 +4702,6 @@ async function criarDia() {
   const dia  = parseInt(document.getElementById('dia-semana-input').value);
   if (!nome) { showToast('Digite o nome do treino'); return; }
 
-  if (!iniciarSalvamento()) { showToast('Aguarde...'); return; }
   const ordem = state.diasTreino.length;
   const { data, error } = await sb.from('dias_treino').insert({
     ficha_id: state.fichaAtiva.id,
@@ -4722,15 +4710,12 @@ async function criarDia() {
     ordem
   }).select().single();
 
-  finalizarSalvamento();
   if (error) { showToast('Erro ao criar dia'); return; }
 
   document.getElementById('dia-nome-input').value = '';
   closeModal('modal-dia');
   showToast('Dia criado!');
   await loadTreino();
-  // Abre detalhe da ficha para ver o novo dia
-  if (fichaDetalhando) await abrirDetalhesFicha(fichaDetalhando.id);
 }
 
 // ═══════════════════════════════════════════
@@ -4833,7 +4818,6 @@ async function criarExercicio() {
   const grupo  = tipo === 'forca' ? document.getElementById('ex-grupo-input').value : 'Cardio';
   const equip  = tipo === 'forca' ? document.getElementById('ex-equip-input').value : '';
   if (!nome) { showToast('Digite o nome do exercicio'); return; }
-  if (!iniciarSalvamento()) { showToast('Aguarde...'); return; }
 
   const { data: exsAtuais } = await sb.from('exercicios')
     .select('id').eq('dia_id', editState.diaEditando.id);
@@ -4855,7 +4839,6 @@ async function criarExercicio() {
 
   if (error) { showToast('Erro ao criar exercicio'); return; }
 
-  finalizarSalvamento();
   closeModal('modal-ex');
   showToast('Exercicio adicionado!');
   await renderExEditList();
@@ -5033,13 +5016,8 @@ function removerSerie(idx) {
 
 async function salvarSeries() {
   if (!editState.exEditando) return;
-  if (!iniciarSalvamento()) { showToast('Aguarde...'); return; }
   const series = editState.seriesEditor;
-  if (!series.length) { finalizarSalvamento(); showToast('Adicione ao menos 1 serie'); return; }
-
-  // Desabilita botão visualmente
-  const btnSalvar = document.querySelector('#screen-editar-ex .btn-main');
-  if (btnSalvar) { btnSalvar.disabled = true; btnSalvar.style.opacity = '0.6'; }
+  if (!series.length) { showToast('Adicione ao menos 1 serie'); return; }
 
   await sb.from('series_template').delete().eq('exercicio_id', editState.exEditando);
 
@@ -5075,16 +5053,9 @@ async function salvarSeries() {
   });
 
   const { error } = await sb.from('series_template').insert(inserts);
-  if (error) {
-    finalizarSalvamento();
-    if (btnSalvar) { btnSalvar.disabled = false; btnSalvar.style.opacity = ''; }
-    showToast('Erro ao salvar series');
-    return;
-  }
+  if (error) { showToast('Erro ao salvar series'); return; }
 
   showToast('Series salvas!');
-  finalizarSalvamento();
-  if (btnSalvar) { btnSalvar.disabled = false; btnSalvar.style.opacity = ''; }
   await renderExEditList();
   goTo('screen-editar-dia');
 }
@@ -5118,11 +5089,17 @@ async function abrirDetalhesFicha(fichaId) {
   document.getElementById('detalhe-ficha-status-label').textContent =
     ficha.status === 'ativa' ? '✦ Ficha ativa' : 'Ficha arquivada';
 
-  // Busca dias e sessões em paralelo
-  const [{ data: dias }, { data: sessoes }] = await Promise.all([
-    sb.from('dias_treino').select('*, exercicios(id)').eq('ficha_id', fichaId).order('ordem'),
-    sb.from('sessoes').select('id').eq('ficha_id', fichaId).not('finalizado_em', 'is', null)
-  ]);
+  // Busca dias com exercícios
+  const { data: dias } = await sb.from('dias_treino')
+    .select('*, exercicios(id)')
+    .eq('ficha_id', fichaId)
+    .order('ordem');
+
+  // Busca treinos realizados
+  const { data: sessoes } = await sb.from('sessoes')
+    .select('id')
+    .eq('ficha_id', fichaId)
+    .not('finalizado_em', 'is', null);
 
   const totalDias    = dias?.length || 0;
   const totalTreinos = sessoes?.length || 0;
@@ -5211,22 +5188,12 @@ async function confirmarExcluirFicha() {
   if (!fichaDetalhando) return;
   if (!confirm('Excluir "' + fichaDetalhando.nome + '"? Esta ação não pode ser desfeita.')) return;
 
-  // Cascata manual: busca dias → exercícios → series_template
-  const { data: dias } = await sb.from('dias_treino').select('id').eq('ficha_id', fichaDetalhando.id);
-  if (dias?.length) {
-    const diaIds = dias.map(d => d.id);
-    const { data: exs } = await sb.from('exercicios').select('id').in('dia_id', diaIds);
-    if (exs?.length) {
-      const exIds = exs.map(e => e.id);
-      await sb.from('series_template').delete().in('exercicio_id', exIds);
-      await sb.from('exercicios').delete().in('dia_id', diaIds);
-    }
-    await sb.from('dias_treino').delete().eq('ficha_id', fichaDetalhando.id);
-  }
-
   const { error } = await sb.from('fichas').delete().eq('id', fichaDetalhando.id);
   if (!error) {
-    if (state.fichaAtiva?.id === fichaDetalhando.id) state.fichaAtiva = null;
+    // Se era a ficha ativa, limpa o state
+    if (state.fichaAtiva?.id === fichaDetalhando.id) {
+      state.fichaAtiva = null;
+    }
     showToast('Ficha excluída!');
     fichaDetalhando = null;
     await loadTreino();
@@ -5357,12 +5324,8 @@ async function renderHistoricoMedidas() {
       </div>`;
     }).join('');
 
-    const pesoDeltaStr = pesoDelta
-      ? `<span style="font-size:10px;font-weight:800;color:${parseFloat(pesoDelta)<0?'#39d353':'#ff6a00'};margin-left:5px">${parseFloat(pesoDelta)>0?'↑':'↓'}${Math.abs(pesoDelta)}kg</span>`
-      : '';
-
     return `<div onclick="editarMedida('${m.id}')"
-      style="background:var(--bg2);border-radius:16px;border:1px solid var(--border);overflow:hidden;margin-bottom:8px;cursor:pointer"
+      style="background:var(--bg2);border-radius:16px;border:1px solid var(--border);overflow:hidden;margin-bottom:8px;cursor:pointer;active:background:var(--bg3)"
       ontouchstart="this.style.background='var(--bg3)'" ontouchend="this.style.background='var(--bg2)'">
       <div style="padding:13px 14px;display:flex;align-items:center;gap:12px">
         <div style="width:46px;height:46px;border-radius:13px;background:var(--grad);display:flex;flex-direction:column;align-items:center;justify-content:center;flex-shrink:0;box-shadow:0 4px 12px #ff6a0033">
@@ -5371,10 +5334,7 @@ async function renderHistoricoMedidas() {
         </div>
         <div style="flex:1">
           <div style="font-size:13px;font-weight:800;color:var(--text)">${dateFmt}</div>
-          <div style="font-size:10px;color:var(--text3);margin-top:3px;display:flex;align-items:center;gap:4px">
-            <span>${i===0?'✦ Mais recente':'Avaliação passada'}</span>
-            ${m.peso_kg ? `<span>· ${m.peso_kg}kg${pesoDeltaStr}</span>` : ''}
-          </div>
+          <div style="font-size:10px;color:var(--text3);margin-top:3px">${i===0?'✦ Mais recente':'Avaliação passada'}${m.peso_kg?' · '+m.peso_kg+'kg':''}</div>
         </div>
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--text4)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
       </div>
@@ -5390,18 +5350,11 @@ let medicaoEditandoId = null;
 let medicaoDetalhando = null;
 
 async function editarMedida(id) {
+  // Carrega o registro e abre tela de DETALHE (não o formulário direto)
   const { data, error } = await sb.from('medidas').select('*').eq('id', id).single();
   if (error || !data) { showToast('Erro ao carregar avaliação'); return; }
-  medicaoDetalhando = data;
 
-  // Busca avaliação anterior para comparativo
-  const { data: anterior } = await sb.from('medidas')
-    .select('*')
-    .eq('user_id', state.user.id)
-    .lt('data_registro', data.data_registro)
-    .order('data_registro', { ascending: false })
-    .limit(1)
-    .single();
+  medicaoDetalhando = data;
 
   // Data formatada no hero
   const dateFmt = new Date(data.data_registro + 'T12:00:00').toLocaleDateString('pt-BR', {
@@ -5413,49 +5366,30 @@ async function editarMedida(id) {
   const boneco = document.getElementById('detalhe-boneco');
   if (boneco) boneco.innerHTML = gerarBonecoHTML(data, state.perfil?.sexo || 'neutro');
 
-  // Campos com comparativo
+  // Tabela completa
   const campos = [
-    { l:'Peso',           v: data.peso_kg,        p: anterior?.peso_kg,        u:'kg',  neg:false },
-    { l:'Peito',          v: data.peito_cm,        p: anterior?.peito_cm,       u:'cm',  neg:false },
-    { l:'Ombros',         v: data.ombros_cm,       p: anterior?.ombros_cm,      u:'cm',  neg:false },
-    { l:'Cintura',        v: data.cintura_cm,      p: anterior?.cintura_cm,     u:'cm',  neg:true  },
-    { l:'Abdômen',        v: data.abdomen_cm,      p: anterior?.abdomen_cm,     u:'cm',  neg:true  },
-    { l:'Braço direito',  v: data.braco_d_cm,      p: anterior?.braco_d_cm,     u:'cm',  neg:false },
-    { l:'Braço esquerdo', v: data.braco_e_cm,      p: anterior?.braco_e_cm,     u:'cm',  neg:false },
-    { l:'Glúteo',         v: data.gluteo_cm,       p: anterior?.gluteo_cm,      u:'cm',  neg:false },
-    { l:'Coxa direita',   v: data.coxa_d_cm,       p: anterior?.coxa_d_cm,      u:'cm',  neg:false },
-    { l:'Coxa esquerda',  v: data.coxa_e_cm,       p: anterior?.coxa_e_cm,      u:'cm',  neg:false },
-    { l:'Panturrilha',    v: data.panturrilha_cm,  p: anterior?.panturrilha_cm, u:'cm',  neg:false },
+    { l:'Peso',          v: data.peso_kg,         u:'kg'  },
+    { l:'Altura',        v: data.altura_cm,        u:'cm'  },
+    { l:'Peito',         v: data.peito_cm,         u:'cm'  },
+    { l:'Ombros',        v: data.ombros_cm,        u:'cm'  },
+    { l:'Cintura',       v: data.cintura_cm,       u:'cm'  },
+    { l:'Abdômen',       v: data.abdomen_cm,       u:'cm'  },
+    { l:'Braço direito', v: data.braco_d_cm,       u:'cm'  },
+    { l:'Braço esquerdo',v: data.braco_e_cm,       u:'cm'  },
+    { l:'Glúteo',        v: data.gluteo_cm,        u:'cm'  },
+    { l:'Coxa direita',  v: data.coxa_d_cm,        u:'cm'  },
+    { l:'Coxa esquerda', v: data.coxa_e_cm,        u:'cm'  },
+    { l:'Panturrilha',   v: data.panturrilha_cm,   u:'cm'  },
   ].filter(c => c.v);
 
   const tabela = document.getElementById('detalhe-tabela');
   if (tabela) {
-    tabela.innerHTML = campos.map((c, i) => {
-      const delta = (c.v && c.p) ? parseFloat((c.v - c.p).toFixed(1)) : null;
-      // neg=true: reduzir é positivo (cintura, abdomen)
-      const positivo = delta ? (c.neg ? delta < 0 : delta > 0) : null;
-      const deltaHTML = delta !== null
-        ? `<span style="font-size:11px;font-weight:800;color:${positivo ? '#39d353' : '#ff6a00'};margin-left:6px">
-            ${delta > 0 ? '↑' : '↓'}${Math.abs(delta)}${c.u}
-           </span>`
-        : '';
-      return `<div style="display:flex;justify-content:space-between;align-items:center;padding:12px 16px;${i < campos.length-1 ? 'border-bottom:1px solid var(--border)' : ''}">
+    tabela.innerHTML = campos.map((c, i) => `
+      <div style="display:flex;justify-content:space-between;align-items:center;padding:11px 16px;${i < campos.length-1 ? 'border-bottom:1px solid var(--border)' : ''}">
         <span style="font-size:12px;font-weight:700;color:var(--text3)">${c.l}</span>
-        <div style="display:flex;align-items:center">
-          <span style="font-size:15px;font-weight:900;color:var(--text)">${c.v}<span style="font-size:10px;color:var(--text3);margin-left:2px">${c.u}</span></span>
-          ${deltaHTML}
-        </div>
-      </div>`;
-    }).join('') || '<div style="padding:16px;text-align:center;color:var(--text3);font-size:12px">Nenhuma medida registrada</div>';
-
-    // Banner de comparativo no topo se tiver anterior
-    if (anterior) {
-      const dataAnt = new Date(anterior.data_registro + 'T12:00:00').toLocaleDateString('pt-BR', {day:'2-digit', month:'short', year:'numeric'});
-      tabela.innerHTML = `<div style="padding:10px 16px;background:#ff6a0010;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:6px">
-        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="2.5"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
-        <span style="font-size:10px;font-weight:700;color:var(--accent)">Comparando com ${dataAnt}</span>
-      </div>` + tabela.innerHTML;
-    }
+        <span style="font-size:15px;font-weight:900;color:var(--text)">${c.v}<span style="font-size:10px;color:var(--text3);margin-left:2px">${c.u}</span></span>
+      </div>
+    `).join('') || '<div style="padding:16px;text-align:center;color:var(--text3);font-size:12px">Nenhuma medida registrada</div>';
   }
 
   goTo('screen-detalhe-medida');
@@ -5717,7 +5651,7 @@ async function loadHistorico() {
     histQuery = histQuery.gte('iniciado_em', limite.toISOString());
   }
 
-  const { data } = await histQuery.limit(100);
+  const { data } = await histQuery.limit(50);
 
   const list = document.getElementById('hist-list');
   if (!data || !data.length) {
@@ -5764,20 +5698,20 @@ async function loadHistorico() {
 }
 
 async function abrirDetalhesSessao(sessaoId) {
-  // Carrega sessão completa com exercícios e séries
-  const { data: sessao, error } = await sb.from('sessoes')
-    .select(`*, dias_treino(nome, dia_semana), fichas(nome)`)
-    .eq('id', sessaoId)
-    .single();
+  // Paralleliza as duas queries principais
+  const [{ data: sessao, error }, { data: series }] = await Promise.all([
+    sb.from('sessoes')
+      .select('*, dias_treino(nome, dia_semana), fichas(nome)')
+      .eq('id', sessaoId)
+      .single(),
+    sb.from('series_executadas')
+      .select('*, exercicios(nome, tipo, grupo_muscular)')
+      .eq('sessao_id', sessaoId)
+      .eq('concluida', true)
+      .order('executado_em')
+  ]);
 
   if (error || !sessao) { showToast('Erro ao carregar treino'); return; }
-
-  // Carrega séries executadas com nome do exercício
-  const { data: series } = await sb.from('series_executadas')
-    .select(`*, exercicios(nome, tipo, grupo_muscular)`)
-    .eq('sessao_id', sessaoId)
-    .eq('concluida', true)
-    .order('executado_em');
 
   // ── Header ──
   const inicio  = new Date(sessao.iniciado_em);
@@ -5951,7 +5885,7 @@ function iniciarCardio() {
     const elapsed = Math.floor((Date.now() - cardioState.inicio) / 1000);
     const timerEl = document.getElementById('cardio-timer');
     if (timerEl) timerEl.textContent = formatarTempo(elapsed);
-  }, 500); // 500ms para mais precisão
+  }, 1000);
 }
 
 async function finalizarCardio() {

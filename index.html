@@ -1823,6 +1823,11 @@ select.form-input option{background:#0e0e1a;color:#fff}
         <svg viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
         adicionar exercicio
       </button>
+      <div style="padding:16px 16px 0">
+        <button onclick="excluirDia()" style="width:100%;background:var(--bg2);border:1px solid var(--border);border-radius:14px;padding:13px;font-size:12px;font-weight:700;color:#ee097970;cursor:pointer">
+          Excluir este dia de treino
+        </button>
+      </div>
       <div style="height:20px"></div>
     </div>
   </div>
@@ -4726,6 +4731,32 @@ async function editarTituloDia() {
     const dia = state.diasTreino.find(d => d.id === state.diaAtual.id);
     if (dia) dia.nome = novo.trim();
     showToast('Nome atualizado!');
+  }
+}
+
+async function excluirDia() {
+  if (!editState.diaEditando) return;
+  if (!confirm('Excluir "' + editState.diaEditando.nome + '"? Todos os exercícios serão removidos.')) return;
+
+  const diaId = editState.diaEditando.id;
+
+  // Cascata: exercícios e series_template
+  const { data: exs } = await sb.from('exercicios').select('id').eq('dia_id', diaId);
+  if (exs?.length) {
+    const exIds = exs.map(e => e.id);
+    await sb.from('series_template').delete().in('exercicio_id', exIds);
+    await sb.from('exercicios').delete().eq('dia_id', diaId);
+  }
+
+  const { error } = await sb.from('dias_treino').delete().eq('id', diaId);
+  if (!error) {
+    showToast('Dia excluído!');
+    editState.diaEditando = null;
+    // Atualiza ficha e volta
+    if (fichaDetalhando) await abrirDetalhesFicha(fichaDetalhando.id);
+    else goTo('screen-detalhe-ficha');
+  } else {
+    showToast('Erro ao excluir dia');
   }
 }
 

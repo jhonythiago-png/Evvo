@@ -2479,6 +2479,60 @@ function hideLoading() {
   document.getElementById('loading').style.display = 'none';
 }
 
+// ── Persistência de sessão (Android mata a página ao sair) ──
+function salvarSessaoLocal() {
+  if (!state.sessaoAtiva) return;
+  try {
+    localStorage.setItem('evvo_sessao', JSON.stringify({
+      sessaoAtiva:       state.sessaoAtiva,
+      diaAtual:          state.diaAtual,
+      exerciciosAtual:   state.exerciciosAtual,
+      execIdx:           state.execIdx || 0,
+      exsConcluidos:     [...(state.exsConcluidos || new Set())],
+      seriesExecutadas:  seriesExecutadas || {},
+      cardiosConcluidos: [...(state.cardiosConcluidos || new Set())],
+      prs:               state.prs || {},
+      preSessaoPRs:      state.preSessaoPRs || {},
+      ts:                Date.now(),
+    }));
+  } catch(e) {}
+}
+
+function restaurarSessaoLocal() {
+  try {
+    const raw = localStorage.getItem('evvo_sessao');
+    if (!raw) return false;
+    const d = JSON.parse(raw);
+    // Expira em 12h
+    if (Date.now() - d.ts > 12 * 60 * 60 * 1000) {
+      localStorage.removeItem('evvo_sessao');
+      return false;
+    }
+    // Só restaura se o usuário logado for o mesmo
+    if (d.sessaoAtiva?.user_id && d.sessaoAtiva.user_id !== state.user?.id) {
+      localStorage.removeItem('evvo_sessao');
+      return false;
+    }
+    state.sessaoAtiva       = d.sessaoAtiva;
+    state.diaAtual          = d.diaAtual;
+    state.exerciciosAtual   = d.exerciciosAtual || [];
+    state.execIdx           = d.execIdx || 0;
+    state.exsConcluidos     = new Set(d.exsConcluidos || []);
+    state.cardiosConcluidos = new Set(d.cardiosConcluidos || []);
+    state.prs               = d.prs || {};
+    state.preSessaoPRs      = d.preSessaoPRs || {};
+    seriesExecutadas        = d.seriesExecutadas || {};
+    return true;
+  } catch(e) {
+    localStorage.removeItem('evvo_sessao');
+    return false;
+  }
+}
+
+function limparSessaoLocal() {
+  try { localStorage.removeItem('evvo_sessao'); } catch(e) {}
+}
+
 function showApp() {
   hideLoading();
   document.getElementById('bottom-nav').classList.add('visible');
@@ -2489,6 +2543,13 @@ function showApp() {
   updateShareProfile();
   carregarPRs();
   iniciarHeartbeat();
+  // Verifica treino em andamento APÓS tudo carregar (Android)
+  setTimeout(() => {
+    if (restaurarSessaoLocal()) {
+      showToast('Treino em andamento — continue! 💪');
+      setTimeout(() => { renderExec(); goTo('screen-exec'); }, 1000);
+    }
+  }, 1500);
 }
 
 // ═══════════════════════════════════════════
@@ -3103,6 +3164,7 @@ function toggleSerie(si) {
     const concluidas = Object.keys(seriesExecutadas).filter(k => k.startsWith(`${state.execIdx}_`)).length;
     if (concluidas >= totalSeries) {
       state.exsConcluidos.add(state.execIdx);
+      salvarSessaoLocal();
       renderExOverview(state.execIdx);
     }
   }
@@ -3280,6 +3342,7 @@ async function finalizarTreino() {
   cardioState.inicio    = null;
   cardioState.concluido = false;
   atualizarBotaoDia();
+  limparSessaoLocal();
   showToast('🎉 Treino finalizado!');
   updateShareTreino(); // atualiza card com dados do treino recém finalizado
   goTo('screen-treino');
@@ -3979,6 +4042,7 @@ function setFormato(fmt) {
 function excluirFotoShare() {
   fotoShareBase64 = null;
   fotoShareImgCache = null;
+  limparSessaoLocal();
   const canvas = document.getElementById('foto-canvas');
   const ctx = canvas.getContext('2d');
   ctx.clearRect(0, 0, canvas.width, canvas.height);
@@ -4228,32 +4292,37 @@ async function compartilharFoto() {
   }, 'image/jpeg', 0.92);
 }
 
+async function downloadImagem(blob, nomeArquivo) {
+  const file = new File([blob], nomeArquivo, { type: blob.type });
+  const isAndroid = /android/i.test(navigator.userAgent);
+  // Tenta Web Share com arquivo
+  if (navigator.share && navigator.canShare?.({ files: [file] })) {
+    try {
+      await navigator.share({ files: [file], title: 'EVVO' });
+      return;
+    } catch(e) {
+      if (e.name === 'AbortError') return;
+    }
+  }
+  // Android: abre em nova aba para segurar e salvar
+  if (isAndroid) {
+    const url = URL.createObjectURL(blob);
+    const a = window.open(url, '_blank');
+    if (a) { showToast('Segure a imagem para salvar'); setTimeout(() => URL.revokeObjectURL(url), 30000); return; }
+  }
+  // Desktop / fallback
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.href = url; link.download = nomeArquivo;
+  document.body.appendChild(link); link.click(); document.body.removeChild(link);
+  setTimeout(() => URL.revokeObjectURL(url), 2000);
+  showToast('Imagem salva!');
+}
+
 async function baixarFoto() {
   const canvas = document.getElementById('foto-canvas');
   if (!canvas.width) { showToast('Escolha uma foto primeiro'); return; }
-
-  canvas.toBlob(async (blob) => {
-    const file = new File([blob], 'evvo-treino.jpg', { type: 'image/jpeg' });
-
-    // Tenta Web Share API com arquivo (salva direto na galeria no mobile)
-    if (navigator.share && navigator.canShare && navigator.canShare({ files: [file] })) {
-      try {
-        await navigator.share({ files: [file], title: 'EVVO Treino' });
-        return;
-      } catch(e) {
-        if (e.name === 'AbortError') return; // usuário cancelou
-      }
-    }
-
-    // Fallback: download direto (desktop)
-    const url  = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.download = 'evvo-treino.jpg';
-    link.href = url;
-    link.click();
-    setTimeout(() => URL.revokeObjectURL(url), 1000);
-    showToast('Foto salva!');
-  }, 'image/jpeg', 0.92);
+  canvas.toBlob(async (blob) => { await downloadImagem(blob, 'evvo-treino.jpg'); }, 'image/jpeg', 0.92);
 }
 
 async function baixarMarcaDagua() {
@@ -4406,32 +4475,37 @@ async function compartilharFoto() {
   }, 'image/jpeg', 0.92);
 }
 
+async function downloadImagem(blob, nomeArquivo) {
+  const file = new File([blob], nomeArquivo, { type: blob.type });
+  const isAndroid = /android/i.test(navigator.userAgent);
+  // Tenta Web Share com arquivo
+  if (navigator.share && navigator.canShare?.({ files: [file] })) {
+    try {
+      await navigator.share({ files: [file], title: 'EVVO' });
+      return;
+    } catch(e) {
+      if (e.name === 'AbortError') return;
+    }
+  }
+  // Android: abre em nova aba para segurar e salvar
+  if (isAndroid) {
+    const url = URL.createObjectURL(blob);
+    const a = window.open(url, '_blank');
+    if (a) { showToast('Segure a imagem para salvar'); setTimeout(() => URL.revokeObjectURL(url), 30000); return; }
+  }
+  // Desktop / fallback
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.href = url; link.download = nomeArquivo;
+  document.body.appendChild(link); link.click(); document.body.removeChild(link);
+  setTimeout(() => URL.revokeObjectURL(url), 2000);
+  showToast('Imagem salva!');
+}
+
 async function baixarFoto() {
   const canvas = document.getElementById('foto-canvas');
   if (!canvas.width) { showToast('Escolha uma foto primeiro'); return; }
-
-  canvas.toBlob(async (blob) => {
-    const file = new File([blob], 'evvo-treino.jpg', { type: 'image/jpeg' });
-
-    // Tenta Web Share API com arquivo (salva direto na galeria no mobile)
-    if (navigator.share && navigator.canShare && navigator.canShare({ files: [file] })) {
-      try {
-        await navigator.share({ files: [file], title: 'EVVO Treino' });
-        return;
-      } catch(e) {
-        if (e.name === 'AbortError') return; // usuário cancelou
-      }
-    }
-
-    // Fallback: download direto (desktop)
-    const url  = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.download = 'evvo-treino.jpg';
-    link.href = url;
-    link.click();
-    setTimeout(() => URL.revokeObjectURL(url), 1000);
-    showToast('Foto salva!');
-  }, 'image/jpeg', 0.92);
+  canvas.toBlob(async (blob) => { await downloadImagem(blob, 'evvo-treino.jpg'); }, 'image/jpeg', 0.92);
 }
 
 async function baixarMarcaDagua() {
@@ -5463,6 +5537,7 @@ async function iniciarSessao() {
   if (!error && data) {
     state.sessaoAtiva = data;
     console.log('Sessão iniciada:', data.id);
+    salvarSessaoLocal();
   }
 }
 

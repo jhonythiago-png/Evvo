@@ -2466,6 +2466,48 @@ async function init() {
     goTo('screen-login');
   }
 
+// ── Persistência de sessão para Android ──
+function salvarSessaoLocal() {
+  if (!state.sessaoAtiva) return;
+  try {
+    localStorage.setItem('evvo_sessao', JSON.stringify({
+      sessaoAtiva:       state.sessaoAtiva,
+      diaAtual:          state.diaAtual,
+      exerciciosAtual:   state.exerciciosAtual,
+      execIdx:           state.execIdx,
+      exsConcluidos:     [...state.exsConcluidos],
+      seriesExecutadas:  seriesExecutadas,
+      cardiosConcluidos: [...(state.cardiosConcluidos||new Set())],
+      prs:               state.prs || {},
+      preSessaoPRs:      state.preSessaoPRs || {},
+      ts:                Date.now(),
+    }));
+  } catch(e) {}
+}
+
+function restaurarSessaoLocal() {
+  try {
+    const raw = localStorage.getItem('evvo_sessao');
+    if (!raw) return false;
+    const d = JSON.parse(raw);
+    if (Date.now() - d.ts > 12 * 60 * 60 * 1000) { localStorage.removeItem('evvo_sessao'); return false; }
+    state.sessaoAtiva       = d.sessaoAtiva;
+    state.diaAtual          = d.diaAtual;
+    state.exerciciosAtual   = d.exerciciosAtual;
+    state.execIdx           = d.execIdx || 0;
+    state.exsConcluidos     = new Set(d.exsConcluidos || []);
+    state.cardiosConcluidos = new Set(d.cardiosConcluidos || []);
+    state.prs               = d.prs || {};
+    state.preSessaoPRs      = d.preSessaoPRs || {};
+    seriesExecutadas        = d.seriesExecutadas || {};
+    return true;
+  } catch(e) { localStorage.removeItem('evvo_sessao'); return false; }
+}
+
+function limparSessaoLocal() {
+  try { localStorage.removeItem('evvo_sessao'); } catch(e) {}
+}
+
   sb.auth.onAuthStateChange(async (_event, session) => {
     if (session && !state.user) {
       state.user = session.user;
@@ -2482,6 +2524,15 @@ function hideLoading() {
 function showApp() {
   hideLoading();
   document.getElementById('bottom-nav').classList.add('visible');
+  // Verifica se tinha treino em andamento (Android mata a página ao sair)
+  if (restaurarSessaoLocal()) {
+    navTo('screen-treino', document.querySelector('.nav-item'));
+    setTimeout(() => {
+      showToast('Treino em andamento — continue de onde parou! 💪');
+      setTimeout(() => { renderExec(); goTo('screen-exec'); }, 1200);
+    }, 500);
+    return;
+  }
   navTo('screen-treino', document.querySelector('.nav-item'));
   loadTreino();
   updateGreeting();
@@ -3103,6 +3154,7 @@ function toggleSerie(si) {
     const concluidas = Object.keys(seriesExecutadas).filter(k => k.startsWith(`${state.execIdx}_`)).length;
     if (concluidas >= totalSeries) {
       state.exsConcluidos.add(state.execIdx);
+      salvarSessaoLocal();
       renderExOverview(state.execIdx);
     }
   }
@@ -3280,6 +3332,7 @@ async function finalizarTreino() {
   cardioState.inicio    = null;
   cardioState.concluido = false;
   atualizarBotaoDia();
+  limparSessaoLocal();
   showToast('🎉 Treino finalizado!');
   updateShareTreino(); // atualiza card com dados do treino recém finalizado
   goTo('screen-treino');
@@ -3864,24 +3917,7 @@ async function baixarMarcaDaguaCard() {
     if (scBg) scBg.style.background = bgElOriginal;
 
     canvas.toBlob(async (blob) => {
-      const file = new File([blob], 'evvo-marcadagua.png', { type: 'image/png' });
-      if (navigator.share && navigator.canShare && navigator.canShare({ files: [file] })) {
-        try {
-          await navigator.share({ files: [file], title: 'EVVO Marca Dagua' });
-          return;
-        } catch(e) {
-          if (e.name === 'AbortError') return;
-        }
-      }
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = 'evvo-marcadagua.png';
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      setTimeout(() => URL.revokeObjectURL(url), 2000);
-      showToast('Imagem salva!');
+      await downloadImagem(blob, 'evvo-marcadagua.png');
     }, 'image/png');
   } catch(e) {
     cardEl.style.background = bgOriginal;
@@ -3912,29 +3948,9 @@ async function baixarCard() {
       removeContainer: true,
     });
 
-    const salvar = async (blob) => {
-      const file = new File([blob], 'evvo-card.jpg', { type: 'image/jpeg' });
-      if (navigator.share && navigator.canShare && navigator.canShare({ files: [file] })) {
-        try {
-          await navigator.share({ files: [file], title: 'EVVO Card' });
-          return;
-        } catch(e) {
-          if (e.name === 'AbortError') return;
-        }
-      }
-      // Fallback direto
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = 'evvo-card.jpg';
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      setTimeout(() => URL.revokeObjectURL(url), 2000);
-      showToast('Card salvo!');
-    };
-
-    canvas.toBlob(salvar, 'image/jpeg', 0.95);
+    canvas.toBlob(async (blob) => {
+      await downloadImagem(blob, 'evvo-card.jpg');
+    }, 'image/jpeg', 0.95);
   } catch(e) {
     console.error('html2canvas error:', e);
     showToast('Erro: ' + e.message);
@@ -4244,31 +4260,49 @@ async function compartilharFoto() {
   }, 'image/jpeg', 0.92);
 }
 
+// Função universal de download — funciona iOS e Android
+async function downloadImagem(blob, nomeArquivo) {
+  const isAndroid = /android/i.test(navigator.userAgent);
+  const file = new File([blob], nomeArquivo, { type: blob.type });
+
+  // Tenta Web Share com arquivo (iOS funciona sempre, Android nem sempre)
+  if (navigator.share && navigator.canShare?.({ files: [file] })) {
+    try {
+      await navigator.share({ files: [file], title: 'EVVO' });
+      return;
+    } catch(e) {
+      if (e.name === 'AbortError') return;
+      // Se falhou no Android, cai no fallback
+    }
+  }
+
+  // Fallback universal — abre imagem em nova aba para salvar
+  const url = URL.createObjectURL(blob);
+  if (isAndroid) {
+    // No Android: abre em nova aba — usuário segura e salva
+    const a = window.open(url, '_blank');
+    if (a) {
+      showToast('Segure a imagem para salvar na galeria');
+      setTimeout(() => URL.revokeObjectURL(url), 30000);
+      return;
+    }
+  }
+  // Desktop / fallback
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = nomeArquivo;
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  setTimeout(() => URL.revokeObjectURL(url), 2000);
+  showToast('Imagem salva!');
+}
+
 async function baixarFoto() {
   const canvas = document.getElementById('foto-canvas');
   if (!canvas.width) { showToast('Escolha uma foto primeiro'); return; }
-
   canvas.toBlob(async (blob) => {
-    const file = new File([blob], 'evvo-treino.jpg', { type: 'image/jpeg' });
-
-    // Tenta Web Share API com arquivo (salva direto na galeria no mobile)
-    if (navigator.share && navigator.canShare && navigator.canShare({ files: [file] })) {
-      try {
-        await navigator.share({ files: [file], title: 'EVVO Treino' });
-        return;
-      } catch(e) {
-        if (e.name === 'AbortError') return; // usuário cancelou
-      }
-    }
-
-    // Fallback: download direto (desktop)
-    const url  = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.download = 'evvo-treino.jpg';
-    link.href = url;
-    link.click();
-    setTimeout(() => URL.revokeObjectURL(url), 1000);
-    showToast('Foto salva!');
+    await downloadImagem(blob, 'evvo-treino.jpg');
   }, 'image/jpeg', 0.92);
 }
 
@@ -4422,31 +4456,49 @@ async function compartilharFoto() {
   }, 'image/jpeg', 0.92);
 }
 
+// Função universal de download — funciona iOS e Android
+async function downloadImagem(blob, nomeArquivo) {
+  const isAndroid = /android/i.test(navigator.userAgent);
+  const file = new File([blob], nomeArquivo, { type: blob.type });
+
+  // Tenta Web Share com arquivo (iOS funciona sempre, Android nem sempre)
+  if (navigator.share && navigator.canShare?.({ files: [file] })) {
+    try {
+      await navigator.share({ files: [file], title: 'EVVO' });
+      return;
+    } catch(e) {
+      if (e.name === 'AbortError') return;
+      // Se falhou no Android, cai no fallback
+    }
+  }
+
+  // Fallback universal — abre imagem em nova aba para salvar
+  const url = URL.createObjectURL(blob);
+  if (isAndroid) {
+    // No Android: abre em nova aba — usuário segura e salva
+    const a = window.open(url, '_blank');
+    if (a) {
+      showToast('Segure a imagem para salvar na galeria');
+      setTimeout(() => URL.revokeObjectURL(url), 30000);
+      return;
+    }
+  }
+  // Desktop / fallback
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = nomeArquivo;
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  setTimeout(() => URL.revokeObjectURL(url), 2000);
+  showToast('Imagem salva!');
+}
+
 async function baixarFoto() {
   const canvas = document.getElementById('foto-canvas');
   if (!canvas.width) { showToast('Escolha uma foto primeiro'); return; }
-
   canvas.toBlob(async (blob) => {
-    const file = new File([blob], 'evvo-treino.jpg', { type: 'image/jpeg' });
-
-    // Tenta Web Share API com arquivo (salva direto na galeria no mobile)
-    if (navigator.share && navigator.canShare && navigator.canShare({ files: [file] })) {
-      try {
-        await navigator.share({ files: [file], title: 'EVVO Treino' });
-        return;
-      } catch(e) {
-        if (e.name === 'AbortError') return; // usuário cancelou
-      }
-    }
-
-    // Fallback: download direto (desktop)
-    const url  = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.download = 'evvo-treino.jpg';
-    link.href = url;
-    link.click();
-    setTimeout(() => URL.revokeObjectURL(url), 1000);
-    showToast('Foto salva!');
+    await downloadImagem(blob, 'evvo-treino.jpg');
   }, 'image/jpeg', 0.92);
 }
 
@@ -5483,6 +5535,7 @@ async function iniciarSessao() {
   if (!error && data) {
     state.sessaoAtiva = data;
     console.log('Sessão iniciada:', data.id);
+    salvarSessaoLocal();
   }
 }
 
@@ -5844,6 +5897,7 @@ async function concluirCardio() {
   // Marca como concluído visualmente e na visão geral
   ex._cardio_concluido = true;
   state.exsConcluidos.add(state.execIdx);
+  salvarSessaoLocal();
   renderExec();
   renderExOverview(state.execIdx);
   showToast('Cardio concluído! ✓');
@@ -5966,6 +6020,7 @@ async function finalizarCardio() {
   state.exsConcluidos.add(state.execIdx);
   if (!state.cardiosConcluidos) state.cardiosConcluidos = new Set();
   state.cardiosConcluidos.add(state.execIdx);
+  salvarSessaoLocal();
 
   const msg = isIsoEx ? `Prancha concluída! ${tempoFinalSeg}s 🏆` : `Cardio concluído — ${tempoStr}! 🔥`;
   showToast(msg);

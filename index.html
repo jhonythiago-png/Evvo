@@ -5651,6 +5651,7 @@ async function salvarSerieExecutada(si) {
   // Guarda local para calcular volume
   const key = `${state.execIdx}_${si}`;
   seriesExecutadas[key] = { carga: cargaVal, reps: repsVal, isPR };
+  salvarSessaoLocal(); // persiste a cada série marcada
 }
 
 function mostrarBadgePR(si, carga) {
@@ -5691,6 +5692,7 @@ async function desmarcarSerieExecutada(si) {
     .eq('sessao_id', state.sessaoAtiva.id)
     .eq('exercicio_id', ex.id)
     .eq('numero_serie', si + 1);
+  salvarSessaoLocal();
 }
 
 async function encerrarSessao() {

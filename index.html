@@ -2485,6 +2485,55 @@ function hideLoading() {
   document.getElementById('loading').style.display = 'none';
 }
 
+// ── Persistência de sessão (iOS/Android mata a página após tempo longo) ──
+function salvarSessaoLocal() {
+  if (!state.sessaoAtiva) return;
+  try {
+    localStorage.setItem('evvo_sessao_' + (state.user?.id || ''), JSON.stringify({
+      sessaoAtiva:       state.sessaoAtiva,
+      diaAtual:          state.diaAtual,
+      exerciciosAtual:   state.exerciciosAtual,
+      execIdx:           state.execIdx || 0,
+      exsConcluidos:     [...(state.exsConcluidos || new Set())],
+      seriesExecutadas:  seriesExecutadas || {},
+      cardiosConcluidos: [...(state.cardiosConcluidos || new Set())],
+      prs:               state.prs || {},
+      preSessaoPRs:      state.preSessaoPRs || {},
+      ts:                Date.now(),
+    }));
+  } catch(e) {}
+}
+
+function restaurarSessaoLocal(userId) {
+  try {
+    const raw = localStorage.getItem('evvo_sessao_' + userId);
+    if (!raw) return false;
+    const d = JSON.parse(raw);
+    // Expira em 12h
+    if (Date.now() - d.ts > 12 * 60 * 60 * 1000) {
+      localStorage.removeItem('evvo_sessao_' + userId);
+      return false;
+    }
+    state.sessaoAtiva       = d.sessaoAtiva;
+    state.diaAtual          = d.diaAtual;
+    state.exerciciosAtual   = d.exerciciosAtual || [];
+    state.execIdx           = d.execIdx || 0;
+    state.exsConcluidos     = new Set(d.exsConcluidos || []);
+    state.cardiosConcluidos = new Set(d.cardiosConcluidos || []);
+    state.prs               = d.prs || {};
+    state.preSessaoPRs      = d.preSessaoPRs || {};
+    seriesExecutadas        = d.seriesExecutadas || {};
+    return true;
+  } catch(e) {
+    localStorage.removeItem('evvo_sessao_' + userId);
+    return false;
+  }
+}
+
+function limparSessaoLocal() {
+  try { localStorage.removeItem('evvo_sessao_' + (state.user?.id || '')); } catch(e) {}
+}
+
 function showApp() {
   hideLoading();
   document.getElementById('bottom-nav').classList.add('visible');
@@ -2495,6 +2544,13 @@ function showApp() {
   updateShareProfile();
   carregarPRs();
   iniciarHeartbeat();
+  // Restaura treino em andamento após tudo carregar — chave por user ID evita conflito entre usuários
+  setTimeout(() => {
+    if (state.user?.id && restaurarSessaoLocal(state.user.id)) {
+      showToast('Treino em andamento — continue de onde parou! 💪');
+      setTimeout(() => { renderExec(); goTo('screen-exec'); }, 1000);
+    }
+  }, 1500);
 }
 
 // ═══════════════════════════════════════════
@@ -3121,6 +3177,7 @@ function toggleSerie(si) {
     const concluidas = Object.keys(seriesExecutadas).filter(k => k.startsWith(`${state.execIdx}_`)).length;
     if (concluidas >= totalSeries) {
       state.exsConcluidos.add(state.execIdx);
+      salvarSessaoLocal();
       renderExOverview(state.execIdx);
     }
   }
@@ -3298,6 +3355,7 @@ async function finalizarTreino() {
   cardioState.inicio    = null;
   cardioState.concluido = false;
   atualizarBotaoDia();
+  limparSessaoLocal();
   showToast('🎉 Treino finalizado!');
   updateShareTreino(); // atualiza card com dados do treino recém finalizado
   goTo('screen-treino');
@@ -3997,6 +4055,7 @@ function setFormato(fmt) {
 function excluirFotoShare() {
   fotoShareBase64 = null;
   fotoShareImgCache = null;
+  limparSessaoLocal();
   const canvas = document.getElementById('foto-canvas');
   const ctx = canvas.getContext('2d');
   ctx.clearRect(0, 0, canvas.width, canvas.height);
@@ -5507,6 +5566,7 @@ async function iniciarSessao() {
   if (!error && data) {
     state.sessaoAtiva = data;
     console.log('Sessão iniciada:', data.id);
+    salvarSessaoLocal();
   }
 }
 

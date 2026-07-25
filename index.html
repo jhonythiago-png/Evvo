@@ -1870,6 +1870,24 @@ select.form-input option{background:#0e0e1a;color:#fff}
     </div>
   </div>
 
+  <!-- ══════════ MODAL RETOMAR TREINO ══════════ -->
+  <div class="modal-overlay" id="modal-retomar">
+    <div class="modal">
+      <div class="modal-handle"></div>
+      <div style="text-align:center;padding:8px 0 4px">
+        <div style="font-size:36px;margin-bottom:8px">💪</div>
+        <h3 style="margin-bottom:6px">Treino em andamento</h3>
+        <p id="modal-retomar-txt" style="font-size:13px;color:var(--text3);margin-bottom:20px">Você tem um treino em andamento.</p>
+      </div>
+      <button class="btn-primary" onclick="retomarTreino()" style="margin-bottom:10px">
+        Continuar de onde parei
+      </button>
+      <button onclick="descartarTreino()" style="width:100%;background:var(--bg2);border:1px solid var(--border);border-radius:14px;padding:14px;font-size:13px;font-weight:700;color:var(--text3);cursor:pointer">
+        Começar novo treino
+      </button>
+    </div>
+  </div>
+
   <!-- ══════════ MODAL NOVO DIA ══════════ -->
   <div class="modal-overlay" id="modal-dia">
     <div class="modal">
@@ -2479,6 +2497,69 @@ function hideLoading() {
   document.getElementById('loading').style.display = 'none';
 }
 
+// ── Persistência de sessão ──
+function salvarSessaoLocal() {
+  if (!state.sessaoAtiva || !state.user?.id) return;
+  try {
+    localStorage.setItem('evvo_sessao_' + state.user.id, JSON.stringify({
+      sessaoAtiva:       state.sessaoAtiva,
+      diaAtual:          state.diaAtual,
+      exerciciosAtual:   state.exerciciosAtual,
+      execIdx:           state.execIdx || 0,
+      exsConcluidos:     [...(state.exsConcluidos || new Set())],
+      seriesExecutadas:  seriesExecutadas || {},
+      cardiosConcluidos: [...(state.cardiosConcluidos || new Set())],
+      prs:               state.prs || {},
+      preSessaoPRs:      state.preSessaoPRs || {},
+      ts:                Date.now(),
+    }));
+  } catch(e) {}
+}
+
+function _lerSessaoLocal(userId) {
+  try {
+    const raw = localStorage.getItem('evvo_sessao_' + userId);
+    if (!raw) return null;
+    const d = JSON.parse(raw);
+    if (Date.now() - d.ts > 12 * 60 * 60 * 1000) {
+      localStorage.removeItem('evvo_sessao_' + userId);
+      return null;
+    }
+    return d;
+  } catch(e) { return null; }
+}
+
+function restaurarSessaoLocal(d) {
+  state.sessaoAtiva       = d.sessaoAtiva;
+  state.diaAtual          = d.diaAtual;
+  state.exerciciosAtual   = d.exerciciosAtual || [];
+  state.execIdx           = d.execIdx || 0;
+  state.exsConcluidos     = new Set(d.exsConcluidos || []);
+  state.cardiosConcluidos = new Set(d.cardiosConcluidos || []);
+  state.prs               = d.prs || {};
+  state.preSessaoPRs      = d.preSessaoPRs || {};
+  seriesExecutadas        = d.seriesExecutadas || {};
+}
+
+function limparSessaoLocal() {
+  try { localStorage.removeItem('evvo_sessao_' + (state.user?.id || '')); } catch(e) {}
+}
+
+function retomarTreino() {
+  const d = _lerSessaoLocal(state.user.id);
+  if (!d) { closeModal('modal-retomar'); return; }
+  restaurarSessaoLocal(d);
+  closeModal('modal-retomar');
+  renderExec();
+  goTo('screen-exec');
+}
+
+function descartarTreino() {
+  limparSessaoLocal();
+  closeModal('modal-retomar');
+  showToast('Pode iniciar um novo treino!');
+}
+
 function showApp() {
   hideLoading();
   document.getElementById('bottom-nav').classList.add('visible');
@@ -2489,6 +2570,17 @@ function showApp() {
   updateShareProfile();
   carregarPRs();
   iniciarHeartbeat();
+  // Verifica treino em andamento após carregar
+  setTimeout(() => {
+    if (!state.user?.id) return;
+    const d = _lerSessaoLocal(state.user.id);
+    if (!d) return;
+    // Mostra modal com nome do dia
+    const nomeDia = d.diaAtual?.nome || 'treino anterior';
+    document.getElementById('modal-retomar-txt').textContent =
+      `Você tem um treino de "${nomeDia}" em andamento. O que deseja fazer?`;
+    openModal('modal-retomar');
+  }, 1500);
 }
 
 // ═══════════════════════════════════════════
@@ -3103,6 +3195,7 @@ function toggleSerie(si) {
     const concluidas = Object.keys(seriesExecutadas).filter(k => k.startsWith(`${state.execIdx}_`)).length;
     if (concluidas >= totalSeries) {
       state.exsConcluidos.add(state.execIdx);
+      salvarSessaoLocal();
       renderExOverview(state.execIdx);
     }
   }
@@ -3280,6 +3373,7 @@ async function finalizarTreino() {
   cardioState.inicio    = null;
   cardioState.concluido = false;
   atualizarBotaoDia();
+  limparSessaoLocal();
   showToast('🎉 Treino finalizado!');
   updateShareTreino(); // atualiza card com dados do treino recém finalizado
   goTo('screen-treino');
@@ -3979,6 +4073,7 @@ function setFormato(fmt) {
 function excluirFotoShare() {
   fotoShareBase64 = null;
   fotoShareImgCache = null;
+  limparSessaoLocal();
   const canvas = document.getElementById('foto-canvas');
   const ctx = canvas.getContext('2d');
   ctx.clearRect(0, 0, canvas.width, canvas.height);
@@ -4657,7 +4752,7 @@ function closeModal(id) {
 }
 
 // Fecha modal ao clicar fora
-['modal-dia','modal-ex','modal-ficha','modal-edit-ex'].forEach(id => {
+['modal-dia','modal-ex','modal-ficha','modal-edit-ex','modal-retomar'].forEach(id => {
   const el = document.getElementById(id);
   if(el) el.addEventListener('click', function(e){ if(e.target===this) closeModal(id); });
 });
@@ -5463,6 +5558,7 @@ async function iniciarSessao() {
   if (!error && data) {
     state.sessaoAtiva = data;
     console.log('Sessão iniciada:', data.id);
+    salvarSessaoLocal();
   }
 }
 
@@ -5547,6 +5643,7 @@ async function salvarSerieExecutada(si) {
   // Guarda local para calcular volume
   const key = `${state.execIdx}_${si}`;
   seriesExecutadas[key] = { carga: cargaVal, reps: repsVal, isPR };
+  salvarSessaoLocal();
 }
 
 function mostrarBadgePR(si, carga) {

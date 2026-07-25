@@ -1279,7 +1279,6 @@ select.form-input option{background:#0e0e1a;color:#fff}
           </div>
           <div class="exec-ex-name" id="exec-name">Exercício</div>
           <div class="exec-ex-meta" id="exec-meta">—</div>
-          <div id="exec-obs" style="display:none;margin-top:5px;font-size:11px;color:var(--accent);font-style:italic;line-height:1.4;opacity:0.8"></div>
         </div>
         <div class="series-wrap">
           <div class="series-head">
@@ -1823,11 +1822,6 @@ select.form-input option{background:#0e0e1a;color:#fff}
         <svg viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
         adicionar exercicio
       </button>
-      <div style="padding:16px 16px 0">
-        <button onclick="excluirDia()" style="width:100%;background:var(--bg2);border:1px solid var(--border);border-radius:14px;padding:13px;font-size:12px;font-weight:700;color:#ee097970;cursor:pointer">
-          Excluir este dia de treino
-        </button>
-      </div>
       <div style="height:20px"></div>
     </div>
   </div>
@@ -2485,55 +2479,6 @@ function hideLoading() {
   document.getElementById('loading').style.display = 'none';
 }
 
-// ── Persistência de sessão (iOS/Android mata a página após tempo longo) ──
-function salvarSessaoLocal() {
-  if (!state.sessaoAtiva) return;
-  try {
-    localStorage.setItem('evvo_sessao_' + (state.user?.id || ''), JSON.stringify({
-      sessaoAtiva:       state.sessaoAtiva,
-      diaAtual:          state.diaAtual,
-      exerciciosAtual:   state.exerciciosAtual,
-      execIdx:           state.execIdx || 0,
-      exsConcluidos:     [...(state.exsConcluidos || new Set())],
-      seriesExecutadas:  seriesExecutadas || {},
-      cardiosConcluidos: [...(state.cardiosConcluidos || new Set())],
-      prs:               state.prs || {},
-      preSessaoPRs:      state.preSessaoPRs || {},
-      ts:                Date.now(),
-    }));
-  } catch(e) {}
-}
-
-function restaurarSessaoLocal(userId) {
-  try {
-    const raw = localStorage.getItem('evvo_sessao_' + userId);
-    if (!raw) return false;
-    const d = JSON.parse(raw);
-    // Expira em 12h
-    if (Date.now() - d.ts > 12 * 60 * 60 * 1000) {
-      localStorage.removeItem('evvo_sessao_' + userId);
-      return false;
-    }
-    state.sessaoAtiva       = d.sessaoAtiva;
-    state.diaAtual          = d.diaAtual;
-    state.exerciciosAtual   = d.exerciciosAtual || [];
-    state.execIdx           = d.execIdx || 0;
-    state.exsConcluidos     = new Set(d.exsConcluidos || []);
-    state.cardiosConcluidos = new Set(d.cardiosConcluidos || []);
-    state.prs               = d.prs || {};
-    state.preSessaoPRs      = d.preSessaoPRs || {};
-    seriesExecutadas        = d.seriesExecutadas || {};
-    return true;
-  } catch(e) {
-    localStorage.removeItem('evvo_sessao_' + userId);
-    return false;
-  }
-}
-
-function limparSessaoLocal() {
-  try { localStorage.removeItem('evvo_sessao_' + (state.user?.id || '')); } catch(e) {}
-}
-
 function showApp() {
   hideLoading();
   document.getElementById('bottom-nav').classList.add('visible');
@@ -2544,13 +2489,6 @@ function showApp() {
   updateShareProfile();
   carregarPRs();
   iniciarHeartbeat();
-  // Restaura treino em andamento após tudo carregar — chave por user ID evita conflito entre usuários
-  setTimeout(() => {
-    if (state.user?.id && restaurarSessaoLocal(state.user.id)) {
-      showToast('Treino em andamento — continue de onde parou! 💪');
-      setTimeout(() => { renderExec(); goTo('screen-exec'); }, 1000);
-    }
-  }, 1500);
 }
 
 // ═══════════════════════════════════════════
@@ -2974,18 +2912,6 @@ function renderExec() {
   document.getElementById('exec-name').textContent = ex.nome;
   document.getElementById('exec-meta').textContent = `${ex.grupo_muscular||''}${ex.equipamento?' · '+ex.equipamento:''}`;
 
-  // Observação da série (usa a da primeira série)
-  const obsEl = document.getElementById('exec-obs');
-  const primeiraObs = (ex.series_template || [])[0]?.observacao;
-  if (obsEl) {
-    if (primeiraObs) {
-      obsEl.textContent = primeiraObs;
-      obsEl.style.display = 'block';
-    } else {
-      obsEl.style.display = 'none';
-    }
-  }
-
   // barra de segmentos
   const bar = document.getElementById('seg-bar');
   bar.innerHTML = exs.map((_,i) =>
@@ -3177,7 +3103,6 @@ function toggleSerie(si) {
     const concluidas = Object.keys(seriesExecutadas).filter(k => k.startsWith(`${state.execIdx}_`)).length;
     if (concluidas >= totalSeries) {
       state.exsConcluidos.add(state.execIdx);
-      salvarSessaoLocal();
       renderExOverview(state.execIdx);
     }
   }
@@ -3355,7 +3280,6 @@ async function finalizarTreino() {
   cardioState.inicio    = null;
   cardioState.concluido = false;
   atualizarBotaoDia();
-  limparSessaoLocal();
   showToast('🎉 Treino finalizado!');
   updateShareTreino(); // atualiza card com dados do treino recém finalizado
   goTo('screen-treino');
@@ -4055,7 +3979,6 @@ function setFormato(fmt) {
 function excluirFotoShare() {
   fotoShareBase64 = null;
   fotoShareImgCache = null;
-  limparSessaoLocal();
   const canvas = document.getElementById('foto-canvas');
   const ctx = canvas.getContext('2d');
   ctx.clearRect(0, 0, canvas.width, canvas.height);
@@ -4790,32 +4713,6 @@ async function editarTituloDia() {
     const dia = state.diasTreino.find(d => d.id === state.diaAtual.id);
     if (dia) dia.nome = novo.trim();
     showToast('Nome atualizado!');
-  }
-}
-
-async function excluirDia() {
-  if (!editState.diaEditando) return;
-  if (!confirm('Excluir "' + editState.diaEditando.nome + '"? Todos os exercícios serão removidos.')) return;
-
-  const diaId = editState.diaEditando.id;
-
-  // Cascata: exercícios e series_template
-  const { data: exs } = await sb.from('exercicios').select('id').eq('dia_id', diaId);
-  if (exs?.length) {
-    const exIds = exs.map(e => e.id);
-    await sb.from('series_template').delete().in('exercicio_id', exIds);
-    await sb.from('exercicios').delete().eq('dia_id', diaId);
-  }
-
-  const { error } = await sb.from('dias_treino').delete().eq('id', diaId);
-  if (!error) {
-    showToast('Dia excluído!');
-    editState.diaEditando = null;
-    // Atualiza ficha e volta
-    if (fichaDetalhando) await abrirDetalhesFicha(fichaDetalhando.id);
-    else goTo('screen-detalhe-ficha');
-  } else {
-    showToast('Erro ao excluir dia');
   }
 }
 
@@ -5566,7 +5463,6 @@ async function iniciarSessao() {
   if (!error && data) {
     state.sessaoAtiva = data;
     console.log('Sessão iniciada:', data.id);
-    salvarSessaoLocal();
   }
 }
 
@@ -5651,7 +5547,6 @@ async function salvarSerieExecutada(si) {
   // Guarda local para calcular volume
   const key = `${state.execIdx}_${si}`;
   seriesExecutadas[key] = { carga: cargaVal, reps: repsVal, isPR };
-  salvarSessaoLocal(); // persiste a cada série marcada
 }
 
 function mostrarBadgePR(si, carga) {
@@ -5692,7 +5587,6 @@ async function desmarcarSerieExecutada(si) {
     .eq('sessao_id', state.sessaoAtiva.id)
     .eq('exercicio_id', ex.id)
     .eq('numero_serie', si + 1);
-  salvarSessaoLocal();
 }
 
 async function encerrarSessao() {

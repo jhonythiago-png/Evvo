@@ -1103,6 +1103,37 @@ select.form-input option{background:#0e0e1a;color:#fff}
 .btn-sm.edit svg{stroke:var(--text3)}
 .btn-sm.del{background:#ee097915}
 .btn-sm.del svg{stroke:#ee0979}
+
+/* ═══════════════════════════════════════════
+   PERSONAL & ALUNOS (Fase 2)
+═══════════════════════════════════════════ */
+.aluno-card{background:var(--bg2);border-radius:16px;border:1px solid var(--border);padding:14px;cursor:pointer;transition:background .15s}
+.aluno-card:active{background:var(--bg3)}
+.aluno-top{display:flex;align-items:center;gap:10px}
+.aluno-av{width:38px;height:38px;border-radius:50%;background:var(--grad);display:flex;align-items:center;justify-content:center;font-size:15px;font-weight:900;color:#fff;flex-shrink:0}
+.aluno-info{flex:1;min-width:0}
+.aluno-nome{font-size:14px;font-weight:800;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.aluno-meta{font-size:11px;color:var(--text3);margin-top:2px}
+.aluno-linha{font-size:11px;color:var(--text2);margin-top:9px}
+.aluno-linha.dim{color:var(--text3);margin-top:4px}
+.est{font-size:10px;font-weight:800;padding:4px 10px;border-radius:20px;white-space:nowrap;flex-shrink:0}
+.est-ativo{background:#39d35318;color:#39d353}
+.est-carencia{background:#f5a62318;color:#f5a623}
+.est-vencido,.est-bloqueado{background:#ee097918;color:#ee0979}
+.est-aguardando{background:#00cfff18;color:#00cfff}
+.est-pausado{background:var(--border);color:var(--text3)}
+.btn-ghost{width:100%;margin-top:10px;background:var(--bg3);border:1px solid var(--border2);border-radius:14px;padding:14px;color:var(--text2);font-size:13px;font-weight:700;cursor:pointer}
+.btn-chip{background:var(--bg2);border:1px solid var(--border2);border-radius:20px;padding:9px 14px;color:var(--text2);font-size:12px;font-weight:700;cursor:pointer}
+.btn-chip.destaque{background:#ff6a0018;border-color:#ff6a0035;color:var(--accent)}
+.na-box{background:var(--bg3);border:1px solid var(--border2);border-radius:14px;padding:14px 16px;font-size:14px;color:var(--text2);line-height:1.8;margin-bottom:14px;word-break:break-all}
+.na-box b{color:var(--text);font-weight:800}
+.acesso-overlay{position:fixed;inset:0;background:var(--bg);z-index:450;display:none;align-items:center;justify-content:center;padding:28px}
+.acesso-box{width:100%;max-width:360px;text-align:center}
+.acesso-ico{font-size:54px;margin-bottom:14px}
+.acesso-box h2{font-size:22px;font-weight:900;color:var(--text);letter-spacing:-.5px;margin-bottom:10px}
+.acesso-box p{font-size:14px;color:var(--text3);line-height:1.55;margin-bottom:24px}
+.acesso-chip{margin-top:10px;display:none;align-items:center;gap:6px;font-size:11px;font-weight:800;padding:6px 12px;border-radius:20px;line-height:1.3}
+.acesso-chip.aviso{background:#f5a62318;color:#f5a623;border:1px solid #f5a62330}
 </style>
 </head>
 <body>
@@ -1189,6 +1220,7 @@ select.form-input option{background:#0e0e1a;color:#fff}
           <div style="font-size:14px;color:var(--text2);font-weight:700;letter-spacing:-.2px" id="treino-greeting">Ola 👋</div>
         </div>
         <div class="hero-title">Meu Treino</div>
+        <div id="acesso-chip" class="acesso-chip"></div>
         <!-- Seletor de ficha -->
         <div id="ficha-selector-wrap" style="margin-top:10px;display:none">
           <button onclick="toggleFichaSelector()" id="ficha-selector-btn"
@@ -1755,7 +1787,7 @@ select.form-input option{background:#0e0e1a;color:#fff}
           <span>Alterar senha</span>
           <svg class="arr" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg>
         </div>
-        <div class="menu-item" onclick="abrirUpgrade()" style="background:#f5a62310;border-color:#f5a62330">
+        <div class="menu-item" id="menu-upgrade" onclick="abrirUpgrade()" style="background:#f5a62310;border-color:#f5a62330">
           <svg viewBox="0 0 24 24" style="stroke:#f5a623"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
           <span style="color:#f5a623;font-weight:800">Upgrade para Pro</span>
           <svg class="arr" viewBox="0 0 24 24" style="stroke:#f5a623"><polyline points="9 18 15 12 9 6"/></svg>
@@ -1793,12 +1825,102 @@ select.form-input option{background:#0e0e1a;color:#fff}
       <svg viewBox="0 0 24 24"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
       <span>Share</span>
     </button>
+    <button class="nav-item" id="nav-alunos" style="display:none" onclick="navTo('screen-alunos',this)">
+      <svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+      <span>Alunos</span>
+    </button>
     <button class="nav-item" onclick="navTo('screen-perfil',this)">
       <svg viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
       <span>Perfil</span>
     </button>
   </nav>
 
+
+  <!-- ══════════ TELA: ALUNOS (personal) ══════════ -->
+  <div class="screen" id="screen-alunos">
+    <div class="scroll">
+      <div class="hero">
+        <div class="hero-glow"></div>
+        <div class="hero-label">Gestão</div>
+        <div class="hero-title">Alunos</div>
+        <div class="hero-sub" id="alunos-sub">—</div>
+      </div>
+      <div id="alunos-aviso"></div>
+      <div style="padding:0 16px 12px">
+        <button class="btn-main" id="btn-novo-aluno" style="margin:0;width:100%" onclick="abrirNovoAluno()">
+          <svg viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+          <span>Novo aluno</span>
+        </button>
+      </div>
+      <div id="alunos-pend"></div>
+      <div class="day-list" id="alunos-lista" style="padding:0 16px;gap:9px"></div>
+      <div style="height:20px"></div>
+    </div>
+  </div>
+
+  <!-- ══════════ TELA: DETALHE DO ALUNO ══════════ -->
+  <div class="screen" id="screen-aluno-detalhe">
+    <div class="scroll">
+      <div class="back-row">
+        <button class="btn-back" onclick="voltarAlunos()"><svg viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg></button>
+        <span class="back-label">Alunos</span>
+      </div>
+      <div class="hero" style="padding-top:12px">
+        <div class="hero-glow"></div>
+        <div class="hero-label" id="ad-estado-label">—</div>
+        <div class="hero-title" id="ad-nome">—</div>
+        <div class="hero-sub" id="ad-sub">—</div>
+      </div>
+      <div id="ad-acoes" style="padding:0 16px 14px;display:flex;gap:8px;flex-wrap:wrap"></div>
+      <div class="sec-lbl">Treinos recentes</div>
+      <div id="ad-sessoes" style="padding:0 16px;display:flex;flex-direction:column;gap:8px"></div>
+      <div class="sec-lbl" style="margin-top:18px">Medidas</div>
+      <div id="ad-medidas" style="padding:0 16px"></div>
+      <div class="sec-lbl" style="margin-top:18px">Recordes</div>
+      <div id="ad-prs" style="padding:0 16px;display:flex;flex-direction:column;gap:8px"></div>
+      <div class="sec-lbl" style="margin-top:18px">Fichas</div>
+      <div id="ad-fichas" style="padding:0 16px;display:flex;flex-direction:column;gap:8px"></div>
+      <div style="height:20px"></div>
+    </div>
+  </div>
+
+  <!-- ══════════ MODAL NOVO ALUNO ══════════ -->
+  <div class="modal-overlay" id="modal-novo-aluno">
+    <div class="modal">
+      <div class="modal-handle"></div>
+      <div id="na-form">
+        <h3>Novo aluno</h3>
+        <div class="login-error" id="na-erro"></div>
+        <div class="form-group"><label class="form-label">Nome do aluno</label>
+          <input class="form-input" type="text" id="na-nome" placeholder="Nome completo" maxlength="80"></div>
+        <div class="form-group"><label class="form-label">Usuário (para entrar no app)</label>
+          <input class="form-input" type="text" id="na-user" placeholder="sem espaços" autocapitalize="none" maxlength="30"></div>
+        <div class="form-group"><label class="form-label">Senha inicial</label>
+          <input class="form-input" type="text" id="na-senha" placeholder="mínimo 6 caracteres" maxlength="72"></div>
+        <button class="btn-primary" id="na-btn" onclick="criarAluno()">Criar aluno</button>
+      </div>
+      <div id="na-ok" style="display:none">
+        <h3>Aluno criado ✅</h3>
+        <p style="font-size:13px;color:var(--text3);line-height:1.5;margin-bottom:14px">Envie estes dados ao aluno. O acesso só funciona depois que o administrador liberar.</p>
+        <div class="na-box">Usuário: <b id="na-ok-user"></b><br>Senha: <b id="na-ok-senha"></b></div>
+        <button class="btn-primary" onclick="copiarAcessoAluno()">Copiar acesso</button>
+        <button class="btn-ghost" onclick="pedirLiberacaoUltimo()">💬 Pedir liberação ao administrador</button>
+        <button class="btn-ghost" onclick="closeModal('modal-novo-aluno')">Fechar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════ MODAL NOVA SENHA DO ALUNO ══════════ -->
+  <div class="modal-overlay" id="modal-senha-aluno">
+    <div class="modal">
+      <div class="modal-handle"></div>
+      <h3>Nova senha</h3>
+      <div class="login-error" id="sa-erro"></div>
+      <div class="form-group"><label class="form-label">Nova senha do aluno</label>
+        <input class="form-input" type="text" id="sa-senha" placeholder="mínimo 6 caracteres" maxlength="72"></div>
+      <button class="btn-primary" onclick="redefinirSenhaAluno()">Salvar nova senha</button>
+    </div>
+  </div>
 
   <!-- ══════════ TELA: EDITAR DIA ══════════ -->
   <div class="screen" id="screen-editar-dia">
@@ -1823,6 +1945,11 @@ select.form-input option{background:#0e0e1a;color:#fff}
         <svg viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
         adicionar exercicio
       </button>
+      <div style="padding:16px 16px 0">
+        <button onclick="excluirDia()" style="width:100%;background:var(--bg2);border:1px solid var(--border);border-radius:14px;padding:13px;font-size:12px;font-weight:700;color:#ee097970;cursor:pointer">
+          Excluir este dia de treino
+        </button>
+      </div>
       <div style="height:20px"></div>
     </div>
   </div>
@@ -2444,6 +2571,17 @@ select.form-input option{background:#0e0e1a;color:#fff}
 
 </div>
 
+<!-- AVISO DE ACESSO DO ALUNO -->
+<div class="acesso-overlay" id="acesso-overlay">
+  <div class="acesso-box">
+    <div class="acesso-ico" id="acesso-ico">⏳</div>
+    <h2 id="acesso-titulo">Acesso aguardando liberação</h2>
+    <p id="acesso-msg"></p>
+    <button class="btn-primary" id="acesso-btn" onclick="atualizarAcesso()">Já foi liberado? Atualizar</button>
+    <button class="btn-ghost" onclick="doLogout()">Sair</button>
+  </div>
+</div>
+
 <!-- TOAST -->
 <div class="toast" id="toast"></div>
 
@@ -2470,6 +2608,15 @@ let state = {
   medidas: null,
   exsConcluidos: new Set(), // índices dos exercícios concluídos na sessão atual
 };
+
+// Trava contra clique duplo em operações que gravam no banco
+let _salvando = false;
+function iniciarSalvamento() {
+  if (_salvando) return false;
+  _salvando = true;
+  return true;
+}
+function finalizarSalvamento() { _salvando = false; }
 
 // ═══════════════════════════════════════════
 // INIT
@@ -2571,6 +2718,7 @@ function showApp() {
   updateShareProfile();
   carregarPRs();
   iniciarHeartbeat();
+  if (ehAluno()) verificarAcesso();   // aluno: confere se o acesso está liberado
   // Verifica treino em andamento após carregar
   setTimeout(() => {
     if (!state.user?.id) return;
@@ -2603,7 +2751,12 @@ async function doLogin() {
   if (!user || !pass) { err.textContent = 'Preencha usuario e senha.'; err.style.display = 'block'; return; }
   const fakeEmail = user + '@evvo.app';
   const { error } = await sb.auth.signInWithPassword({ email: fakeEmail, password: pass });
-  if (error) { err.textContent = 'Usuario ou senha incorretos.'; err.style.display = 'block'; }
+  if (error) {
+    err.textContent = /banned/i.test(error.message || '')
+      ? 'Seu acesso está pausado. Fale com seu personal.'
+      : 'Usuario ou senha incorretos.';
+    err.style.display = 'block';
+  }
 }
 
 async function doRegister() {
@@ -2632,8 +2785,15 @@ async function doRegister() {
 
 async function doLogout() {
   pararHeartbeat();
+  _salvando = false;
   await sb.auth.signOut();
-  state = { user:null, perfil:null, fichaAtiva:null, diasTreino:[], diaAtual:null, exerciciosAtual:[], execIdx:0, sessaoAtiva:null, medidas:null, exsConcluidos:new Set() };
+  state = { user:null, perfil:null, fichaAtiva:null, diasTreino:[], diaAtual:null, exerciciosAtual:[], execIdx:0, sessaoAtiva:null, medidas:null, exsConcluidos:new Set(), prs:{}, preSessaoPRs:{}, todasFichas:[], acesso:null };
+  seriesExecutadas = {};
+  fichaDetalhando = null;
+  fotoShareBase64 = null;
+  fotoShareImgCache = null;
+  aplicarAcesso(null);
+  const _na = document.getElementById('nav-alunos'); if (_na) _na.style.display = 'none';
   document.getElementById('bottom-nav').classList.remove('visible');
   goTo('screen-login');
 }
@@ -2662,6 +2822,7 @@ async function loadPerfil() {
     const emailEl = document.getElementById('profile-email');
     const uname = data.email.replace('@evvo.app','');
     if (emailEl) emailEl.textContent = '@' + uname + (idade ? ' · ' + idade + ' anos' : '');
+    aplicarPapelUI();
   }
 }
 
@@ -3400,6 +3561,14 @@ document.getElementById('modal-ficha').addEventListener('click', function(e) {
 });
 
 async function criarFicha() {
+  if (!iniciarSalvamento()) { showToast('Aguarde...'); return; }
+  try {
+    return await _criarFicha();
+  } finally {
+    finalizarSalvamento();
+  }
+}
+async function _criarFicha() {
   const nome = document.getElementById('ficha-nome').value.trim();
   if (!nome) { showToast('Digite um nome para a ficha'); return; }
 
@@ -3439,19 +3608,29 @@ async function loadFichas() {
     return;
   }
 
-  // Para cada ficha busca dias e sessoes realizadas
-  const fichasComDados = await Promise.all(fichas.map(async f => {
-    const [{ count: totalDias }, { data: sessoes }] = await Promise.all([
-      sb.from('dias_treino').select('id', { count: 'exact', head: true }).eq('ficha_id', f.id),
-      sb.from('sessoes').select('volume_total_kg').eq('ficha_id', f.id).not('finalizado_em', 'is', null)
-    ]);
-    const totalSessoes = sessoes?.length || 0;
-    const volumeTotal  = sessoes?.reduce((acc, s) => acc + (s.volume_total_kg || 0), 0) || 0;
+  // Busca dias e sessões de TODAS as fichas em 2 consultas (não 2 por ficha)
+  const fichaIds = fichas.map(f => f.id);
+  const [{ data: todosOsDias }, { data: todasSessoes }] = await Promise.all([
+    sb.from('dias_treino').select('ficha_id').in('ficha_id', fichaIds),
+    sb.from('sessoes').select('ficha_id, volume_total_kg').in('ficha_id', fichaIds).not('finalizado_em', 'is', null)
+  ]);
+  const diasPorFicha = {};
+  (todosOsDias || []).forEach(d => { diasPorFicha[d.ficha_id] = (diasPorFicha[d.ficha_id] || 0) + 1; });
+  const sessoesPorFicha = {};
+  (todasSessoes || []).forEach(s => {
+    if (!sessoesPorFicha[s.ficha_id]) sessoesPorFicha[s.ficha_id] = { count: 0, volume: 0 };
+    sessoesPorFicha[s.ficha_id].count++;
+    sessoesPorFicha[s.ficha_id].volume += s.volume_total_kg || 0;
+  });
+  const fichasComDados = fichas.map(f => {
+    const totalDias    = diasPorFicha[f.id] || 0;
+    const totalSessoes = sessoesPorFicha[f.id]?.count || 0;
+    const volumeTotal  = sessoesPorFicha[f.id]?.volume || 0;
     const volumeMedio  = totalSessoes > 0 ? Math.round(volumeTotal / totalSessoes) : 0;
     const inicio = new Date(f.created_at).toLocaleDateString('pt-BR', { day:'2-digit', month:'short', year:'numeric' });
     const fim    = f.archived_at ? new Date(f.archived_at).toLocaleDateString('pt-BR', { day:'2-digit', month:'short' }) : 'hoje';
-    return { ...f, totalDias: totalDias || 0, totalSessoes, volumeMedio, inicio, fim };
-  }));
+    return { ...f, totalDias, totalSessoes, volumeMedio, inicio, fim };
+  });
 
   list.innerHTML = fichasComDados.map(f => {
     const nomeEscapado = f.nome.replace(/'/g, "\'");
@@ -3949,26 +4128,7 @@ async function baixarMarcaDaguaCard() {
     cardEl.style.background = bgOriginal;
     if (scBg) scBg.style.background = bgElOriginal;
 
-    canvas.toBlob(async (blob) => {
-      const file = new File([blob], 'evvo-marcadagua.png', { type: 'image/png' });
-      if (navigator.share && navigator.canShare && navigator.canShare({ files: [file] })) {
-        try {
-          await navigator.share({ files: [file], title: 'EVVO Marca Dagua' });
-          return;
-        } catch(e) {
-          if (e.name === 'AbortError') return;
-        }
-      }
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = 'evvo-marcadagua.png';
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      setTimeout(() => URL.revokeObjectURL(url), 2000);
-      showToast('Imagem salva!');
-    }, 'image/png');
+    canvas.toBlob(async (blob) => { await downloadImagem(blob, 'evvo-marcadagua.png'); }, 'image/png');
   } catch(e) {
     cardEl.style.background = bgOriginal;
     if (scBg) scBg.style.background = bgElOriginal;
@@ -3998,29 +4158,7 @@ async function baixarCard() {
       removeContainer: true,
     });
 
-    const salvar = async (blob) => {
-      const file = new File([blob], 'evvo-card.jpg', { type: 'image/jpeg' });
-      if (navigator.share && navigator.canShare && navigator.canShare({ files: [file] })) {
-        try {
-          await navigator.share({ files: [file], title: 'EVVO Card' });
-          return;
-        } catch(e) {
-          if (e.name === 'AbortError') return;
-        }
-      }
-      // Fallback direto
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = 'evvo-card.jpg';
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      setTimeout(() => URL.revokeObjectURL(url), 2000);
-      showToast('Card salvo!');
-    };
-
-    canvas.toBlob(salvar, 'image/jpeg', 0.95);
+    canvas.toBlob(async (blob) => { await downloadImagem(blob, 'evvo-card.jpg'); }, 'image/jpeg', 0.95);
   } catch(e) {
     console.error('html2canvas error:', e);
     showToast('Erro: ' + e.message);
@@ -4711,7 +4849,9 @@ function solicitarUpgrade() {
 }
 
 function isPro() {
-  return state.perfil?.plano === 'pro';
+  if (state.perfil?.plano === 'pro') return true;
+  // Aluno de personal: recursos Pro enquanto o acesso estiver liberado
+  return ehAluno() && ACESSO_OK.includes(state.acesso?.estado);
 }
 
 function bloqueadoFree(msg) {
@@ -4730,8 +4870,12 @@ function showToast(msg) {
 // OBSERVAR NAVEGAÇÃO PARA CARREGAR DADOS
 // ═══════════════════════════════════════════
 const origNavTo = navTo;
+let _telaAtual = '';
 window.navTo = function(screenId, btn) {
   origNavTo(screenId, btn);
+  if (screenId === _telaAtual) return;   // já estava nesta aba: não recarrega
+  _telaAtual = screenId;
+  if (screenId === 'screen-alunos') carregarAlunos();
   if (screenId === 'screen-evolucao') { loadFichas(); loadHistorico(); }
   if (screenId === 'screen-medidas') setupMedidasDate();
   if (screenId === 'screen-share') updateShareTreino();
@@ -4760,7 +4904,7 @@ function closeModal(id) {
 }
 
 // Fecha modal ao clicar fora
-['modal-dia','modal-ex','modal-ficha','modal-edit-ex','modal-retomar'].forEach(id => {
+['modal-dia','modal-ex','modal-ficha','modal-edit-ex','modal-retomar','modal-novo-aluno','modal-senha-aluno'].forEach(id => {
   const el = document.getElementById(id);
   if(el) el.addEventListener('click', function(e){ if(e.target===this) closeModal(id); });
 });
@@ -4781,6 +4925,14 @@ function openModalDia() {
 }
 
 async function criarDia() {
+  if (!iniciarSalvamento()) { showToast('Aguarde...'); return; }
+  try {
+    return await _criarDia();
+  } finally {
+    finalizarSalvamento();
+  }
+}
+async function _criarDia() {
   const nome = document.getElementById('dia-nome-input').value.trim();
   const dia  = parseInt(document.getElementById('dia-semana-input').value);
   if (!nome) { showToast('Digite o nome do treino'); return; }
@@ -4799,6 +4951,7 @@ async function criarDia() {
   closeModal('modal-dia');
   showToast('Dia criado!');
   await loadTreino();
+  if (fichaDetalhando) await abrirDetalhesFicha(fichaDetalhando.id);
 }
 
 // ═══════════════════════════════════════════
@@ -4896,6 +5049,14 @@ function toggleCardioFields() {
 }
 
 async function criarExercicio() {
+  if (!iniciarSalvamento()) { showToast('Aguarde...'); return; }
+  try {
+    return await _criarExercicio();
+  } finally {
+    finalizarSalvamento();
+  }
+}
+async function _criarExercicio() {
   const nome   = document.getElementById('ex-nome-input').value.trim();
   const tipo   = document.getElementById('ex-tipo-input').value;
   const grupo  = tipo === 'forca' ? document.getElementById('ex-grupo-input').value : 'Cardio';
@@ -5098,6 +5259,17 @@ function removerSerie(idx) {
 }
 
 async function salvarSeries() {
+  if (!iniciarSalvamento()) { showToast('Aguarde...'); return; }
+  const _btnSalvar = document.querySelector('#screen-editar-ex .btn-main');
+  if (_btnSalvar) { _btnSalvar.disabled = true; _btnSalvar.style.opacity = '0.6'; }
+  try {
+    return await _salvarSeries();
+  } finally {
+    finalizarSalvamento();
+    if (_btnSalvar) { _btnSalvar.disabled = false; _btnSalvar.style.opacity = ''; }
+  }
+}
+async function _salvarSeries() {
   if (!editState.exEditando) return;
   const series = editState.seriesEditor;
   if (!series.length) { showToast('Adicione ao menos 1 serie'); return; }
@@ -5172,17 +5344,11 @@ async function abrirDetalhesFicha(fichaId) {
   document.getElementById('detalhe-ficha-status-label').textContent =
     ficha.status === 'ativa' ? '✦ Ficha ativa' : 'Ficha arquivada';
 
-  // Busca dias com exercícios
-  const { data: dias } = await sb.from('dias_treino')
-    .select('*, exercicios(id)')
-    .eq('ficha_id', fichaId)
-    .order('ordem');
-
-  // Busca treinos realizados
-  const { data: sessoes } = await sb.from('sessoes')
-    .select('id')
-    .eq('ficha_id', fichaId)
-    .not('finalizado_em', 'is', null);
+  // Busca dias e treinos realizados ao mesmo tempo
+  const [{ data: dias }, { data: sessoes }] = await Promise.all([
+    sb.from('dias_treino').select('*, exercicios(id)').eq('ficha_id', fichaId).order('ordem'),
+    sb.from('sessoes').select('id').eq('ficha_id', fichaId).not('finalizado_em', 'is', null)
+  ]);
 
   const totalDias    = dias?.length || 0;
   const totalTreinos = sessoes?.length || 0;
@@ -5270,6 +5436,19 @@ async function ativarFicha() {
 async function confirmarExcluirFicha() {
   if (!fichaDetalhando) return;
   if (!confirm('Excluir "' + fichaDetalhando.nome + '"? Esta ação não pode ser desfeita.')) return;
+
+  // Cascata: dias → exercícios → séries (nada fica órfão no banco)
+  const { data: _dias } = await sb.from('dias_treino').select('id').eq('ficha_id', fichaDetalhando.id);
+  if (_dias?.length) {
+    const diaIds = _dias.map(d => d.id);
+    const { data: _exs } = await sb.from('exercicios').select('id').in('dia_id', diaIds);
+    if (_exs?.length) {
+      const exIds = _exs.map(e => e.id);
+      await sb.from('series_template').delete().in('exercicio_id', exIds);
+      await sb.from('exercicios').delete().in('dia_id', diaIds);
+    }
+    await sb.from('dias_treino').delete().eq('ficha_id', fichaDetalhando.id);
+  }
 
   const { error } = await sb.from('fichas').delete().eq('id', fichaDetalhando.id);
   if (!error) {
@@ -5756,7 +5935,7 @@ async function loadHistorico() {
     histQuery = histQuery.gte('iniciado_em', limite.toISOString());
   }
 
-  const { data } = await histQuery.limit(100);
+  const { data } = await histQuery.limit(50);
 
   const list = document.getElementById('hist-list');
   if (!data || !data.length) {
@@ -5803,20 +5982,14 @@ async function loadHistorico() {
 }
 
 async function abrirDetalhesSessao(sessaoId) {
-  // Carrega sessão completa com exercícios e séries
-  const { data: sessao, error } = await sb.from('sessoes')
-    .select(`*, dias_treino(nome, dia_semana), fichas(nome)`)
-    .eq('id', sessaoId)
-    .single();
+  // Sessão e séries ao mesmo tempo
+  const [{ data: sessao, error }, { data: series }] = await Promise.all([
+    sb.from('sessoes').select(`*, dias_treino(nome, dia_semana), fichas(nome)`).eq('id', sessaoId).single(),
+    sb.from('series_executadas').select(`*, exercicios(nome, tipo, grupo_muscular)`)
+      .eq('sessao_id', sessaoId).eq('concluida', true).order('executado_em')
+  ]);
 
   if (error || !sessao) { showToast('Erro ao carregar treino'); return; }
-
-  // Carrega séries executadas com nome do exercício
-  const { data: series } = await sb.from('series_executadas')
-    .select(`*, exercicios(nome, tipo, grupo_muscular)`)
-    .eq('sessao_id', sessaoId)
-    .eq('concluida', true)
-    .order('executado_em');
 
   // ── Header ──
   const inicio  = new Date(sessao.iniciado_em);
@@ -5990,7 +6163,7 @@ function iniciarCardio() {
     const elapsed = Math.floor((Date.now() - cardioState.inicio) / 1000);
     const timerEl = document.getElementById('cardio-timer');
     if (timerEl) timerEl.textContent = formatarTempo(elapsed);
-  }, 500); // 500ms para mais precisão
+  }, 1000);
 }
 
 async function finalizarCardio() {
@@ -6704,7 +6877,7 @@ async function verificarStatus() {
   try {
     const { data, error } = await sb
       .from('perfis')
-      .select('status, plano, nome, app_version')
+      .select('status, plano, nome, app_version, papel')
       .eq('id', state.user.id)
       .single();
 
@@ -6734,7 +6907,11 @@ async function verificarStatus() {
         planEl.className = 'profile-plan ' + (data.plano === 'pro' ? 'plan-pro' : 'plan-free');
       }
       if (data.plano === 'pro') showToast('🎉 Bem-vindo ao plano Pro!');
+      atualizarBadgePlano();
     }
+
+    // 2b. Aluno de personal — confere se o acesso continua liberado
+    if (data.papel === 'aluno') await verificarAcesso();
 
     // 3. Nome alterado pelo admin — atualiza
     if (state.perfil && data.nome !== state.perfil.nome) {
@@ -6786,6 +6963,433 @@ document.addEventListener('visibilitychange', () => {
     }
   }
 });
+
+// ═══════════════════════════════════════════
+// PERSONAL & ALUNOS  (Fase 2)
+// ═══════════════════════════════════════════
+const WHATS_ADMIN = '5544984373004';
+const URL_APP     = 'https://jhonythiago-png.github.io/Evvo/';
+const ACESSO_OK   = ['ativo', 'carencia'];
+
+function escHtml(s) {
+  return String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' }[c]));
+}
+function ehPersonal() { return state.perfil?.papel === 'personal'; }
+function ehAluno()    { return state.perfil?.papel === 'aluno'; }
+
+function fmtDataCurta(iso) {
+  if (!iso) return '—';
+  return new Date(iso).toLocaleDateString('pt-BR', { day:'2-digit', month:'2-digit', year:'2-digit' });
+}
+function tempoRelativo(iso) {
+  if (!iso) return null;
+  const dias = Math.floor((Date.now() - new Date(iso).getTime()) / 86400000);
+  if (dias <= 0) return 'hoje';
+  if (dias === 1) return 'ontem';
+  if (dias < 14) return 'há ' + dias + ' dias';
+  if (dias < 60) return 'há ' + Math.floor(dias / 7) + ' semanas';
+  return 'há ' + Math.floor(dias / 30) + ' meses';
+}
+
+// ── ACESSO DO ALUNO ─────────────────────────
+// Só alunos criados por um personal passam por aqui; os demais usuários
+// nunca chamam o servidor para isso.
+async function verificarAcesso() {
+  if (!state.user || !ehAluno()) { aplicarAcesso(null); return; }
+  const { data, error } = await sb.rpc('meu_acesso');
+  if (error || !data) return; // falha de rede: mantém o estado atual
+  aplicarAcesso(data);
+}
+
+let _acessoBloqueado = false;
+function aplicarAcesso(a) {
+  state.acesso = a;
+  const ov   = document.getElementById('acesso-overlay');
+  const chip = document.getElementById('acesso-chip');
+  if (!ov || !chip) return;
+
+  if (!a || !ehAluno()) {
+    ov.style.display = 'none'; chip.style.display = 'none'; _acessoBloqueado = false;
+    atualizarBadgePlano();
+    return;
+  }
+
+  const personal = a.personal_nome || 'seu personal';
+  if (!ACESSO_OK.includes(a.estado)) {
+    const t = {
+      aguardando: ['⏳', 'Acesso aguardando liberação', 'Seu acesso ainda não foi liberado. Fale com ' + personal + ' para liberar.'],
+      vencido:    ['🔒', 'Acesso vencido',              'Seu acesso venceu. Fale com ' + personal + ' para renovar.'],
+      pausado:    ['⏸️', 'Acesso pausado',              personal + ' pausou o seu acesso. Fale com ele para reativar.'],
+    }[a.estado] || ['🚫', 'Acesso indisponível', 'Seu acesso está suspenso. Fale com ' + personal + '.'];
+    document.getElementById('acesso-ico').textContent    = t[0];
+    document.getElementById('acesso-titulo').textContent = t[1];
+    document.getElementById('acesso-msg').textContent    = t[2];
+    ov.style.display = 'flex';
+    chip.style.display = 'none';
+    _acessoBloqueado = true;
+    atualizarBadgePlano();
+    return;
+  }
+
+  ov.style.display = 'none';
+  if (_acessoBloqueado) {          // acabou de ser liberado
+    _acessoBloqueado = false;
+    recarregarDadosApp();
+    showToast('Acesso liberado! 🎉');
+  }
+  if (a.estado === 'carencia') {
+    chip.textContent = '⚠️ Acesso vencido — em carência. Renove com ' + personal;
+    chip.className = 'acesso-chip aviso'; chip.style.display = 'inline-flex';
+  } else if (a.dias_restantes != null && a.dias_restantes <= 5) {
+    const n = a.dias_restantes;
+    chip.textContent = '⏰ Seu acesso vence ' + (n <= 1 ? 'em 1 dia' : 'em ' + n + ' dias');
+    chip.className = 'acesso-chip aviso'; chip.style.display = 'inline-flex';
+  } else {
+    chip.style.display = 'none';
+  }
+  atualizarBadgePlano();
+}
+
+async function atualizarAcesso() {
+  const btn = document.getElementById('acesso-btn');
+  btn.disabled = true; btn.textContent = 'Verificando...';
+  await verificarAcesso();
+  btn.disabled = false; btn.textContent = 'Já foi liberado? Atualizar';
+  if (_acessoBloqueado) showToast('Ainda não foi liberado');
+}
+
+function recarregarDadosApp() {
+  loadTreino(); loadMedidas(); carregarPRs(); loadFichas();
+}
+
+// Mostra/esconde o que depende do papel (personal, aluno, usuário comum)
+function aplicarPapelUI() {
+  const nav = document.getElementById('nav-alunos');
+  if (nav) nav.style.display = ehPersonal() ? 'flex' : 'none';
+  const up = document.getElementById('menu-upgrade');
+  if (up) up.style.display = ehAluno() ? 'none' : 'flex';
+  atualizarBadgePlano();
+}
+function atualizarBadgePlano() {
+  const el = document.getElementById('profile-plan');
+  if (!el || !state.perfil) return;
+  if (ehAluno()) {
+    el.textContent = '🎓 Aluno' + (state.acesso?.personal_nome ? ' · ' + state.acesso.personal_nome : '');
+    el.className = 'profile-plan plan-pro';
+  } else if (ehPersonal()) {
+    el.textContent = state.perfil.plano === 'pro' ? '🏋️ Personal · Pro' : '🏋️ Personal';
+    el.className = 'profile-plan plan-pro';
+  }
+}
+
+// ── SERVIDOR: criar aluno, pausar, senha ────
+async function chamarFnAluno(body) {
+  const { data, error } = await sb.functions.invoke('gerir-aluno', { body });
+  if (error) {
+    let msg = error.message || 'Erro de conexão';
+    try {
+      if (error.context && typeof error.context.json === 'function') {
+        const j = await error.context.json();
+        if (j && j.erro) msg = j.erro;
+      }
+    } catch (_) {}
+    if (/Failed to send|fetch|NetworkError/i.test(msg)) msg = 'Sem conexão com o servidor. Tente novamente.';
+    return { ok: false, erro: msg };
+  }
+  if (data && data.ok === false) return { ok: false, erro: data.erro || 'Erro' };
+  return { ok: true, data };
+}
+
+// ── TELA ALUNOS (personal) ──────────────────
+let alunosState = { limite: 0, alunos: [] };
+let alunoAtual  = null;
+let ultimoAlunoCriado = null;
+
+const ESTADOS_ALUNO = { ativo:'Ativo', carencia:'Carência', vencido:'Vencido', aguardando:'Aguardando', pausado:'Pausado', bloqueado:'Bloqueado' };
+const ESTADOS_PEDIR = ['aguardando', 'vencido', 'carencia'];
+
+function textoValidadeAluno(a) {
+  const d = a.dias_restantes;
+  switch (a.estado) {
+    case 'aguardando': return 'Aguardando liberação do administrador';
+    case 'ativo':      return 'Acesso até ' + fmtDataCurta(a.validade_ate) + (d != null ? ' · ' + d + (d === 1 ? ' dia' : ' dias') : '');
+    case 'carencia':   return 'Venceu em ' + fmtDataCurta(a.validade_ate) + ' · em carência, renove';
+    case 'vencido':    return 'Venceu em ' + fmtDataCurta(a.validade_ate);
+    case 'pausado':    return a.validade_ate ? 'Pausado · validade ' + fmtDataCurta(a.validade_ate) : 'Pausado';
+    default:           return 'Acesso suspenso';
+  }
+}
+
+async function carregarAlunos() {
+  const aviso = document.getElementById('alunos-aviso');
+  const { data, error } = await sb.rpc('meus_alunos');
+  if (error) {
+    const falta = error.code === 'PGRST202' || /meus_alunos/.test(error.message || '');
+    aviso.innerHTML = '<div class="login-error" style="display:block;margin:0 16px 12px">' +
+      (falta ? 'Recurso ainda não ativado no servidor.' : 'Não foi possível carregar seus alunos.') + '</div>';
+    return;
+  }
+  aviso.innerHTML = '';
+  alunosState = data || { limite: 0, alunos: [] };
+  renderAlunos();
+}
+
+function renderAlunos() {
+  const { limite, alunos } = alunosState;
+  const total = alunos.length;
+  document.getElementById('alunos-sub').textContent = total + ' de ' + limite + (limite === 1 ? ' aluno' : ' alunos');
+
+  const cheio = total >= limite;
+  const btn = document.getElementById('btn-novo-aluno');
+  btn.style.opacity = cheio ? '.5' : '';
+  btn.querySelector('span').textContent = cheio ? 'Limite de alunos atingido' : 'Novo aluno';
+
+  const pend = alunos.filter(a => ESTADOS_PEDIR.includes(a.estado));
+  document.getElementById('alunos-pend').innerHTML = pend.length
+    ? '<div style="padding:0 16px 12px"><button class="btn-ghost" style="margin:0" onclick="pedirLiberacaoPendentes()">💬 Pedir liberação ao administrador (' + pend.length + ')</button></div>'
+    : '';
+
+  const lista = document.getElementById('alunos-lista');
+  if (!total) {
+    lista.innerHTML = '<div style="padding:24px;text-align:center;color:var(--text3);font-size:13px;line-height:1.5">' +
+      (limite === 0 ? 'Seu limite de alunos é 0. Fale com o administrador para liberar vagas.'
+                    : 'Você ainda não tem alunos.<br>Toque em <b>Novo aluno</b> para cadastrar o primeiro.') + '</div>';
+    return;
+  }
+  lista.innerHTML = alunos.map(a => {
+    const rel = tempoRelativo(a.ultimo_treino);
+    const ult = rel ? 'Último treino: ' + rel + ' · ' + a.treinos_30d + (a.treinos_30d === 1 ? ' treino' : ' treinos') + ' em 30 dias'
+                    : 'Ainda não treinou';
+    return '<div class="aluno-card" onclick="abrirAluno(\'' + escHtml(a.id) + '\')">' +
+      '<div class="aluno-top">' +
+        '<div class="aluno-av">' + escHtml((a.nome || '?').charAt(0).toUpperCase()) + '</div>' +
+        '<div class="aluno-info"><div class="aluno-nome">' + escHtml(a.nome) + '</div><div class="aluno-meta">@' + escHtml(a.username) + '</div></div>' +
+        '<span class="est est-' + escHtml(a.estado) + '">' + escHtml(ESTADOS_ALUNO[a.estado] || a.estado) + '</span>' +
+      '</div>' +
+      '<div class="aluno-linha">' + escHtml(textoValidadeAluno(a)) + '</div>' +
+      '<div class="aluno-linha dim">' + escHtml(ult) + '</div>' +
+    '</div>';
+  }).join('');
+}
+
+// ── Novo aluno ──
+function abrirNovoAluno() {
+  if (alunosState.alunos.length >= alunosState.limite) {
+    showToast('Limite de alunos atingido. Fale com o administrador.');
+    return;
+  }
+  ['na-nome', 'na-user', 'na-senha'].forEach(id => document.getElementById(id).value = '');
+  document.getElementById('na-erro').style.display = 'none';
+  document.getElementById('na-form').style.display = 'block';
+  document.getElementById('na-ok').style.display = 'none';
+  openModal('modal-novo-aluno');
+}
+async function criarAluno() {
+  const nome  = document.getElementById('na-nome').value.trim();
+  const user  = document.getElementById('na-user').value.trim().toLowerCase().replace(/\s+/g, '');
+  const senha = document.getElementById('na-senha').value;
+  const erro  = document.getElementById('na-erro');
+  const falha = m => { erro.textContent = m; erro.style.display = 'block'; };
+  erro.style.display = 'none';
+  if (nome.length < 2) return falha('Informe o nome do aluno.');
+  if (!/^[a-z0-9._-]{3,30}$/.test(user)) return falha('Usuário: 3 a 30 caracteres, só letras, números, ponto, hífen e sublinhado.');
+  if (senha.length < 6) return falha('A senha deve ter ao menos 6 caracteres.');
+
+  if (!iniciarSalvamento()) return;
+  const btn = document.getElementById('na-btn');
+  btn.disabled = true; btn.textContent = 'Criando...';
+  try {
+    const r = await chamarFnAluno({ acao: 'criar', nome, usuario: user, senha });
+    if (!r.ok) return falha(r.erro);
+    ultimoAlunoCriado = { nome, username: user, senha };
+    document.getElementById('na-ok-user').textContent  = user;
+    document.getElementById('na-ok-senha').textContent = senha;
+    document.getElementById('na-form').style.display = 'none';
+    document.getElementById('na-ok').style.display = 'block';
+    carregarAlunos();
+  } catch (e) {
+    falha('Erro inesperado. Tente novamente.');
+  } finally {
+    finalizarSalvamento();
+    btn.disabled = false; btn.textContent = 'Criar aluno';
+  }
+}
+async function copiarAcessoAluno() {
+  if (!ultimoAlunoCriado) return;
+  const t = 'EVVO — seu acesso\nSite: ' + URL_APP + '\nUsuário: ' + ultimoAlunoCriado.username +
+            '\nSenha: ' + ultimoAlunoCriado.senha + '\n(Depois você pode trocar a senha em Perfil > Alterar senha.)';
+  try { await navigator.clipboard.writeText(t); showToast('Acesso copiado!'); }
+  catch (e) { window.prompt('Copie o acesso do aluno:', t); }
+}
+
+// ── Pedir liberação por WhatsApp (você não precisa abrir o painel) ──
+function pedirLiberacao(lista) {
+  if (!lista.length) return;
+  const nomes = lista.map(a => '• ' + a.nome + ' (@' + a.username + ')').join('\n');
+  const msg = 'Olá! Sou o personal ' + (state.perfil?.nome || '') + ' e quero liberar/renovar o acesso de:\n' + nomes;
+  window.open('https://wa.me/' + WHATS_ADMIN + '?text=' + encodeURIComponent(msg), '_blank');
+}
+function pedirLiberacaoPendentes() {
+  pedirLiberacao(alunosState.alunos.filter(a => ESTADOS_PEDIR.includes(a.estado)));
+}
+function pedirLiberacaoUltimo() {
+  if (ultimoAlunoCriado) pedirLiberacao([ultimoAlunoCriado]);
+}
+function pedirLiberacaoAlunoAtual() {
+  const a = alunoAtual?.aluno;
+  if (a) pedirLiberacao([a]);
+}
+
+// ── Detalhe do aluno ──
+async function abrirAluno(id) {
+  const { data, error } = await sb.rpc('aluno_detalhe', { p_aluno: id });
+  if (error || !data) { showToast('Não foi possível abrir o aluno'); return; }
+  alunoAtual = data;
+  renderAlunoDetalhe();
+  goTo('screen-aluno-detalhe');
+}
+function voltarAlunos() { goTo('screen-alunos'); carregarAlunos(); }
+
+const CAMPOS_MEDIDA = [
+  ['peso_kg','Peso','kg',true], ['peito_cm','Peito','cm',false], ['ombros_cm','Ombros','cm',false],
+  ['cintura_cm','Cintura','cm',true], ['abdomen_cm','Abdômen','cm',true],
+  ['braco_d_cm','Braço D','cm',false], ['braco_e_cm','Braço E','cm',false], ['gluteo_cm','Glúteo','cm',false],
+  ['coxa_d_cm','Coxa D','cm',false], ['coxa_e_cm','Coxa E','cm',false], ['panturrilha_cm','Panturrilha','cm',false]
+];
+function fmtVolume(v) { v = Number(v) || 0; return v >= 1000 ? (v / 1000).toFixed(1) + 't' : Math.round(v) + 'kg'; }
+
+function renderAlunoDetalhe() {
+  const d = alunoAtual, a = d.aluno;
+  document.getElementById('ad-estado-label').textContent = ESTADOS_ALUNO[a.estado] || a.estado;
+  document.getElementById('ad-nome').textContent = a.nome;
+  document.getElementById('ad-sub').textContent = '@' + a.username + ' · ' + textoValidadeAluno(a);
+
+  const pausado = a.acesso_status === 'pausado';
+  document.getElementById('ad-acoes').innerHTML =
+    (ESTADOS_PEDIR.includes(a.estado) ? '<button class="btn-chip destaque" onclick="pedirLiberacaoAlunoAtual()">💬 Pedir liberação</button>' : '') +
+    '<button class="btn-chip" onclick="acaoAluno(\'' + (pausado ? 'reativar' : 'pausar') + '\')">' + (pausado ? 'Reativar acesso' : 'Pausar acesso') + '</button>' +
+    '<button class="btn-chip" onclick="abrirSenhaAluno()">🔑 Nova senha</button>';
+
+  // treinos
+  const vazio = t => '<div style="padding:14px;color:var(--text3);font-size:12px">' + t + '</div>';
+  document.getElementById('ad-sessoes').innerHTML = d.sessoes.length ? d.sessoes.map(s => {
+    const dt = new Date(s.iniciado_em);
+    return '<div class="hist-item" style="cursor:default">' +
+      '<div class="hist-date-box"><b>' + dt.getDate() + '</b><span>' + escHtml(dt.toLocaleDateString('pt-BR', { month: 'short' }).replace('.', '')) + '</span></div>' +
+      '<div class="hist-item-info"><div class="hist-item-name">' + escHtml(s.nome_dia || 'Treino') + (s.tem_pr ? ' 🏆' : '') + '</div>' +
+      '<div class="hist-item-meta">' + escHtml(s.ficha || '') + ' · ' + s.series + ' séries' + (s.duracao_min ? ' · ' + s.duracao_min + ' min' : '') + '</div></div>' +
+      '<div class="hist-item-right"><div style="font-size:14px;font-weight:900;color:var(--text)">' + fmtVolume(s.volume_total_kg) + '</div></div>' +
+    '</div>';
+  }).join('') : vazio('Ainda não há treinos finalizados.');
+
+  // medidas (mais recente + comparação com a anterior)
+  const [m, p] = d.medidas;
+  document.getElementById('ad-medidas').innerHTML = m
+    ? '<div style="background:var(--bg2);border-radius:16px;border:1px solid var(--border);overflow:hidden">' +
+      '<div style="padding:10px 16px;background:#ff6a0010;border-bottom:1px solid var(--border);font-size:10px;font-weight:700;color:var(--accent)">Avaliação de ' + fmtDataCurta(m.data_registro + 'T12:00:00') + (p ? ' · comparando com ' + fmtDataCurta(p.data_registro + 'T12:00:00') : '') + '</div>' +
+      CAMPOS_MEDIDA.filter(([k]) => m[k] != null).map(([k, nome, un, neg], i, arr) => {
+        const delta = (p && p[k] != null) ? Math.round((m[k] - p[k]) * 10) / 10 : null;
+        const bom = delta ? (neg ? delta < 0 : delta > 0) : null;
+        return '<div style="display:flex;justify-content:space-between;align-items:center;padding:11px 16px;' + (i < arr.length - 1 ? 'border-bottom:1px solid var(--border)' : '') + '">' +
+          '<span style="font-size:12px;font-weight:700;color:var(--text3)">' + nome + '</span><span style="display:flex;align-items:center;gap:6px">' +
+          '<b style="font-size:14px;color:var(--text)">' + m[k] + '<span style="font-size:10px;color:var(--text3);margin-left:2px">' + un + '</span></b>' +
+          (delta ? '<span style="font-size:11px;font-weight:800;color:' + (bom ? '#39d353' : '#ff6a00') + '">' + (delta > 0 ? '↑' : '↓') + Math.abs(delta) + un + '</span>' : '') +
+          '</span></div>';
+      }).join('') + '</div>'
+    : vazio('Nenhuma avaliação registrada.');
+
+  document.getElementById('ad-prs').innerHTML = d.prs.length ? d.prs.map(r =>
+    '<div style="background:var(--bg2);border-radius:12px;border:1px solid var(--border);padding:11px 14px;display:flex;justify-content:space-between;align-items:center">' +
+    '<div><div style="font-size:13px;font-weight:800;color:var(--text)">' + escHtml(r.exercicio) + '</div><div style="font-size:10px;color:var(--text3);margin-top:2px">' + fmtDataCurta(r.conquistado_em) + '</div></div>' +
+    '<div style="font-size:16px;font-weight:900;color:var(--accent)">🏆 ' + Number(r.carga_kg) + '<span style="font-size:10px;color:var(--text3);margin-left:2px">kg</span></div></div>'
+  ).join('') : vazio('Nenhum recorde ainda.');
+
+  document.getElementById('ad-fichas').innerHTML = d.fichas.length ? d.fichas.map(f =>
+    '<div style="background:var(--bg2);border-radius:12px;border:1px solid var(--border);padding:11px 14px;display:flex;justify-content:space-between;align-items:center">' +
+    '<div style="font-size:13px;font-weight:800;color:var(--text)">' + escHtml(f.nome) + '</div>' +
+    '<div style="font-size:11px;color:var(--text3)">' + f.dias + (f.dias === 1 ? ' dia' : ' dias') + '</div></div>'
+  ).join('') : vazio('Nenhuma ficha cadastrada.');
+}
+
+async function acaoAluno(acao) {
+  const a = alunoAtual?.aluno;
+  if (!a) return;
+  if (acao === 'pausar' && !confirm('Pausar o acesso de ' + a.nome + '? Ele não conseguirá entrar até você reativar.')) return;
+  if (!iniciarSalvamento()) return;
+  try {
+    const r = await chamarFnAluno({ acao, aluno_id: a.id });
+    if (!r.ok) { showToast('Erro: ' + r.erro); return; }
+    showToast(acao === 'pausar' ? 'Aluno pausado' : 'Aluno reativado');
+    await abrirAluno(a.id);
+  } finally { finalizarSalvamento(); }
+}
+function abrirSenhaAluno() {
+  document.getElementById('sa-senha').value = '';
+  document.getElementById('sa-erro').style.display = 'none';
+  openModal('modal-senha-aluno');
+}
+async function redefinirSenhaAluno() {
+  const a = alunoAtual?.aluno;
+  const senha = document.getElementById('sa-senha').value;
+  const erro = document.getElementById('sa-erro');
+  if (!a) return;
+  if (senha.length < 6) { erro.textContent = 'A senha deve ter ao menos 6 caracteres.'; erro.style.display = 'block'; return; }
+  if (!iniciarSalvamento()) return;
+  try {
+    const r = await chamarFnAluno({ acao: 'redefinir_senha', aluno_id: a.id, senha });
+    if (!r.ok) { erro.textContent = r.erro; erro.style.display = 'block'; return; }
+    closeModal('modal-senha-aluno');
+    showToast('Senha alterada. Avise o aluno.');
+  } finally { finalizarSalvamento(); }
+}
+
+// ═══════════════════════════════════════════
+// RECOLOCADO — correções que tinham se perdido
+// ═══════════════════════════════════════════
+// Excluir um dia de treino (dentro da ficha)
+async function excluirDia() {
+  if (!editState.diaEditando) return;
+  if (!confirm('Excluir "' + editState.diaEditando.nome + '"? Todos os exercícios serão removidos.')) return;
+  const diaId = editState.diaEditando.id;
+  const { data: exs } = await sb.from('exercicios').select('id').eq('dia_id', diaId);
+  if (exs?.length) {
+    const exIds = exs.map(e => e.id);
+    await sb.from('series_template').delete().in('exercicio_id', exIds);
+    await sb.from('exercicios').delete().eq('dia_id', diaId);
+  }
+  const { error } = await sb.from('dias_treino').delete().eq('id', diaId);
+  if (error) { showToast('Erro ao excluir dia'); return; }
+  showToast('Dia excluído!');
+  editState.diaEditando = null;
+  if (fichaDetalhando) await abrirDetalhesFicha(fichaDetalhando.id);
+  else goTo('screen-detalhe-ficha');
+}
+
+// Salvar/compartilhar imagem — funciona no iOS e no Android
+async function downloadImagem(blob, nomeArquivo) {
+  const file = new File([blob], nomeArquivo, { type: blob.type });
+  const isAndroid = /android/i.test(navigator.userAgent);
+  if (navigator.share && navigator.canShare?.({ files: [file] })) {
+    try { await navigator.share({ files: [file], title: 'EVVO' }); return; }
+    catch (e) { if (e.name === 'AbortError') return; }
+  }
+  const url = URL.createObjectURL(blob);
+  if (isAndroid) {
+    // Android: abre a imagem; segure para salvar na galeria
+    const w = window.open(url, '_blank');
+    if (w) { showToast('Segure a imagem para salvar'); setTimeout(() => URL.revokeObjectURL(url), 30000); return; }
+  }
+  const link = document.createElement('a');
+  link.href = url; link.download = nomeArquivo;
+  document.body.appendChild(link); link.click(); document.body.removeChild(link);
+  setTimeout(() => URL.revokeObjectURL(url), 2000);
+  showToast('Imagem salva!');
+}
+async function baixarFoto() {
+  const canvas = document.getElementById('foto-canvas');
+  if (!canvas.width) { showToast('Escolha uma foto primeiro'); return; }
+  canvas.toBlob(async (blob) => { await downloadImagem(blob, 'evvo-treino.jpg'); }, 'image/jpeg', 0.92);
+}
 
 // ═══════════════════════════════════════════
 // START

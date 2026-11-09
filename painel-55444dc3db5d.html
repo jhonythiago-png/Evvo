@@ -108,8 +108,52 @@ button{cursor:pointer}
 .toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:#0e0e1a;border:1px solid #ffffff14;border-radius:10px;padding:11px 20px;font-size:13px;font-weight:700;white-space:nowrap;z-index:999;opacity:0;transition:opacity .3s;pointer-events:none}
 .toast.on{opacity:1}
 
+/* ─ ABAS ─ */
+.tabs{display:flex;gap:8px;margin-bottom:18px}
+.tab{background:#0e0e1a;border:1px solid #ffffff14;border-radius:10px;padding:10px 18px;color:#ffffff66;font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:.06em;display:flex;align-items:center;gap:8px}
+.tab.on{background:linear-gradient(135deg,#ff6a00,#ee0979);border-color:transparent;color:#fff}
+.tbadge{display:none;background:#fff;color:#ee0979;border-radius:20px;padding:1px 8px;font-size:10px;font-weight:900}
+
+/* ─ SELOS DE ESTADO E PAPEL ─ */
+.bagu{background:#00cfff18;color:#00cfff;border:1px solid #00cfff30}
+.bcar{background:#f5a62318;color:#f5a623;border:1px solid #f5a62330}
+.bven{background:#ee097918;color:#ee0979;border:1px solid #ee097930}
+.bpau{background:#ffffff0a;color:#ffffff77;border:1px solid #ffffff14}
+.bper{background:#ff6a0018;color:#ff6a00;border:1px solid #ff6a0030;margin-left:4px}
+.bali{background:#00cfff12;color:#00cfffcc;border:1px solid #00cfff25;margin-left:4px}
+
+/* ─ ABA PERSONAIS ─ */
+.btn-sm{background:#141428;border:1px solid #ffffff14;border-radius:8px;padding:7px 12px;color:#ffffffcc;font-size:11px;font-weight:700;white-space:nowrap}
+.btn-sm:hover{border-color:#ff6a00}
+.btn-ok{background:linear-gradient(135deg,#39d353,#1a7a2e);border-radius:8px;padding:7px 12px;color:#fff;font-size:11px;font-weight:800;white-space:nowrap}
+.btn-sm:disabled,.btn-ok:disabled{opacity:.4;cursor:default}
+.mini{width:64px;background:#0e0e1a;border:1px solid #ffffff14;border-radius:8px;padding:7px 8px;color:#fff;font-size:12px;text-align:center}
+.cbox{display:flex;align-items:center;gap:6px;font-size:11px;color:#ffffff66;font-weight:700}
+.fila{background:#0e0e1a;border:1px solid #00cfff33;border-radius:14px;margin-bottom:14px;overflow:hidden}
+.fila-h{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:12px 16px;background:#00cfff0d;border-bottom:1px solid #ffffff0a;flex-wrap:wrap;font-size:13px}
+.fila-r{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:10px 16px;border-bottom:1px solid #ffffff0a}
+.fila-r:last-child{border-bottom:none}
+.pcard{background:#0e0e1a;border-radius:14px;border:1px solid #ffffff0a;margin-bottom:12px;overflow:hidden}
+.phead{display:flex;align-items:center;gap:12px;padding:14px 16px;flex-wrap:wrap}
+.pcap{font-size:12px;font-weight:800;color:#ffffffcc;white-space:nowrap}
+.pcap.cheio{color:#f5a623}
+.pcounts{display:flex;gap:5px;flex-wrap:wrap;flex:1}
+.pacts{display:flex;gap:6px;flex-wrap:wrap;margin-left:auto}
+.pbody{border-top:1px solid #ffffff0a}
+.alrow{display:grid;grid-template-columns:minmax(0,2fr) 110px minmax(0,1.6fr) 200px;gap:10px;align-items:center;padding:10px 16px;border-bottom:1px solid #ffffff0a}
+.alrow:last-child{border-bottom:none}
+.alrow:hover{background:#141428}
+.aval{font-size:12px;color:#ffffff88}
+.aacts{display:flex;gap:6px;justify-content:flex-end;flex-wrap:wrap}
+.hint{background:#ffffff08;border:1px solid #ffffff14;border-radius:8px;padding:10px 12px;font-size:12px;color:#ffffff88;line-height:1.5;margin-top:8px}
+
 @media(max-width:700px){
   .stats{grid-template-columns:1fr 1fr}
+  .tab{flex:1;justify-content:center}
+  .alrow{grid-template-columns:1fr 1fr}
+  .alrow .aval{grid-column:1/-1}
+  .alrow .aacts{grid-column:1/-1;justify-content:flex-start}
+  .pacts{margin-left:0}
   .thead,.trow{grid-template-columns:2fr 1fr 1fr 90px}
   .th:nth-child(3),.td:nth-child(3),.th:nth-child(5),.td:nth-child(5){display:none}
 }
@@ -154,6 +198,13 @@ button{cursor:pointer}
     </div>
   </div>
   <div class="main">
+    <div class="tabs">
+      <button class="tab on" id="tab-usuarios" onclick="aba('usuarios')">Usuários</button>
+      <button class="tab" id="tab-personais" onclick="aba('personais')">Personais <span class="tbadge" id="tbadge"></span></button>
+    </div>
+
+    <!-- ═══ SEÇÃO USUÁRIOS ═══ -->
+    <div id="sec-usuarios">
     <div class="stats">
       <div class="stat"><div class="stat-l">Total</div><div class="stat-v" id="st">—</div></div>
       <div class="stat"><div class="stat-l">Pro</div><div class="stat-v" id="sp" style="color:#ff6a00">—</div></div>
@@ -185,13 +236,34 @@ button{cursor:pointer}
       </div>
       <div id="tbody"><div class="empty">Carregando...</div></div>
     </div>
+    </div>
+
+    <!-- ═══ SEÇÃO PERSONAIS ═══ -->
+    <div id="sec-personais" style="display:none">
+      <div id="pers-aviso" class="err" style="display:none;margin:0 0 12px"></div>
+      <div class="stats">
+        <div class="stat"><div class="stat-l">Personais</div><div class="stat-v" id="ps-pers">—</div></div>
+        <div class="stat"><div class="stat-l">Alunos com acesso</div><div class="stat-v" id="ps-ativos" style="color:#39d353">—</div></div>
+        <div class="stat"><div class="stat-l">Aguardando liberação</div><div class="stat-v" id="ps-agu" style="color:#00cfff">—</div></div>
+        <div class="stat"><div class="stat-l">Vencidos</div><div class="stat-v" id="ps-ven" style="color:#ee0979">—</div></div>
+      </div>
+      <div class="toolbar">
+        <input class="search" id="pbusca" placeholder="Buscar personal ou aluno..." oninput="renderPersonais()">
+        <div class="cbox">Carência <input class="mini" id="carencia" type="number" min="0" max="60"> dias
+          <button class="btn-sm" onclick="salvarCarencia()">Salvar</button></div>
+        <button class="btn-sm" onclick="carregarPersonais()">↻ Atualizar</button>
+        <button class="btn-novo" onclick="abrirNovoPersonal()">+ Novo personal</button>
+      </div>
+      <div id="pers-fila"></div>
+      <div id="pers-lista"><div class="empty">Carregando...</div></div>
+    </div>
   </div>
 </div>
 
 <!-- MODAL NOVO -->
 <div class="ov" id="m1">
   <div class="modal">
-    <h3>Novo usuário</h3>
+    <h3 id="m1t">Novo usuário</h3>
     <p>Cadastre manualmente.</p>
     <div class="merr" id="m1e"></div>
     <label class="label">Nome</label>
@@ -205,6 +277,15 @@ button{cursor:pointer}
       <option value="free">Free</option>
       <option value="pro">Pro</option>
     </select>
+    <label class="label">Tipo de conta</label>
+    <select class="inp sel" id="n5" onchange="tipoMudou()" style="padding:14px 16px;margin-bottom:8px">
+      <option value="usuario">Usuário comum</option>
+      <option value="personal">Personal (gerencia alunos)</option>
+    </select>
+    <div id="n6wrap" style="display:none">
+      <label class="label">Limite de alunos</label>
+      <input class="inp" id="n6" type="number" min="0" max="1000" value="5">
+    </div>
     <div class="mbtns">
       <button class="bcancl" onclick="fechar('m1')">Cancelar</button>
       <button class="bconf" onclick="criarUser()">Criar</button>
@@ -228,6 +309,18 @@ button{cursor:pointer}
       <option value="ativo">Ativo</option>
       <option value="bloqueado">Bloqueado</option>
     </select>
+    <div id="m2tipowrap">
+      <label class="label">Tipo de conta</label>
+      <select class="inp sel" id="m2t" onchange="m2tipoMudou()" style="padding:14px 16px">
+        <option value="usuario">Usuário comum</option>
+        <option value="personal">Personal (gerencia alunos)</option>
+      </select>
+      <div id="m2limwrap" style="display:none">
+        <label class="label">Limite de alunos</label>
+        <input class="inp" id="m2l" type="number" min="0" max="1000" value="5">
+      </div>
+    </div>
+    <div id="m2aluno" class="hint" style="display:none">Aluno de <b id="m2pn"></b>. Acesso e validade são geridos na aba Personais.</div>
     <div class="mbtns">
       <button class="bcancl" onclick="fechar('m2')">Cancelar</button>
       <button class="bconf" onclick="salvarEdit()">Salvar</button>
@@ -248,6 +341,21 @@ button{cursor:pointer}
   </div>
 </div>
 
+<!-- MODAL LIMITE DE ALUNOS -->
+<div class="ov" id="m4">
+  <div class="modal">
+    <h3>Limite de alunos</h3>
+    <p id="m4d"></p>
+    <input type="hidden" id="m4id">
+    <label class="label">Máximo de alunos</label>
+    <input class="inp" id="m4l" type="number" min="0" max="1000">
+    <div class="mbtns">
+      <button class="bcancl" onclick="fechar('m4')">Cancelar</button>
+      <button class="bconf" onclick="salvarLimite()">Salvar</button>
+    </div>
+  </div>
+</div>
+
 <div class="toast" id="tst"></div>
 
 <script>
@@ -256,6 +364,9 @@ const KEY_  = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJl
 const ADM   = 'jhony';
 const sb    = supabase.createClient(URL_, KEY_);
 let users   = [];
+let painel  = { carencia_dias: 5, personais: [] };
+let abertos = {};      // cartões de personal abertos/fechados manualmente
+let _ocupado = false;  // impede cliques duplos em ações que mexem em validade
 
 function show(id)  { const e=document.getElementById(id); e.style.display=id==='app'?'flex':'flex'; if(id==='app') e.style.flexDirection='column'; }
 function hide(id)  { document.getElementById(id).style.display='none'; }
@@ -265,7 +376,16 @@ function fechar(id){ document.getElementById(id).classList.remove('on'); }
 function toast(m){
   const t=document.getElementById('tst');
   t.textContent=m; t.classList.add('on');
-  setTimeout(()=>t.classList.remove('on'),2500);
+  setTimeout(()=>t.classList.remove('on'),2800);
+}
+
+// Escapa texto antes de colocar em HTML (nomes vêm de outros usuários)
+function esc(s){
+  return String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+function fmtData(iso){
+  if(!iso) return '—';
+  return new Date(iso).toLocaleDateString('pt-BR',{day:'2-digit',month:'2-digit',year:'2-digit'});
 }
 
 // ─ INIT ─
@@ -301,15 +421,25 @@ async function logout(){
   hide('app'); show('login');
 }
 
-// ─ DADOS ─
+// ─ ABAS ─
+function aba(nome){
+  ['usuarios','personais'].forEach(n=>{
+    document.getElementById('sec-'+n).style.display = n===nome ? 'block' : 'none';
+    document.getElementById('tab-'+n).classList.toggle('on', n===nome);
+  });
+  if(nome==='personais') carregarPersonais(true);
+}
+
+// ─ DADOS (USUÁRIOS) ─
 async function load(){
   const {data:p}=await sb.from('perfis').select('*').order('created_at',{ascending:false});
   if(!p) return;
   const {data:s}=await sb.from('sessoes').select('user_id').not('finalizado_em','is',null);
   const mp={};
   (s||[]).forEach(x=>{mp[x.user_id]=(mp[x.user_id]||0)+1;});
-  users=p.map(x=>({...x,username:x.email.replace('@evvo.app',''),treinos:mp[x.id]||0}));
-  stats(); render(users);
+  users=p.map(x=>({...x,username:(x.email||'').replace('@evvo.app',''),treinos:mp[x.id]||0}));
+  stats(); filtrar();
+  await carregarPersonais(true);
 }
 
 function stats(){
@@ -323,25 +453,28 @@ function render(list){
   const b=document.getElementById('tbody');
   if(!list.length){b.innerHTML='<div class="empty">Nenhum resultado</div>';return;}
   b.innerHTML=list.map(u=>{
-    const ini=(u.nome||'?').charAt(0).toUpperCase();
+    const ini=esc((u.nome||'?').charAt(0).toUpperCase());
     const dt=new Date(u.created_at).toLocaleDateString('pt-BR',{day:'2-digit',month:'short',year:'2-digit'});
     const bloq=u.status==='bloqueado';
     const pro=u.plano==='pro';
-    const ne=(u.nome||'').replace(/'/g,"\\'");
+    let tag='';
+    if(u.papel==='personal') tag=' <span class="bdg bper">Personal</span>';
+    else if(u.papel==='aluno') tag=' <span class="bdg bali">Aluno</span>';
+    const id=esc(u.id);
     return `<div class="trow">
-      <div class="td"><div class="uinfo"><div class="av">${ini}</div><div><div class="un">${u.nome||'—'}</div><div class="uh">@${u.username}</div></div></div></div>
+      <div class="td"><div class="uinfo"><div class="av">${ini}</div><div><div class="un">${esc(u.nome)||'—'}</div><div class="uh">@${esc(u.username)}${tag}</div></div></div></div>
       <div class="td" style="font-size:11px;color:#ffffff44">${dt}</div>
       <div class="td"><span class="bdg ${pro?'bpro':'bfree'}">${pro?'⭐ Pro':'Free'}</span></div>
       <div class="td"><span class="bdg ${bloq?'bbloq':'bativo'}"><span class="dot"></span>${bloq?'Bloqueado':'Ativo'}</span></div>
       <div class="td" style="font-weight:700;color:${u.treinos>0?'#fff':'#ffffff33'}">${u.treinos}</div>
       <div class="td acts">
-        <button class="ba" onclick="abrirEdit('${u.id}','${ne}','${u.plano}','${u.status||'ativo'}')" title="Editar">
+        <button class="ba" onclick="abrirEdit('${id}')" title="Editar">
           <svg viewBox="0 0 24 24"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
         </button>
-        <button class="ba ${bloq?'':'d'}" onclick="${bloq?'unlock':'block_'}('${u.id}')" title="${bloq?'Desbloquear':'Bloquear'}">
+        <button class="ba ${bloq?'':'d'}" onclick="${bloq?'unlock':'block_'}('${id}')" title="${bloq?'Desbloquear':'Bloquear'}">
           <svg viewBox="0 0 24 24">${bloq?'<rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/>':'<rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 9.9-1"/>'}</svg>
         </button>
-        <button class="ba d" onclick="abrirDel('${u.id}','${ne}')" title="Excluir">
+        <button class="ba d" onclick="abrirDel('${id}')" title="Excluir">
           <svg viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg>
         </button>
       </div>
@@ -354,7 +487,7 @@ function filtrar(){
   const fp=document.getElementById('fp').value;
   const fs=document.getElementById('fs').value;
   render(users.filter(u=>{
-    const mq=!q||u.nome?.toLowerCase().includes(q)||u.username.includes(q);
+    const mq=!q||(u.nome||'').toLowerCase().includes(q)||(u.username||'').includes(q);
     const mp=!fp||u.plano===fp;
     const ms=!fs||(u.status||'ativo')===fs;
     return mq&&mp&&ms;
@@ -372,113 +505,410 @@ async function unlock(id){
   toast('Usuário desbloqueado!');load();
 }
 
-// Novo
-function abrirNovo(){
+// ─ CHAMADAS AO SERVIDOR ─
+async function rpc(nome,args){
+  const {data,error}=await sb.rpc(nome,args);
+  if(error) throw new Error(error.message);
+  return data;
+}
+// Função de servidor "gerir-aluno" (cria contas, pausa, reativa)
+async function chamarFn(body){
+  const {data,error}=await sb.functions.invoke('gerir-aluno',{body});
+  if(error){
+    let msg=error.message||'Erro de conexão';
+    try{
+      if(error.context && typeof error.context.json==='function'){
+        const j=await error.context.json();
+        if(j && j.erro) msg=j.erro;
+      }
+    }catch(_){}
+    if(/Failed to send|fetch|NetworkError/i.test(msg)) msg='Não consegui falar com o servidor. A função gerir-aluno está publicada no Supabase?';
+    return {ok:false,erro:msg};
+  }
+  if(data && data.ok===false) return {ok:false,erro:data.erro||'Erro'};
+  return {ok:true,data};
+}
+// Roda uma ação por vez (evita clique duplo somar 60 dias sem querer)
+async function executar(fn){
+  if(_ocupado){toast('Aguarde a ação anterior...');return;}
+  _ocupado=true;
+  try{ await fn(); }
+  catch(e){ console.error(e); toast('Erro: '+(e.message||e)); }
+  finally{ _ocupado=false; }
+}
+
+// ─ NOVO USUÁRIO / PERSONAL ─
+function abrirNovo(tipo){
   ['n1','n2','n3'].forEach(x=>document.getElementById(x).value='');
   document.getElementById('n4').value='free';
+  document.getElementById('n5').value=tipo==='personal'?'personal':'usuario';
+  document.getElementById('n6').value='5';
   document.getElementById('m1e').style.display='none';
+  tipoMudou();
   abrir('m1');
+}
+function abrirNovoPersonal(){ abrirNovo('personal'); }
+function tipoMudou(){
+  const personal=document.getElementById('n5').value==='personal';
+  document.getElementById('n6wrap').style.display=personal?'block':'none';
+  document.getElementById('m1t').textContent=personal?'Novo personal':'Novo usuário';
 }
 async function criarUser(){
   const n=document.getElementById('n1').value.trim();
   const u=document.getElementById('n2').value.trim().toLowerCase().replace(/\s+/g,'');
   const p=document.getElementById('n3').value;
   const pl=document.getElementById('n4').value;
+  const tipo=document.getElementById('n5').value;
+  const lim=parseInt(document.getElementById('n6').value,10);
   const e=document.getElementById('m1e');
+  const falha=m=>{e.textContent=m;e.style.display='block';};
   e.style.display='none';
-  if(!n||!u||!p){e.textContent='Preencha todos os campos.';e.style.display='block';return;}
-  if(p.length<6){e.textContent='Senha mínimo 6 caracteres.';e.style.display='block';return;}
-  if(u.length<3){e.textContent='Usuário deve ter ao menos 3 caracteres.';e.style.display='block';return;}
+  if(!n||!u||!p) return falha('Preencha todos os campos.');
+  if(p.length<6) return falha('Senha mínimo 6 caracteres.');
+  if(!/^[a-z0-9._-]{3,30}$/.test(u)) return falha('Usuário: 3 a 30 caracteres, só letras, números, ponto, hífen e sublinhado.');
+  if(tipo==='personal' && (isNaN(lim)||lim<0||lim>1000)) return falha('Limite de alunos deve ser de 0 a 1000.');
 
-  // Botão de criar vira loading
-  const btnCriar = document.querySelector('#m1 .bconf');
-  if(btnCriar){ btnCriar.textContent='Criando...'; btnCriar.disabled=true; }
-
-  try {
-    const {data:authData, error}=await sb.auth.signUp({
-      email:u+'@evvo.app',
-      password:p,
-      options:{data:{nome:n,username:u}}
-    });
-
-    if(error){
-      const msg = error.message.includes('already') ? 'Usuário já existe.'
-        : error.message.includes('fetch') ? 'Erro de conexão. Tente novamente.'
-        : error.message;
-      e.textContent=msg;
-      e.style.display='block';
-      if(btnCriar){ btnCriar.textContent='Criar'; btnCriar.disabled=false; }
-      return;
-    }
-
-    const userId = authData?.user?.id;
-
-    // Aguarda trigger e garante perfil criado
-    await new Promise(r => setTimeout(r, 2000));
-
-    if(userId){
-      const {data:pf}=await sb.from('perfis').select('id,plano').eq('id',userId).single();
-      if(!pf){
-        // Trigger não rodou — insere manualmente
-        await sb.from('perfis').insert({
-          id: userId,
-          nome: n,
-          email: u+'@evvo.app',
-          plano: pl,
-          status: 'ativo',
-        });
-      } else if(pl==='pro' && pf.plano !== 'pro'){
-        await sb.from('perfis').update({plano:'pro'}).eq('id',userId);
-      }
-    }
-
+  const btn=document.querySelector('#m1 .bconf');
+  if(btn){btn.textContent='Criando...';btn.disabled=true;}
+  try{
+    // A conta é criada no servidor: não derruba a sessão do painel
+    const r=await chamarFn({acao:'criar_usuario',nome:n,usuario:u,senha:p,plano:pl,tipo,limite:tipo==='personal'?lim:0});
+    if(!r.ok) return falha(r.erro);
     fechar('m1');
-    toast('✅ Usuário criado com sucesso!');
-    load();
-
-  } catch(err) {
-    e.textContent = 'Erro inesperado: ' + (err.message || 'tente novamente');
-    e.style.display='block';
-  } finally {
-    if(btnCriar){ btnCriar.textContent='Criar'; btnCriar.disabled=false; }
+    toast(tipo==='personal'?'✅ Personal criado!':'✅ Usuário criado!');
+    await load();
+    if(tipo==='personal') aba('personais');
+  }catch(err){
+    falha('Erro inesperado: '+(err.message||'tente novamente'));
+  }finally{
+    if(btn){btn.textContent='Criar';btn.disabled=false;}
   }
 }
 
-// Editar
-function abrirEdit(id,nome,plano,status){
+// ─ EDITAR ─
+function abrirEdit(id){
+  const u=users.find(x=>x.id===id);
+  if(!u) return;
   document.getElementById('m2id').value=id;
-  document.getElementById('m2d').textContent='Editando: '+nome;
-  document.getElementById('m2p').value=plano;
-  document.getElementById('m2s').value=status;
+  document.getElementById('m2d').textContent='Editando: '+(u.nome||u.username);
+  document.getElementById('m2p').value=u.plano||'free';
+  document.getElementById('m2s').value=u.status||'ativo';
+  const ehAluno=u.papel==='aluno';
+  document.getElementById('m2tipowrap').style.display=ehAluno?'none':'block';
+  document.getElementById('m2aluno').style.display=ehAluno?'block':'none';
+  if(ehAluno){
+    const pers=users.find(x=>x.id===u.personal_id);
+    document.getElementById('m2pn').textContent=pers?(pers.nome||pers.username):'—';
+  }
+  document.getElementById('m2t').value=u.papel==='personal'?'personal':'usuario';
+  document.getElementById('m2l').value=u.papel==='personal'?(u.limite_alunos||0):5;
+  m2tipoMudou();
   abrir('m2');
+}
+function m2tipoMudou(){
+  document.getElementById('m2limwrap').style.display=document.getElementById('m2t').value==='personal'?'block':'none';
 }
 async function salvarEdit(){
   const id=document.getElementById('m2id').value;
+  const u=users.find(x=>x.id===id);
   const pl=document.getElementById('m2p').value;
   const st=document.getElementById('m2s').value;
   const {error}=await sb.from('perfis').update({plano:pl,status:st}).eq('id',id);
   if(error){toast('Erro: '+error.message);console.error(error);return;}
+  if(u && u.papel!=='aluno'){
+    const tipo=document.getElementById('m2t').value;
+    const lim=parseInt(document.getElementById('m2l').value,10);
+    try{
+      if(tipo==='personal'){
+        if(isNaN(lim)||lim<0||lim>1000){toast('Limite de alunos deve ser de 0 a 1000');return;}
+        if(u.papel!=='personal' || lim!==u.limite_alunos) await rpc('definir_personal',{p_user:id,p_limite:lim});
+      }else if(u.papel==='personal'){
+        await rpc('desfazer_personal',{p_user:id});
+      }
+    }catch(e){toast('Erro: '+e.message);return;}
+  }
   fechar('m2');toast('Salvo!');load();
 }
 
-// Deletar
-function abrirDel(id,nome){
+// ─ EXCLUIR ─
+function abrirDel(id){
+  const u=users.find(x=>x.id===id);
   document.getElementById('m3id').value=id;
-  document.getElementById('m3d').textContent='Excluir "'+nome+'"? Esta ação é permanente.';
+  document.getElementById('m3d').textContent='Excluir "'+(u?(u.nome||u.username):'')+'"? Esta ação é permanente.';
   abrir('m3');
 }
 async function delUser(){
   const id=document.getElementById('m3id').value;
-  // Deleta perfil
   const {error}=await sb.from('perfis').delete().eq('id',id);
-  if(error){ toast('Erro: ' + error.message); return; }
+  if(error){
+    toast(/foreign key/i.test(error.message)
+      ? 'Este personal ainda tem alunos. Remova os alunos antes.'
+      : 'Erro: '+error.message);
+    return;
+  }
   fechar('m3');
   toast('Usuário excluído!');
   load();
 }
 
+// ══════════════════════════════════════════
+//  ABA PERSONAIS
+// ══════════════════════════════════════════
+const ESTADOS={
+  ativo:      {t:'Ativo',      c:'bativo'},
+  carencia:   {t:'Carência',   c:'bcar'},
+  vencido:    {t:'Vencido',    c:'bven'},
+  aguardando: {t:'Aguardando', c:'bagu'},
+  pausado:    {t:'Pausado',    c:'bpau'},
+  bloqueado:  {t:'Bloqueado',  c:'bbloq'}
+};
+function contar(alunos){
+  const c={ativo:0,carencia:0,vencido:0,aguardando:0,pausado:0,bloqueado:0};
+  alunos.forEach(a=>{ if(c[a.estado]!==undefined) c[a.estado]++; });
+  return c;
+}
+function achaAluno(id){
+  for(const p of painel.personais){
+    const a=p.alunos.find(x=>x.id===id);
+    if(a) return {aluno:a,personal:p};
+  }
+  return null;
+}
+function textoValidade(a){
+  const dias=a.dias_restantes;
+  switch(a.estado){
+    case 'aguardando': return 'Aguardando liberação';
+    case 'ativo':      return 'até '+fmtData(a.validade_ate)+(dias!=null?' · '+dias+' d':'');
+    case 'carencia':   return 'venceu '+fmtData(a.validade_ate)+' · em carência';
+    case 'vencido':    return 'venceu '+fmtData(a.validade_ate);
+    case 'pausado':    return a.validade_ate?'pausado · validade '+fmtData(a.validade_ate):'pausado';
+    default:           return a.validade_ate?'validade '+fmtData(a.validade_ate):'—';
+  }
+}
+
+async function carregarPersonais(silencioso){
+  const aviso=document.getElementById('pers-aviso');
+  const {data,error}=await sb.rpc('painel_personais');
+  if(error){
+    const msg=error.message||'';
+    const faltando=error.code==='PGRST202' || (/painel_personais/.test(msg) && /not find|does not exist|schema cache/i.test(msg));
+    aviso.textContent=faltando
+      ? 'Falta rodar o fase1b_painel_master.sql no Supabase para ativar esta aba.'
+      : 'Erro ao carregar personais: '+msg;
+    aviso.style.display='block';
+    document.getElementById('pers-fila').innerHTML='';
+    document.getElementById('pers-lista').innerHTML='';
+    document.getElementById('tbadge').style.display='none';
+    if(!silencioso) toast('Erro: '+msg);
+    return;
+  }
+  aviso.style.display='none';
+  painel=data||{carencia_dias:5,personais:[]};
+  const inp=document.getElementById('carencia');
+  if(document.activeElement!==inp) inp.value=painel.carencia_dias;
+  renderPersonais();
+}
+
+function renderPersonais(){
+  const todos=painel.personais.flatMap(p=>p.alunos);
+  const c=contar(todos);
+  document.getElementById('ps-pers').textContent=painel.personais.length;
+  document.getElementById('ps-ativos').textContent=c.ativo+c.carencia;
+  document.getElementById('ps-agu').textContent=c.aguardando;
+  document.getElementById('ps-ven').textContent=c.vencido;
+
+  const badge=document.getElementById('tbadge');
+  badge.textContent=c.aguardando;
+  badge.style.display=c.aguardando>0?'inline-block':'none';
+
+  // Fila de liberações pendentes
+  const fila=[];
+  painel.personais.forEach(p=>p.alunos.forEach(a=>{ if(a.estado==='aguardando') fila.push({a,p}); }));
+  const elFila=document.getElementById('pers-fila');
+  if(!fila.length){
+    elFila.innerHTML='';
+  }else{
+    elFila.innerHTML=`<div class="fila">
+      <div class="fila-h">
+        <div><b>Aguardando liberação</b> <span class="bdg bagu">${fila.length}</span></div>
+        <button class="btn-ok" onclick="liberarFila()">Liberar todos (${fila.length})</button>
+      </div>
+      ${fila.map(({a,p})=>`<div class="fila-r">
+        <div><div class="un">${esc(a.nome)||'—'}</div><div class="uh">@${esc(a.username)} · aluno de ${esc(p.nome)||'—'}</div></div>
+        <button class="btn-ok" onclick="liberarAluno('${esc(a.id)}')">Liberar 30 dias</button>
+      </div>`).join('')}
+    </div>`;
+  }
+
+  // Lista de personais (com busca)
+  const q=document.getElementById('pbusca').value.toLowerCase().trim();
+  const lista=painel.personais.filter(p=>{
+    if(!q) return true;
+    return (p.nome||'').toLowerCase().includes(q) || (p.username||'').includes(q)
+      || p.alunos.some(a=>(a.nome||'').toLowerCase().includes(q) || (a.username||'').includes(q));
+  });
+  const el=document.getElementById('pers-lista');
+  if(!painel.personais.length){
+    el.innerHTML='<div class="empty">Nenhum personal ainda. Clique em "+ Novo personal".</div>';
+    return;
+  }
+  if(!lista.length){ el.innerHTML='<div class="empty">Nenhum resultado</div>'; return; }
+  el.innerHTML=lista.map(cartaoPersonal).join('');
+}
+
+function cartaoPersonal(p){
+  const c=contar(p.alunos);
+  const total=p.alunos.length;
+  const bloq=p.status==='bloqueado';
+  const precisaAcao=c.aguardando+c.carencia+c.vencido>0;
+  const aberto=abertos[p.id]!==undefined ? abertos[p.id] : precisaAcao;
+  const renovaveis=p.alunos.filter(a=>a.acesso_status!=='pausado').length;
+  const cheio=total>=p.limite_alunos;
+  const sel=[['ativo','ativos'],['aguardando','aguardando'],['carencia','carência'],['vencido','vencidos'],['pausado','pausados']]
+    .filter(([k])=>c[k]>0)
+    .map(([k,t])=>`<span class="bdg ${ESTADOS[k].c}">${c[k]} ${t}</span>`).join('');
+  const id=esc(p.id);
+  return `<div class="pcard">
+    <div class="phead">
+      <div class="uinfo"><div class="av">${esc((p.nome||'?').charAt(0).toUpperCase())}</div>
+        <div><div class="un">${esc(p.nome)||'—'}</div><div class="uh">@${esc(p.username)}</div></div></div>
+      <span class="bdg ${bloq?'bbloq':'bativo'}"><span class="dot"></span>${bloq?'Bloqueado':'Ativo'}</span>
+      <span class="pcap ${cheio?'cheio':''}">${total}/${p.limite_alunos} alunos</span>
+      <div class="pcounts">${sel}</div>
+      <div class="pacts">
+        <button class="btn-ok" ${renovaveis?'':'disabled'} onclick="renovarTodos('${id}')">Renovar todos +30d</button>
+        <button class="btn-sm" onclick="abrirLimite('${id}')">Limite</button>
+        <button class="btn-sm" onclick="togglePersonal('${id}')">${bloq?'Desbloquear':'Bloquear'}</button>
+        <button class="btn-sm" onclick="alternar('${id}')">${aberto?'▴':'▾'}</button>
+      </div>
+    </div>
+    <div class="pbody" style="display:${aberto?'block':'none'}">
+      ${total?p.alunos.map(linhaAluno).join(''):'<div class="empty" style="padding:18px">Nenhum aluno cadastrado ainda.</div>'}
+    </div>
+  </div>`;
+}
+
+function linhaAluno(a){
+  const e=ESTADOS[a.estado]||{t:a.estado,c:'bfree'};
+  const id=esc(a.id);
+  const btnLiberar=a.estado==='aguardando'
+    ? `<button class="btn-ok" onclick="liberarAluno('${id}')">Liberar 30 dias</button>`
+    : `<button class="btn-sm" onclick="liberarAluno('${id}')">+30 dias</button>`;
+  const btnPausa=a.acesso_status==='pausado'
+    ? `<button class="btn-sm" onclick="reativarAluno('${id}')">Reativar</button>`
+    : `<button class="btn-sm" onclick="pausarAluno('${id}')">Pausar</button>`;
+  return `<div class="alrow">
+    <div><div class="un">${esc(a.nome)||'—'}</div><div class="uh">@${esc(a.username)}</div></div>
+    <div><span class="bdg ${e.c}">${e.t}</span></div>
+    <div class="aval">${esc(textoValidade(a))}</div>
+    <div class="aacts">${btnLiberar}${btnPausa}</div>
+  </div>`;
+}
+
+function alternar(pid){
+  const p=painel.personais.find(x=>x.id===pid);
+  if(!p) return;
+  const c=contar(p.alunos);
+  const atual=abertos[pid]!==undefined ? abertos[pid] : (c.aguardando+c.carencia+c.vencido>0);
+  abertos[pid]=!atual;
+  renderPersonais();
+}
+
+// Liberar / renovar 1 aluno por 30 dias
+function liberarAluno(id){
+  executar(async()=>{
+    const f=achaAluno(id);
+    const ate=await rpc('liberar_aluno',{p_aluno:id,p_dias:30});
+    toast('✅ '+(f?f.aluno.nome:'Aluno')+' liberado até '+fmtData(ate));
+    await load();
+  });
+}
+// Liberar todos que aguardam
+function liberarFila(){
+  const ids=[];
+  painel.personais.forEach(p=>p.alunos.forEach(a=>{ if(a.estado==='aguardando') ids.push(a.id); }));
+  if(!ids.length) return;
+  if(!confirm('Liberar '+ids.length+' aluno(s) por 30 dias?')) return;
+  executar(async()=>{
+    for(const id of ids) await rpc('liberar_aluno',{p_aluno:id,p_dias:30});
+    toast('✅ '+ids.length+' aluno(s) liberados');
+    await load();
+  });
+}
+// Renovar todos os alunos de um personal (menos os pausados)
+function renovarTodos(pid){
+  const p=painel.personais.find(x=>x.id===pid);
+  if(!p) return;
+  const n=p.alunos.filter(a=>a.acesso_status!=='pausado').length;
+  if(!n) return;
+  if(!confirm('Liberar/renovar '+n+' aluno(s) de '+(p.nome||p.username)+' por 30 dias?\n(Alunos pausados ficam de fora.)')) return;
+  executar(async()=>{
+    const feitos=await rpc('liberar_alunos_do_personal',{p_personal:pid,p_dias:30});
+    toast('✅ '+feitos+' aluno(s) renovados');
+    await load();
+  });
+}
+function pausarAluno(id){
+  const f=achaAluno(id);
+  executar(async()=>{
+    const r=await chamarFn({acao:'pausar',aluno_id:id});
+    if(!r.ok){toast('Erro: '+r.erro);return;}
+    toast('⏸ '+(f?f.aluno.nome:'Aluno')+' pausado');
+    await load();
+  });
+}
+function reativarAluno(id){
+  const f=achaAluno(id);
+  executar(async()=>{
+    const r=await chamarFn({acao:'reativar',aluno_id:id});
+    if(!r.ok){toast('Erro: '+r.erro);return;}
+    toast('▶ '+(f?f.aluno.nome:'Aluno')+' reativado');
+    await load();
+  });
+}
+// Bloquear / desbloquear o personal (derruba/volta os alunos dele)
+function togglePersonal(pid){
+  const p=painel.personais.find(x=>x.id===pid);
+  if(!p) return;
+  if(p.status==='bloqueado'){ unlock(pid); return; }
+  if(!confirm('Bloquear '+(p.nome||p.username)+'?\nTodos os alunos dele perdem o acesso até você desbloquear.')) return;
+  block_(pid);
+}
+
+// Limite de alunos
+function abrirLimite(pid){
+  const p=painel.personais.find(x=>x.id===pid);
+  if(!p) return;
+  document.getElementById('m4id').value=pid;
+  document.getElementById('m4d').textContent=(p.nome||p.username)+' tem '+p.alunos.length+' aluno(s) cadastrado(s).';
+  document.getElementById('m4l').value=p.limite_alunos;
+  abrir('m4');
+}
+function salvarLimite(){
+  const pid=document.getElementById('m4id').value;
+  const lim=parseInt(document.getElementById('m4l').value,10);
+  if(isNaN(lim)||lim<0||lim>1000){toast('Limite deve ser de 0 a 1000');return;}
+  executar(async()=>{
+    await rpc('definir_personal',{p_user:pid,p_limite:lim});
+    fechar('m4');
+    toast('Limite atualizado para '+lim);
+    await load();
+  });
+}
+
+// Carência (dias de tolerância depois do vencimento)
+function salvarCarencia(){
+  const n=parseInt(document.getElementById('carencia').value,10);
+  if(isNaN(n)||n<0||n>60){toast('Carência deve ser de 0 a 60 dias');return;}
+  executar(async()=>{
+    await rpc('definir_carencia',{p_dias:n});
+    toast('Carência: '+n+' dia(s)');
+    await carregarPersonais(true);
+  });
+}
+
 // Fechar modal clicando fora
-['m1','m2','m3'].forEach(id=>{
+['m1','m2','m3','m4'].forEach(id=>{
   document.getElementById(id).addEventListener('click',function(e){if(e.target===this)fechar(id);});
 });
 </script>
